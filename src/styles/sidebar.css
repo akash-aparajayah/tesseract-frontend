@@ -1,93 +1,387 @@
-/* ========== SIDEBAR (MATCHES TOPBAR GRADIENT) ========== */
+/* ============================================
+   BridgeKey Sidebar - Master Stylesheet
+   Colors: Deep Navy, Zoho Blue, Vibrant Cyan, Safety Green
+   ============================================ */
+
+/* ---------- ROOT VARIABLES (theme colors) ---------- */
+:root {
+  --deep-navy: #002C5B;
+  --zoho-blue: #1B72E8;
+  --safety-green: #2ECC71;
+  --vibrant-cyan: #00F2FE;
+  --pure-white: #FFFFFF;
+  --slate-gray: #5A6E8A;
+  --soft-border: #E9EDF2;
+  --sidebar-width: 280px;
+}
+
+/* ---------- GLOBAL RESET (for consistency) ---------- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: #F4F7FC;
+  display: flex;
+}
+
+/* ========== SIDEBAR CONTAINER ========== */
 .sidebar {
   position: fixed;
-  top: 70px;
+  top: 0;
   left: 0;
-  width: 260px;
-  height: calc(100vh - 70px);
-
-  /* Gradient background (same theme as topbar) */
-  background: linear-gradient(
-    180deg,
-    var(--gradient-start),
-    var(--gradient-mid),
-    var(--gradient-end)
-  );
-
-  backdrop-filter: blur(12px);
-
+  width: var(--sidebar-width);
+  height: 100vh;
+  background: var(--deep-navy);
+  backdrop-filter: blur(2px);
   color: white;
-  padding: 20px;
+  padding: 24px 16px;
   overflow-y: auto;
-
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.25);
-
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.12);
   z-index: 999;
-
-  scroll-behavior: smooth;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
-/* ========== LOGO ========== */
-.logo {
-  margin-bottom: 20px;
+/* Custom thin scrollbar (optional) */
+.sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+.sidebar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+}
+.sidebar::-webkit-scrollbar-thumb {
+  background: var(--vibrant-cyan);
+  border-radius: 4px;
 }
 
-.main-logo {
-  width: 200px;
+/* ========== LOGO AT THE TOP ========== */
+.sidebar-logo {
+  text-align: center;
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08); /* very light line */
 }
 
-/* ========== ICONS ========== */
-.sideBar-logo {
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
+.sidebar-logo img {
+  max-width: 160px;
+  height: auto;
+  transition: transform 0.2s ease;
+}
+
+.sidebar-logo img:hover {
+  transform: scale(1.02);
+}
+
+/* Fallback text if image is missing */
+.logo-placeholder {
+  font-size: 1.4rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #FFFFFF, var(--vibrant-cyan));
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+/* ========== NAVIGATION SECTIONS ========== */
+.sidebar-nav {
+  flex: 1;
+}
+
+.nav-section {
+  margin-bottom: 28px;      /* increased spacing between sections */
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08); /* very light, barely visible */
+}
+
+/* Remove border from the last section before logout */
+.nav-section:last-of-type {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+/* Section titles – now clearly visible (vibrant cyan) */
+.section-title {
+ font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #E0EDFF;      /* soft off-white, very readable */
+  font-weight: 600;
+  margin-bottom: 14px;
+  padding-left: 12px;
 }
 
 /* ========== MENU ITEMS ========== */
-.sidebar-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
 .menu-item {
-  padding: 10px;
+  padding: 10px 12px;
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: 14px;
   margin-bottom: 6px;
   transition: all 0.2s ease;
+  display: block;
+  text-decoration: none;
+  color: #e0edff;
 }
 
-/* Hover effect (glass style) */
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.link-content {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  white-space: nowrap;
+}
+
+.sideBar-icon {
+  width: 22px;
+  font-size: 1.2rem;
+  text-align: center;
+}
+
+.menu-text {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Hover effect: slide right + light background */
 .menu-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(6px);
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(4px);
+  transform: translateX(4px);
 }
 
-/* Active menu item */
+/* Click animation (temporary class) */
+.menu-clicked {
+  transform: scale(0.97) !important;
+  background: rgba(27, 114, 232, 0.3) !important;
+  transition: all 0.05s ease !important;
+}
+
+/* Active menu highlight (cyan left border) */
 .active {
-  background: linear-gradient(
-    90deg,
-    rgba(79, 142, 247, 0.25),
-    rgba(79, 142, 247, 0.05)
-  );
-  border-left: 4px solid #4f8ef7;
+  background: linear-gradient(90deg, rgba(27, 114, 232, 0.25), rgba(0, 242, 254, 0.08));
+  border-left: 4px solid var(--vibrant-cyan);
   font-weight: 600;
+  color: white;
 }
 
-/* ========== DROPDOWN ========== */
-.dropdown {
-  margin-left: 15px;
+/* ========== LOGOUT BUTTON ========== */
+.logout-btn-container {
+  margin-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08); /* very light line above logout */
+  padding-top: 20px;
 }
 
-.dropdown-item {
-  padding: 8px;
+.logout-button {
+  width: 100%;
+  background: rgba(27, 114, 232, 0.08);
+  border: 1.5px solid rgba(27, 114, 232, 0.5);
+  border-radius: 40px;
   cursor: pointer;
-  color: #94a3b8;
+  font-family: inherit;
+  text-align: left;
+  padding: 10px 12px;
   transition: all 0.2s ease;
+  color: #e0edff;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 14px;
+  font-weight: 500;
+  position: relative;
+  overflow: hidden;
 }
 
-.dropdown-item:hover {
-  color: #ffffff;
+.logout-button i {
+  width: 22px;
+  font-size: 1.2rem;
 }
+
+.logout-button:hover {
+  background: rgba(27, 114, 232, 0.2);
+  border-color: var(--zoho-blue);
+  transform: translateX(4px);
+}
+
+/* Ripple effect (created dynamically) */
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(0, 242, 254, 0.5);
+  transform: scale(0);
+  animation: ripple-animation 0.6s linear;
+  pointer-events: none;
+}
+
+@keyframes ripple-animation {
+  to {
+    transform: scale(6);
+    opacity: 0;
+  }
+}
+
+/* Logging out state: pulsing cyan glow */
+.logout-button.logging-out {
+  background: rgba(27, 114, 232, 0.3);
+  pointer-events: none;
+  animation: pulseCyan 0.8s infinite;
+  border-color: var(--vibrant-cyan);
+}
+
+@keyframes pulseCyan {
+  0% { box-shadow: 0 0 0 0 rgba(0, 242, 254, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(0, 242, 254, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 242, 254, 0); }
+}
+
+/* ========== LOGOUT CONFIRMATION POPUP ========== */
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 44, 91, 0.75);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  backdrop-filter: blur(6px);
+  animation: fadeInOverlay 0.25s ease-out;
+}
+
+@keyframes fadeInOverlay {
+  from {
+    backdrop-filter: blur(0px);
+    background: rgba(0, 44, 91, 0);
+  }
+  to {
+    backdrop-filter: blur(6px);
+    background: rgba(0, 44, 91, 0.75);
+  }
+}
+
+.popup-box {
+  background: var(--pure-white);
+  padding: 28px 32px;
+  border-radius: 28px;
+  width: 360px;
+  text-align: center;
+  box-shadow: 0 25px 40px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--soft-border);
+  animation: popInScale 0.35s cubic-bezier(0.34, 1.2, 0.64, 1);
+  transform-origin: center;
+}
+
+@keyframes popInScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.92) translateY(8px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.02) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.popup-box h3 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--deep-navy);
+  margin-bottom: 12px;
+}
+
+.popup-box p {
+  color: var(--slate-gray);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.popup-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 28px;
+}
+
+.btn-no,
+.btn-yes {
+  padding: 10px 20px;
+  border-radius: 40px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+}
+
+.btn-no {
+  border: 1px solid var(--soft-border);
+  background: #F8FAFE;
+  color: var(--deep-navy);
+}
+
+.btn-no:hover {
+  background: #EDF2F7;
+  border-color: #CBD5E1;
+  transform: translateY(-2px);
+}
+
+.btn-yes {
+  border: none;
+  background: var(--zoho-blue);
+  color: white;
+  box-shadow: 0 2px 6px rgba(27, 114, 232, 0.2);
+}
+
+.btn-yes:hover {
+  background: #0f5bc9;
+  transform: translateY(-2px);
+}
+
+/* ========== MAIN CONTENT OFFSET (to be used in parent layout) ========== */
+.main-content {
+  margin-left: var(--sidebar-width);
+  min-height: 100vh;
+  width: calc(100% - var(--sidebar-width));
+  background: #F8FAFE;
+  padding: 24px 32px;
+}
+
+/* ========== RESPONSIVE BEHAVIOR (collapsed on small screens) ========== */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 80px;
+  }
+  .sidebar-logo img {
+    max-width: 40px;
+  }
+  .section-title {
+    font-size: 0;
+    margin-bottom: 8px;
+  }
+  .menu-text {
+    display: none;
+  }
+  .link-content {
+    justify-content: center;
+  }
+  .main-content {
+    margin-left: 80px;
+    width: calc(100% - 80px);
+  }
+}
+

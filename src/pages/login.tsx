@@ -2,7 +2,7 @@ import { useState, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import "../styles/login.css";
-import logo from "../assets/logo.svg";
+import logo from "../assets/env.svg";
 import { loginUser, forgotPasswordApi } from "../services/authApi";
 import { FormState, Errors } from "../types/login.type";
 import { useToast } from "../hooks/useToast";

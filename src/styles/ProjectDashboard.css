@@ -1487,7 +1487,7 @@ input:checked+.slider:before {
   gap: 8px;
 }
 
-.icon-btn {
+/* .icon-btn {
   background: rgb(238, 107, 107);
   border: none;
   cursor: pointer;
@@ -1495,7 +1495,7 @@ input:checked+.slider:before {
   border-radius: 8px;
   font-size: 14px;
   transition: all 0.2s;
-}
+} */
 
 
 .edit-btn:hover {
