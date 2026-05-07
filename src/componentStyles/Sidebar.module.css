@@ -3,7 +3,7 @@
   position: fixed;
   top: 0;
   left: 0;
-  width: var(--sidebar-width);
+  width: 260px;
   height: 100vh;
   background: var(--deep-navy);
   backdrop-filter: blur(2px);
