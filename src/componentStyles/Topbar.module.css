@@ -10,29 +10,39 @@
   --bg-light: #eef2fa;
 }
 
-/* ========== TOP BAR ========== */
+/* ========== TOP BAR - ENTRANCE ANIMATION (NEW) ========== */
 .topBar {
   position: fixed;
-
   top: 0;
   left: var(--sidebar-width);
   right: 0;
-
   height: 70px;
-
-  background: var(--pure-white);
-
+  background: #F4F8FF;  /* very light blue-white */
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   padding: 0 32px;
-
   z-index: 1000;
+  border-bottom: 1px solid #DCE7F5;
+  box-shadow: 0 2px 8px rgba(27, 114, 232, 0.05);
+  
+  /* NEW: entrance animation */
+  animation: slideDownFade 0.45s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+}
 
-  border-bottom: 1px solid var(--soft-border);
-
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+@keyframes slideDownFade {
+  0% {
+    opacity: 0;
+    transform: translateY(-40px);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ========== LEFT SIDE ========== */
@@ -43,7 +53,7 @@
   min-width: 0;
 }
 
-/* ========== SEARCH BAR ========== */
+/* ========== SEARCH BAR (ENHANCED FOCUS F/X) ========== */
 .searchForm {
   display: flex;
   align-items: center;
@@ -51,26 +61,41 @@
   border-radius: 40px;
   padding: 6px 18px;
   height: 48px;
- margin-left: 48px;
+  margin-left: 48px;
   border: 1.5px solid #d7e2f0;
-
   transition: all 0.25s ease;
-
   box-shadow: inset 0 1px 2px rgba(0,0,0,0.03);
+  position: relative;
+  overflow: hidden;
 }
+
+/* NEW: focused pulse ring */
 .searchForm:focus-within {
   background: white;
   border-color: var(--zoho-blue);
+  box-shadow: 0 0 0 4px rgba(27,114,232,0.12), 0 2px 8px rgba(27,114,232,0.08);
+  animation: searchPulse 0.4s ease-out;
+}
 
-  box-shadow:
-    0 0 0 4px rgba(27,114,232,0.12),
-    0 2px 8px rgba(27,114,232,0.08);
+@keyframes searchPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(27,114,232,0.2);
+  }
+  100% {
+    box-shadow: 0 0 0 6px rgba(27,114,232,0);
+  }
 }
 
 .searchIcon {
   color: var(--slate-gray);
   margin-right: 8px;
   font-size: 14px;
+  transition: transform 0.2s ease;
+}
+
+.searchForm:focus-within .searchIcon {
+  transform: scale(1.05);
+  color: var(--zoho-blue);
 }
 
 .searchForm input {
@@ -85,6 +110,11 @@
 .searchForm input::placeholder {
   color: var(--slate-gray);
   opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.searchForm input:focus::placeholder {
+  opacity: 0.3;
 }
 
 /* ========== RIGHT SIDE ========== */
@@ -95,173 +125,158 @@
   flex-shrink: 0;
 }
 
-/* ========== BELL ========== */
+/* ========== BELL (ENHANCED WITH RIPPLE) ========== */
 .bell {
   position: relative;
-
   cursor: pointer;
-
   background: #f8fbff;
-
   width: 42px;
   height: 42px;
-
   border-radius: 50%;
-
   border: 1.5px solid #d7e2f0;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   transition: all 0.25s ease;
-
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* NEW: ripple effect on click */
+.bell:active::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(27,114,232,0.3) 0%, rgba(27,114,232,0) 80%);
+  transform: translate(-50%, -50%) scale(0);
+  animation: ripple 0.5s ease-out;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+@keyframes ripple {
+  to {
+    transform: translate(-50%, -50%) scale(2);
+    opacity: 0;
+  }
 }
 
 .bell:hover {
   background: white;
-
   border-color: #bfd3ec;
-
   transform: translateY(-1px);
-
-  box-shadow:
-    0 4px 12px rgba(0,0,0,0.06);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
 }
 
 .bell svg {
   color: var(--deep-navy);
   font-size: 18px;
-  transition: color 0.2s ease;
+  transition: color 0.2s ease, transform 0.2s;
 }
 
 .bell:hover svg {
   color: var(--zoho-blue);
+  transform: scale(1.05);
 }
 
-/* Bell Animation */
+/* Existing shake animation */
 @keyframes gentleShake {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  25% {
-    transform: rotate(6deg);
-  }
-
-  50% {
-    transform: rotate(-6deg);
-  }
-
-  75% {
-    transform: rotate(3deg);
-  }
-
-  100% {
-    transform: rotate(0deg);
-  }
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(6deg); }
+  50% { transform: rotate(-6deg); }
+  75% { transform: rotate(3deg); }
+  100% { transform: rotate(0deg); }
 }
 
 .animate svg {
   animation: gentleShake 0.3s ease-in-out;
 }
 
-/* Badge */
+/* Badge + pulse */
 .badge {
   position: absolute;
-
   top: 2px;
   right: 2px;
-
   width: 11px;
   height: 11px;
-
   background: #ff3b30;
-
   border-radius: 50%;
-
   border: 2px solid white;
-
   box-sizing: border-box;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  box-shadow:
-    0 0 6px rgba(255,59,48,0.45);
+  box-shadow: 0 0 6px rgba(255,59,48,0.45);
 }
 
-/* Badge Animation */
+@keyframes badgePulse {
+  0% { transform: scale(0.8); opacity: 0.7; }
+  50% { transform: scale(1.2); background: #ff6b6b; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
 .animate .badge {
   animation: badgePulse 0.3s ease-out;
 }
 
-@keyframes badgePulse {
-  0% {
-    transform: scale(0.8);
-    opacity: 0.7;
-  }
-
-  50% {
-    transform: scale(1.2);
-    background: #ff6b6b;
-  }
-
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-/* ========== PROFILE ========== */
+/* ========== PROFILE (NEW HOVER & GLOW) ========== */
 .profile {
   display: flex;
   align-items: center;
   gap: 12px;
-
   background: #f8fbff;
-
   padding: 6px 14px 6px 8px;
-
   border-radius: 40px;
-
   border: 1.5px solid #d7e2f0;
-
-  transition: all 0.25s ease;
-
+  transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
   max-width: 280px;
   min-width: 0;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  position: relative;
+  overflow: hidden;
+}
 
-  box-shadow:
-    0 1px 2px rgba(0,0,0,0.03);
+/* NEW: gradient border sweep on hover */
+.profile::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 40px;
+  padding: 2px;
+  background: linear-gradient(120deg, var(--zoho-blue), var(--vibrant-cyan));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.profile:hover::before {
+  opacity: 1;
 }
 
 .profile:hover {
   background: white;
-
-  border-color: #bfd3ec;
-
-  box-shadow:
-    0 4px 12px rgba(0,0,0,0.06);
-
-  transform: translateY(-1px);
+  border-color: transparent;
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.08);
 }
 
 .avatar {
   width: 36px;
   height: 36px;
-  background: linear-gradient(
-    135deg,
-    var(--zoho-blue),
-    var(--deep-navy)
-  );
+  background: linear-gradient(135deg, var(--zoho-blue), var(--deep-navy));
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.profile:hover .avatar {
+  transform: rotate(4deg) scale(1.02);
 }
 
 .avatar svg {
@@ -294,37 +309,204 @@
   text-overflow: ellipsis;
 }
 
-/* ========== RESPONSIVE ========== */
+/* ========== PASSWORD BUTTON (RIPPLE + WIGGLE) ========== */
+.passwordButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 16px;
+  background: #f8fbff;
+  border: 1.5px solid #d7e2f0;
+  border-radius: 40px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--deep-navy);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* NEW: wiggle on click */
+.passwordButton:active {
+  animation: wiggle 0.2s ease-in-out;
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+/* NEW: ripple effect */
+.passwordButton:active::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(27,114,232,0.2) 0%, rgba(27,114,232,0) 80%);
+  transform: translate(-50%, -50%) scale(0);
+  animation: ripple 0.6s ease-out;
+  border-radius: 40px;
+}
+
+.passwordButton:hover {
+  background: white;
+  border-color: #bfd3ec;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* ========== MODAL (NEW SCALE + FADE IN) ========== */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+  animation: fadeInBackdrop 0.2s ease;
+}
+
+@keyframes fadeInBackdrop {
+  from {
+    backdrop-filter: blur(0);
+    background: rgba(0,0,0,0);
+  }
+  to {
+    backdrop-filter: blur(2px);
+    background: rgba(0, 0, 0, 0.35);
+  }
+}
+
+.modalBox {
+  width: 400px;
+  background: white;
+  padding: 28px;
+  border-radius: 24px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+  animation: modalPopIn 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+
+@keyframes modalPopIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modalBox h2 {
+  margin-bottom: 20px;
+  color: var(--deep-navy);
+}
+
+.modalBox form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modalBox input {
+  height: 48px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1.5px solid #d7e2f0;
+  outline: none;
+  transition: all 0.2s;
+}
+
+/* NEW: input focus glow */
+.modalBox input:focus {
+  border-color: var(--zoho-blue);
+  box-shadow: 0 0 0 3px rgba(27,114,232,0.15);
+  transform: scale(1.01);
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.cancelButton,
+.saveButton {
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.cancelButton {
+  background: #eef2f7;
+  border: none;
+}
+
+.cancelButton:hover {
+  background: #e2e8f0;
+  transform: translateY(-1px);
+}
+
+.saveButton {
+  background: var(--zoho-blue);
+  color: white;
+  border: none;
+}
+
+.saveButton:hover {
+  background: #0f5bc2;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(27,114,232,0.3);
+}
+
+/* ========== RESPONSIVE (unchanged) ========== */
 @media (max-width: 800px) {
-  .topBar {
-    padding: 0 20px;
-  }
-
-  .searchForm input {
-    width: 150px;
-  }
-
-  .profile {
-    padding: 6px 10px;
-  }
+  .topBar { padding: 0 20px; }
+  .searchForm input { width: 150px; }
+  .profile { padding: 6px 10px; }
 }
 
 @media (max-width: 680px) {
-  .info {
-    display: none;
-  }
-
-  .profile {
-    padding: 6px 8px;
-  }
+  .info { display: none; }
+  .profile { padding: 6px 8px; }
 }
 
 @media (max-width: 550px) {
-  .searchForm input {
-    width: 100px;
-  }
+  .searchForm input { width: 100px; }
+  .topBarLeft { gap: 20px; }
+}
 
-  .topBarLeft {
-    gap: 20px;
-  }
+/* Search bar, bell, profile, password button - white with subtle blue hover */
+.searchForm, .bell, .profile, .passwordButton {
+  background: #FFFFFF;
+  border-color: #CDDFF5;
+}
+
+.searchForm:hover, .bell:hover, .profile:hover, .passwordButton:hover {
+  background: #F8FBFE;
+  border-color: #8BB3E0;
+  box-shadow: 0 2px 8px rgba(27, 114, 232, 0.1);
+}
+
+/* Icons turn blue on hover */
+.searchForm:focus-within .searchIcon,
+.bell:hover svg,
+.passwordButton:hover svg,
+.profile:hover .avatar svg {
+  color: #1B72E8;
+}
+
+/* Avatar background gradient (white-blue) */
+.avatar {
+  background: linear-gradient(135deg, #1B72E8, #4D9EFF);
 }

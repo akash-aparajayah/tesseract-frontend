@@ -34,7 +34,7 @@
 
 /* ========== LOGO ========== */
 .sidebarLogo {
-  text-align: center;
+  /* text-align: center; */
   margin-bottom: 28px;
   padding-bottom: 20px;
 border-bottom: 1px solid #e2e8f0;}
@@ -161,7 +161,7 @@ border-bottom: 1px solid #e2e8f0;}
 
 .logoutButton {
   width: 100%;
-  background: rgba(27, 114, 232, 0.08);
+  background: rgba(218, 11, 11, 0.08);
   border: 1.5px solid rgba(27, 114, 232, 0.5);
   border-radius: 40px;
   cursor: pointer;
