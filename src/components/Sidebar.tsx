@@ -4,7 +4,7 @@ import { jwtDecode } from "jwt-decode";
 import "../styles/Sidebar.css";
 
 // Replace with your actual logo path
-import logo from "../assets/log.png";
+import logo from "../assets/unnamed.png";
 
 interface DecodedToken {
   role: string;

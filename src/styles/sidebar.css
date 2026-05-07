@@ -1,10 +1,7 @@
-/* ============================================
-   BridgeKey Sidebar - Master Stylesheet
-   Colors: Deep Navy, Zoho Blue, Vibrant Cyan, Safety Green
-   ============================================ */
+
 
 /* ---------- ROOT VARIABLES (theme colors) ---------- */
-:root {
+/* :root {
   --deep-navy: #002C5B;
   --zoho-blue: #1B72E8;
   --safety-green: #2ECC71;
@@ -13,10 +10,10 @@
   --slate-gray: #5A6E8A;
   --soft-border: #E9EDF2;
   --sidebar-width: 280px;
-}
+} */
 
 /* ---------- GLOBAL RESET (for consistency) ---------- */
-* {
+/* * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -26,7 +23,7 @@ body {
   font-family: 'Inter', sans-serif;
   background: #F4F7FC;
   display: flex;
-}
+} */
 
 /* ========== SIDEBAR CONTAINER ========== */
 .sidebar {
