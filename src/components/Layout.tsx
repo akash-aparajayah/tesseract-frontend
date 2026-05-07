@@ -13,7 +13,7 @@ export default function Layout() {
 
       <main
         style={{
-          marginLeft: "260px",   // same as sidebar width
+          marginLeft: "250px",   // same as sidebar width
           marginTop: "70px",     // same as topbar height
           padding: "24px",
           backgroundColor: "#f9fafb",

@@ -3,7 +3,7 @@
   position: fixed;
   top: 0;
   left: 0;
-  width: 260px;
+  width: var(--sidebar-width);
   height: 100vh;
   background: var(--deep-navy);
   backdrop-filter: blur(2px);
@@ -37,8 +37,7 @@
   text-align: center;
   margin-bottom: 28px;
   padding-bottom: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
+border-bottom: 1px solid #e2e8f0;}
 
 .logoImage {
   max-width: 160px;
@@ -344,10 +343,16 @@
 /* ========== MAIN CONTENT ========== */
 .mainContent {
   margin-left: var(--sidebar-width);
-  min-height: 100vh;
+
+  margin-top: 70px;
+
   width: calc(100% - var(--sidebar-width));
+
+  min-height: calc(100vh - 70px);
+
+  padding: 32px;
+
   background: #f8fafe;
-  padding: 24px 32px;
 }
 
 /* ========== RESPONSIVE ========== */

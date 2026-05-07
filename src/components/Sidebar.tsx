@@ -135,7 +135,7 @@ export default function Sidebar() {
                   ></i>
 
                   <span className={styles.menuText}>
-                    Self Dashboard
+                    Dashboard
                   </span>
                 </div>
               </div>
@@ -165,7 +165,7 @@ export default function Sidebar() {
                     ></i>
 
                     <span className={styles.menuText}>
-                      User Management
+                      User Hub
                     </span>
                   </div>
                 </div>
@@ -188,7 +188,7 @@ export default function Sidebar() {
                   ></i>
 
                   <span className={styles.menuText}>
-                    Project Management
+                   Project Hub
                   </span>
                 </div>
               </div>
