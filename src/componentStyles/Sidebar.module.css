@@ -1,5 +1,3 @@
-
-
 /* ========== SIDEBAR CONTAINER ========== */
 .sidebar {
   position: fixed;
@@ -20,77 +18,80 @@
   justify-content: space-between;
 }
 
-/* Custom thin scrollbar (optional) */
+/* Scrollbar */
 .sidebar::-webkit-scrollbar {
   width: 4px;
 }
+
 .sidebar::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.1);
 }
+
 .sidebar::-webkit-scrollbar-thumb {
   background: var(--vibrant-cyan);
   border-radius: 4px;
 }
 
-/* ========== LOGO AT THE TOP ========== */
-.sidebar-logo {
+/* ========== LOGO ========== */
+.sidebarLogo {
   text-align: center;
   margin-bottom: 28px;
   padding-bottom: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08); /* very light line */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.sidebar-logo img {
+.logoImage {
   max-width: 160px;
   height: auto;
   transition: transform 0.2s ease;
 }
 
-.sidebar-logo img:hover {
+.logoImage:hover {
   transform: scale(1.02);
 }
 
-/* Fallback text if image is missing */
-.logo-placeholder {
+.logoPlaceholder {
   font-size: 1.4rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #FFFFFF, var(--vibrant-cyan));
+  background: linear-gradient(
+    135deg,
+    #ffffff,
+    var(--vibrant-cyan)
+  );
   background-clip: text;
   -webkit-background-clip: text;
   color: transparent;
 }
 
-/* ========== NAVIGATION SECTIONS ========== */
-.sidebar-nav {
+/* ========== NAVIGATION ========== */
+.sidebarNav {
   flex: 1;
 }
 
-.nav-section {
-  margin-bottom: 28px;      /* increased spacing between sections */
+.navSection {
+  margin-bottom: 28px;
   padding-bottom: 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08); /* very light, barely visible */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* Remove border from the last section before logout */
-.nav-section:last-of-type {
+.navSection:last-of-type {
   border-bottom: none;
   margin-bottom: 0;
   padding-bottom: 0;
 }
 
-/* Section titles – now clearly visible (vibrant cyan) */
-.section-title {
- font-size: 0.7rem;
+.sectionTitle {
+  font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 1.5px;
-  color: #E0EDFF;      /* soft off-white, very readable */
+  color: #e0edff;
   font-weight: 600;
   margin-bottom: 14px;
   padding-left: 12px;
 }
 
 /* ========== MENU ITEMS ========== */
-.menu-item {
+.menuItem {
   padding: 10px 12px;
   cursor: pointer;
   border-radius: 14px;
@@ -101,13 +102,13 @@
   color: #e0edff;
 }
 
-.sidebar-link {
+.sidebarLink {
   display: flex;
   align-items: center;
   gap: 14px;
 }
 
-.link-content {
+.linkContent {
   display: flex;
   align-items: center;
   gap: 14px;
@@ -115,47 +116,51 @@
   white-space: nowrap;
 }
 
-.sideBar-icon {
+.sideBarIcon {
   width: 22px;
   font-size: 1.2rem;
   text-align: center;
 }
 
-.menu-text {
+.menuText {
   font-size: 14px;
   font-weight: 500;
 }
 
-/* Hover effect: slide right + light background */
-.menu-item:hover {
+/* Hover */
+.menuItem:hover {
   background: rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(4px);
   transform: translateX(4px);
 }
 
-/* Click animation (temporary class) */
-.menu-clicked {
+/* Click animation */
+.menuClicked {
   transform: scale(0.97) !important;
   background: rgba(27, 114, 232, 0.3) !important;
   transition: all 0.05s ease !important;
 }
 
-/* Active menu highlight (cyan left border) */
+/* Active */
 .active {
-  background: linear-gradient(90deg, rgba(27, 114, 232, 0.25), rgba(0, 242, 254, 0.08));
+  background: linear-gradient(
+    90deg,
+    rgba(27, 114, 232, 0.25),
+    rgba(0, 242, 254, 0.08)
+  );
   border-left: 4px solid var(--vibrant-cyan);
   font-weight: 600;
   color: white;
 }
 
-/* ========== LOGOUT BUTTON ========== */
-.logout-btn-container {
+/* ========== LOGOUT ========== */
+.logoutBtnContainer {
   margin-top: 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08); /* very light line above logout */
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   padding-top: 20px;
 }
 
-.logout-button {
+.logoutButton {
   width: 100%;
   background: rgba(27, 114, 232, 0.08);
   border: 1.5px solid rgba(27, 114, 232, 0.5);
@@ -175,36 +180,36 @@
   overflow: hidden;
 }
 
-.logout-button i {
+.logoutButton i {
   width: 22px;
   font-size: 1.2rem;
 }
 
-.logout-button:hover {
+.logoutButton:hover {
   background: rgba(27, 114, 232, 0.2);
   border-color: var(--zoho-blue);
   transform: translateX(4px);
 }
 
-/* Ripple effect (created dynamically) */
+/* Ripple */
 .ripple {
   position: absolute;
   border-radius: 50%;
   background: rgba(0, 242, 254, 0.5);
   transform: scale(0);
-  animation: ripple-animation 0.6s linear;
+  animation: rippleAnimation 0.6s linear;
   pointer-events: none;
 }
 
-@keyframes ripple-animation {
+@keyframes rippleAnimation {
   to {
     transform: scale(6);
     opacity: 0;
   }
 }
 
-/* Logging out state: pulsing cyan glow */
-.logout-button.logging-out {
+/* Logging out */
+.loggingOut {
   background: rgba(27, 114, 232, 0.3);
   pointer-events: none;
   animation: pulseCyan 0.8s infinite;
@@ -212,13 +217,21 @@
 }
 
 @keyframes pulseCyan {
-  0% { box-shadow: 0 0 0 0 rgba(0, 242, 254, 0.4); }
-  70% { box-shadow: 0 0 0 8px rgba(0, 242, 254, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(0, 242, 254, 0); }
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 242, 254, 0.4);
+  }
+
+  70% {
+    box-shadow: 0 0 0 8px rgba(0, 242, 254, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 242, 254, 0);
+  }
 }
 
-/* ========== LOGOUT CONFIRMATION POPUP ========== */
-.popup-overlay {
+/* ========== POPUP ========== */
+.popupOverlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -238,13 +251,14 @@
     backdrop-filter: blur(0px);
     background: rgba(0, 44, 91, 0);
   }
+
   to {
     backdrop-filter: blur(6px);
     background: rgba(0, 44, 91, 0.75);
   }
 }
 
-.popup-box {
+.popupBox {
   background: var(--pure-white);
   padding: 28px 32px;
   border-radius: 28px;
@@ -252,8 +266,8 @@
   text-align: center;
   box-shadow: 0 25px 40px rgba(0, 0, 0, 0.25);
   border: 1px solid var(--soft-border);
-  animation: popInScale 0.35s cubic-bezier(0.34, 1.2, 0.64, 1);
-  transform-origin: center;
+  animation: popInScale 0.35s
+    cubic-bezier(0.34, 1.2, 0.64, 1);
 }
 
 @keyframes popInScale {
@@ -261,99 +275,106 @@
     opacity: 0;
     transform: scale(0.92) translateY(8px);
   }
+
   60% {
     opacity: 1;
     transform: scale(1.02) translateY(-2px);
   }
+
   100% {
     opacity: 1;
     transform: scale(1) translateY(0);
   }
 }
 
-.popup-box h3 {
+.popupBox h3 {
   font-size: 1.4rem;
   font-weight: 700;
   color: var(--deep-navy);
   margin-bottom: 12px;
 }
 
-.popup-box p {
+.popupBox p {
   color: var(--slate-gray);
   font-size: 0.9rem;
   line-height: 1.5;
 }
 
-.popup-actions {
+.popupActions {
   display: flex;
   gap: 16px;
   justify-content: center;
   margin-top: 28px;
 }
 
-.btn-no,
-.btn-yes {
+.btnNo,
+.btnYes {
   padding: 10px 20px;
   border-radius: 40px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+  transition: all 0.2s
+    cubic-bezier(0.2, 0.9, 0.4, 1.1);
 }
 
-.btn-no {
+.btnNo {
   border: 1px solid var(--soft-border);
-  background: #F8FAFE;
+  background: #f8fafe;
   color: var(--deep-navy);
 }
 
-.btn-no:hover {
-  background: #EDF2F7;
-  border-color: #CBD5E1;
+.btnNo:hover {
+  background: #edf2f7;
+  border-color: #cbd5e1;
   transform: translateY(-2px);
 }
 
-.btn-yes {
+.btnYes {
   border: none;
   background: var(--zoho-blue);
   color: white;
   box-shadow: 0 2px 6px rgba(27, 114, 232, 0.2);
 }
 
-.btn-yes:hover {
+.btnYes:hover {
   background: #0f5bc9;
   transform: translateY(-2px);
 }
 
-/* ========== MAIN CONTENT OFFSET (to be used in parent layout) ========== */
-.main-content {
+/* ========== MAIN CONTENT ========== */
+.mainContent {
   margin-left: var(--sidebar-width);
   min-height: 100vh;
   width: calc(100% - var(--sidebar-width));
-  background: #F8FAFE;
+  background: #f8fafe;
   padding: 24px 32px;
 }
 
-/* ========== RESPONSIVE BEHAVIOR (collapsed on small screens) ========== */
+/* ========== RESPONSIVE ========== */
 @media (max-width: 768px) {
   .sidebar {
     width: 80px;
   }
-  .sidebar-logo img {
+
+  .logoImage {
     max-width: 40px;
   }
-  .section-title {
+
+  .sectionTitle {
     font-size: 0;
     margin-bottom: 8px;
   }
-  .menu-text {
+
+  .menuText {
     display: none;
   }
-  .link-content {
+
+  .linkContent {
     justify-content: center;
   }
-  .main-content {
+
+  .mainContent {
     margin-left: 80px;
     width: calc(100% - 80px);
   }
 }
-

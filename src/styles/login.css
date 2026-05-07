@@ -1,492 +1,409 @@
-/* ============================================
-   ROOT VARIABLES (Design Tokens)
-   ============================================ */
+/* ========== ROOT VARIABLES (Your Theme) ========== */
 :root {
-  --primary-dark: #1e3a5f;
-  --primary: #4f8ef7;
-  --success: #00c896;
-  --danger: #f75f5f;
-  --gray-bg: #f4f7fc;
-  --card-bg: rgba(255, 255, 255, 0.96);
-  --border: #eef2f8;
-  --text-dark: #1a1a2e;
-  --text-muted: #6c7a91;
-  --shadow-md: 0 20px 35px -12px rgba(0, 0, 0, 0.15);
-  --radius: 28px;
+  --deep-navy: #002C5B;
+  --zoho-blue: #1B72E8;
+  --safety-green: #2ECC71;
+  --vibrant-cyan: #00F2FE;
+  --pure-white: #FFFFFF;
+  --slate-gray: #5A6E8A;
+  --soft-border: #E9EDF2;
 }
 
-/* ============================================
-   GLOBAL RESET & BASE
-   ============================================ */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  overflow-x: hidden;
-}
-
-/* ============================================
-   MAIN LOGIN PAGE CONTAINER
-   - Dark radial gradient background
-   - GPU acceleration for the whole scene
-   ============================================ */
-.login-page {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  position: relative;
-  background: radial-gradient(circle at 20% 30%, #0a0f2a, #030617);
-  overflow: hidden;
-  transform: translateZ(0);               /* force GPU layer */
-  will-change: auto;
-}
-
-/* ============================================
-   ANIMATED GLASS ORBS (Background elements)
-   - Each orb has its own size, colour, and speed
-   - filter: blur() creates the glassmorphic glow
-   ============================================ */
-.orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(50px);                    /* reduced from 60px for performance */
-  opacity: 0.5;
-  animation: floatOrb 18s infinite alternate ease-in-out;
-  pointer-events: none;
-  z-index: 0;
-  will-change: transform;                /* each orb gets own GPU layer */
-}
-
-/* Orb 1 – Blue / deep navy (top left) */
-.orb-1 {
-  width: 60vmax;
-  height: 60vmax;
-  background: radial-gradient(circle, #4f8ef7, #1e3a5f);
-  top: -20vh;
-  left: -20vw;
-  animation-duration: 8s;                /* faster movement */
-}
-
-/* Orb 2 – Teal / greenish (bottom right) */
-.orb-2 {
-  width: 50vmax;
-  height: 50vmax;
-  background: radial-gradient(circle, #00c896, #2a5090);
-  bottom: -15vh;
-  right: -15vw;
-  animation-duration: 10s;
-  animation-delay: -2s;
-}
-
-/* Orb 3 – Reddish / purple (center left) */
-.orb-3 {
-  width: 40vmax;
-  height: 40vmax;
-  background: radial-gradient(circle, #f75f5f, #4f8ef7);
-  top: 40vh;
-  left: 30vw;
-  animation-duration: 12s;
-  animation-delay: -4s;
-  opacity: 0.35;
-}
-
-/* Keyframes for orb floating motion */
-@keyframes floatOrb {
-  0% {
-    transform: translate(0, 0) scale(1) rotate(0deg);
-  }
-  100% {
-    transform: translate(8%, 12%) scale(1.2) rotate(5deg);
-  }
-}
-
-/* ============================================
-   GRAIN TEXTURE OVERLAY (Subtle noise)
-   - Gives premium analogue feel without heavy cost
-   ============================================ */
-.login-page::before {
-  content: '';
-  position: absolute;
+/* ========== FULL‑PAGE CENTERING WRAPPER ========== */
+.login-wrapper {
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
-  background-repeat: repeat;
-  opacity: 0.15;
-  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(145deg, #0a1929 0%, #001e3c 100%);
+  overflow: auto;
   z-index: 1;
 }
 
-/* ============================================
-   DARK OVERLAY (Enhances card readability)
-   - Simple rgba without backdrop-filter for performance
-   ============================================ */
-.login-page .bg-overlay {
+/* ========== MAIN PREMIUM CONTAINER ========== */
+.login-premium {
+  width: 90%;
+  max-width: 1280px;
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(20px);
+  border-radius: 48px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Split layout – equal height columns */
+.split-layout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+/* ========== LEFT PANEL ========== */
+.brand-panel {
+  flex: 1.2;
+  background: linear-gradient(135deg, rgba(0, 44, 91, 0.95), rgba(0, 31, 63, 0.98));
+  padding: 48px 40px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Animated particles */
+.particle {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.3);
-  /* backdrop-filter: blur(2px);  REMOVED for smoothness */
-  z-index: 2;
+  border-radius: 50%;
+  opacity: 0.3;
+  animation: floatParticle 15s infinite alternate;
   pointer-events: none;
 }
-
-/* ============================================
-   TOAST NOTIFICATIONS
-   ============================================ */
-.toast-popup {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 1001;
-  padding: 12px 24px;
-  border-radius: 40px;
-  color: white;
-  font-weight: 500;
-  font-size: 14px;
-  box-shadow: var(--shadow-md);
+.particle-1 {
+  width: 300px;
+  height: 300px;
+  top: -100px;
+  left: -100px;
+  background: radial-gradient(circle, var(--vibrant-cyan), transparent);
+  animation-duration: 20s;
 }
-.toast-popup.success { background: var(--success); }
-.toast-popup.error { background: var(--danger); }
-
-/* ============================================
-   LOGIN CARD – SMOOTH ENTRANCE & HOVER
-   - GPU accelerated
-   - Cubic-bezier easing for natural motion
-   - Hover lifts and slightly scales the card
-   ============================================ */
-.login-card {
-  width: 100%;
-  max-width: 460px;
-  background: var(--card-bg);
-  border-radius: var(--radius);
-  box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.3);
-  padding: 40px 36px;
-  position: relative;
-  z-index: 10;
-  
-  /* Entrance animation */
-  animation: cardFloatIn 0.6s cubic-bezier(0.2, 0.9, 0.4, 1.1) forwards;
-  
-  /* Hover transition */
-  transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1),
-              box-shadow 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-  
-  /* GPU optimisation */
-  will-change: transform, box-shadow;
-  transform: translateZ(0);
-  backface-visibility: hidden;
+.particle-2 {
+  width: 250px;
+  height: 250px;
+  bottom: -80px;
+  right: -80px;
+  background: radial-gradient(circle, var(--safety-green), transparent);
+  animation-duration: 25s;
+}
+.particle-3 {
+  width: 180px;
+  height: 180px;
+  top: 50%;
+  left: 40%;
+  background: radial-gradient(circle, var(--zoho-blue), transparent);
+  animation-duration: 18s;
+}
+@keyframes floatParticle {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(30px, -30px) scale(1.2); }
 }
 
-/* Hover effect – lift + slight scale + stronger shadow */
-.login-card:hover {
-  transform: translateY(-8px) scale(1.01) translateZ(0);
-  box-shadow: 0 30px 55px -12px rgba(0, 0, 0, 0.4);
-}
-
-/* Keyframes for card entrance */
-@keyframes cardFloatIn {
-  0% {
-    opacity: 0;
-    transform: translateY(30px) scale(0.98) translateZ(0);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1) translateZ(0);
-  }
-}
-
-/* Inner wrapper – no extra behaviour needed */
-.login-card-inner {
-  width: 100%;
-}
-
-/* ============================================
-   LOGO AREA
-   ============================================ */
 .logo-area {
   text-align: center;
-  margin-bottom: 28px;
+  margin-bottom: 32px;
+  position: relative;
+  z-index: 2;
 }
-
-.login-logo {
-  height: 48px;
-  width: auto;
-  object-fit: contain;
+.premium-logo {
+  max-width: 160px;
+  height: auto;
+  filter: none;
+  transition: transform 0.2s;
 }
-
+.premium-logo:hover {
+  transform: scale(1.02);
+}
 .logo-fallback {
   font-size: 24px;
   font-weight: 800;
-  background: linear-gradient(135deg, var(--primary-dark), var(--primary));
-  -webkit-background-clip: text;
+  background: linear-gradient(135deg, #fff, var(--vibrant-cyan));
   background-clip: text;
+  -webkit-background-clip: text;
   color: transparent;
-  letter-spacing: 1px;
 }
 
-/* Titles & welcome text */
-.login-card h2 {
-  font-size: 28px;
+.value-text {
+  text-align: center;
+  margin-bottom: 40px;
+  position: relative;
+  z-index: 2;
+}
+.value-text h2 {
+  font-size: 1.8rem;
   font-weight: 700;
-  color: var(--primary-dark);
+  background: linear-gradient(135deg, #fff, var(--vibrant-cyan));
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  margin-bottom: 12px;
+}
+.value-text p {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.95rem;
+  max-width: 90%;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+/* Feature grid – equal height cards */
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  position: relative;
+  z-index: 2;
+  margin-top: 10px;
+}
+.grid-card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+  border-radius: 24px;
+  padding: 20px 16px;
   text-align: center;
-  margin-bottom: 8px;
+  transition: all 0.25s;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
 }
-
-.welcome-text {
-  text-align: center;
-  color: var(--text-muted);
-  font-size: 14px;
-  margin-bottom: 32px;
+.grid-card:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-4px);
 }
-
-/* ============================================
-   FORM INPUT GROUPS & LABELS
-   ============================================ */
-.input-group {
-  margin-bottom: 24px;
+.grid-card i {
+  font-size: 2rem;
+  color: var(--vibrant-cyan);
+  margin-bottom: 12px;
+  display: inline-block;
 }
-
-.input-group label {
-  display: block;
-  font-size: 13px;
+.grid-card h3 {
+  font-size: 1.1rem;
   font-weight: 600;
+  color: white;
   margin-bottom: 6px;
-  color: var(--primary-dark);
+}
+.grid-card p {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.4;
 }
 
-/* Base input styling */
-.input-group input {
-  width: 100%;
-  padding: 12px 16px;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  font-size: 14px;
-  transition: all 0.2s ease;
+/* ========== RIGHT PANEL – FORM ========== */
+.form-panel {
+  flex: 1;
   background: white;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
 }
-
-/* Focus effect: subtle scale and glow */
-.input-group input:focus {
+.form-container {
+  width: 100%;
+  max-width: 380px;
+  margin: auto 0;
+  align-self: center;
+}
+.form-panel h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--deep-navy);
+  margin-bottom: 8px;
+  text-align: center;
+}
+.form-panel p {
+  color: var(--slate-gray);
+  margin-bottom: 32px;
+  font-size: 0.9rem;
+  text-align: center;
+}
+.input-group-premium {
+  margin-bottom: 28px;
+  width: 100%;
+}
+.input-group-premium label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--deep-navy);
+  margin-bottom: 6px;
+}
+.input-group-premium input {
+  width: 100%;
+  padding: 14px 18px;
+  background: #f8fafe;
+  border: 1.5px solid var(--soft-border);
+  border-radius: 30px;
+  font-size: 0.9rem;
+  color: #1e293b;
+  transition: all 0.2s;
+}
+.input-group-premium input:focus {
   outline: none;
-  transform: scale(1.01);
-  border-color: var(--primary);
-  box-shadow: 0 0 0 4px rgba(79, 142, 247, 0.15);
+  border-color: var(--zoho-blue);
+  background: white;
+  box-shadow: 0 0 0 4px rgba(27, 114, 232, 0.15);
 }
-
-/* Error messages */
 .error-text {
   display: block;
   font-size: 12px;
-  color: var(--danger);
-  margin-top: 4px;
+  color: #f75f5f;
+  margin-top: 6px;
 }
-
-/* ============================================
-   PASSWORD FIELD WITH EYE BUTTON (INSIDE)
-   ============================================ */
 .password-wrapper {
   position: relative;
-  display: flex;
-  align-items: center;
 }
-
 .password-wrapper input {
-  flex: 1;
-  padding-right: 45px;   /* space for the eye button */
+  padding-right: 50px;
 }
-
-.eye-btn {
+.eye-btn-premium {
   position: absolute;
-  right: 12px;
-  background: transparent;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
   border: none;
   cursor: pointer;
-  font-size: 18px;
-  padding: 0;
+  color: var(--slate-gray);
+  font-size: 1.2rem;
   display: flex;
   align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-  transition: color 0.2s;
 }
-
-.eye-btn:hover {
-  color: var(--primary);
+.eye-btn-premium:hover {
+  color: var(--zoho-blue);
 }
-
-/* ============================================
-   LOGIN BUTTON
-   ============================================ */
-.login-btn {
+.login-btn-premium {
   width: 100%;
-  padding: 12px;
-  background: linear-gradient(135deg, var(--primary), #2563eb);
+  padding: 14px;
+  background: linear-gradient(90deg, var(--zoho-blue), #0f5bc9);
   border: none;
   border-radius: 40px;
   color: white;
-  font-weight: 600;
-  font-size: 14px;
+  font-weight: 700;
+  font-size: 1rem;
   cursor: pointer;
+  transition: all 0.3s;
   margin-top: 8px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s;
+  box-shadow: 0 8px 20px rgba(27, 114, 232, 0.3);
 }
-
+.login-btn-premium:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 30px rgba(27, 114, 232, 0.4);
+}
+.login-btn-premium:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 .btn-content {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
 }
-
-.login-btn:hover:not(:disabled) {
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 12px 28px rgba(79, 142, 247, 0.4);
-}
-
-.login-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* ============================================
-   FORGOT PASSWORD LINK
-   ============================================ */
-.extra-links {
+.forgot-premium {
   text-align: center;
-  margin-top: 20px;
+  margin-top: 24px;
 }
-
-.forgot-link {
+.forgot-premium button {
   background: none;
   border: none;
-  color: var(--primary);
-  font-size: 13px;
+  color: var(--zoho-blue);
+  font-size: 0.8rem;
   cursor: pointer;
-  transition: text-decoration 0.2s;
 }
-
-.forgot-link:hover {
+.forgot-premium button:hover {
   text-decoration: underline;
 }
 
-/* ============================================
-   FORGOT PASSWORD MODAL
-   ============================================ */
+/* ========== MODAL ========== */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 44, 91, 0.8);
+  backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
 }
-
 .forgot-modal {
   background: white;
   width: 90%;
-  max-width: 400px;
-  border-radius: 24px;
-  padding: 28px;
-  animation: modalPop 0.2s ease;
+  max-width: 420px;
+  border-radius: 40px;
+  padding: 32px;
+  box-shadow: 0 30px 50px rgba(0, 0, 0, 0.3);
 }
-
-@keyframes modalPop {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
-
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
 }
-
 .modal-header h3 {
-  font-size: 20px;
+  font-size: 1.5rem;
   font-weight: 700;
-  color: var(--primary-dark);
+  color: var(--deep-navy);
 }
-
 .close-btn {
   background: none;
   border: none;
-  font-size: 24px;
+  font-size: 28px;
   cursor: pointer;
-  color: var(--text-muted);
-  transition: color 0.2s;
+  color: var(--slate-gray);
 }
 .close-btn:hover {
-  color: var(--danger);
+  color: var(--zoho-blue);
 }
-
-.forgot-modal p {
-  color: var(--text-muted);
-  font-size: 13px;
-  margin-bottom: 20px;
-}
-
 .modal-actions {
   display: flex;
   gap: 12px;
   justify-content: flex-end;
   margin-top: 24px;
 }
-
-.btn-cancel, .btn-submit {
+.btn-cancel {
+  background: #f1f5f9;
+  border: none;
   padding: 8px 20px;
   border-radius: 40px;
   font-weight: 500;
-  font-size: 13px;
-  border: none;
   cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-cancel {
-  background: #f1f5f9;
-  color: var(--text-muted);
 }
 .btn-cancel:hover {
   background: #e2e8f0;
 }
-
 .btn-submit {
-  background: var(--primary);
+  background: var(--zoho-blue);
+  border: none;
+  padding: 8px 20px;
+  border-radius: 40px;
   color: white;
+  font-weight: 500;
+  cursor: pointer;
 }
 .btn-submit:hover:not(:disabled) {
-  background: #2563eb;
+  background: #0f5bc9;
 }
 .btn-submit:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-/* ============================================
-   RESPONSIVE ADJUSTMENTS (Mobile)
-   ============================================ */
-@media (max-width: 500px) {
-  .login-card {
-    padding: 28px 20px;
+/* ========== RESPONSIVE ========== */
+@media (max-width: 900px) {
+  .split-layout {
+    flex-direction: column;
   }
-  .login-card h2 {
-    font-size: 24px;
+  .brand-panel {
+    padding: 40px 24px;
+    text-align: center;
+  }
+  .feature-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .form-panel {
+    padding: 48px 28px;
+  }
+  .form-container {
+    max-width: 100%;
   }
 }

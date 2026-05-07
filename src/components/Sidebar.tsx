@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
-import "../styles/Sidebar.css";
+import styles from "../componentStyles/Sidebar.module.css";
 
-// Replace with your actual logo path
 import logo from "../assets/unnamed.png";
 
 interface DecodedToken {
@@ -13,11 +12,14 @@ interface DecodedToken {
 export default function Sidebar() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
+
   const navigate = useNavigate();
 
-  // Get user role from JWT token (if any)
+  // Get role from token
   const token = localStorage.getItem("accessToken");
+
   let role: DecodedToken | null = null;
+
   if (token) {
     try {
       role = jwtDecode<DecodedToken>(token);
@@ -26,151 +28,244 @@ export default function Sidebar() {
     }
   }
 
-  // Click animation for menu items
-  const handleMenuClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+  // Menu click animation
+  const handleMenuClick = (
+    e: React.MouseEvent<HTMLAnchorElement>
+  ) => {
     const element = e.currentTarget;
-    element.classList.add("menu-clicked");
-    setTimeout(() => element.classList.remove("menu-clicked"), 200);
+
+    element.classList.add(styles.menuClicked);
+
+    setTimeout(() => {
+      element.classList.remove(styles.menuClicked);
+    }, 200);
   };
 
-  // Logout flow
+  // Ripple effect
+  const createRipple = (
+    event: React.MouseEvent<HTMLButtonElement>
+  ) => {
+    const button = event.currentTarget;
+
+    const rect = button.getBoundingClientRect();
+
+    const size = Math.max(rect.width, rect.height);
+
+    const x = event.clientX - rect.left - size / 2;
+
+    const y = event.clientY - rect.top - size / 2;
+
+    const ripple = document.createElement("span");
+
+    ripple.classList.add(styles.ripple);
+
+    ripple.style.width = ripple.style.height = `${size}px`;
+
+    ripple.style.left = `${x}px`;
+
+    ripple.style.top = `${y}px`;
+
+    button.appendChild(ripple);
+
+    setTimeout(() => {
+      ripple.remove();
+    }, 600);
+  };
+
+  // Logout click
+  const handleLogoutClick = (
+    e: React.MouseEvent<HTMLButtonElement>
+  ) => {
+    if (isLoggingOut) return;
+
+    createRipple(e);
+
+    setShowPopup(true);
+  };
+
+  // Confirm logout
   const handleConfirmLogout = () => {
     setShowPopup(false);
+
     setIsLoggingOut(true);
+
     setTimeout(() => {
       setIsLoggingOut(false);
+
       localStorage.clear();
+
       navigate("/");
     }, 2000);
   };
 
-  // Ripple effect for logout button
-  const createRipple = (event: React.MouseEvent<HTMLButtonElement>) => {
-    const button = event.currentTarget;
-    const rect = button.getBoundingClientRect();
-    const size = Math.max(rect.width, rect.height);
-    const x = event.clientX - rect.left - size / 2;
-    const y = event.clientY - rect.top - size / 2;
-    const ripple = document.createElement("span");
-    ripple.className = "ripple";
-    ripple.style.width = ripple.style.height = size + "px";
-    ripple.style.left = x + "px";
-    ripple.style.top = y + "px";
-    button.style.position = "relative";
-    button.appendChild(ripple);
-    setTimeout(() => ripple.remove(), 600);
-  };
-
-  const handleLogoutClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (isLoggingOut) return;
-    createRipple(e);
-    setShowPopup(true);
-  };
-
   return (
     <>
-      <aside className="sidebar">
+      <aside className={styles.sidebar}>
         {/* Logo */}
-        <div className="sidebar-logo">
-          <img src={logo} alt="BridgeKey Logo" />
+        <div className={styles.sidebarLogo}>
+          <img
+            src={logo}
+            alt="BridgeKey Logo"
+            className={styles.logoImage}
+          />
         </div>
 
-        {/* Navigation sections */}
-        <div className="sidebar-nav">
+        {/* Navigation */}
+        <div className={styles.sidebarNav}>
           {/* General */}
-          <div className="nav-section">
-            <div className="section-title">General</div>
+          <div className={styles.navSection}>
+            <div className={styles.sectionTitle}>
+              General
+            </div>
+
             <NavLink
               to="/dashboard"
               end
-              className={({ isActive }) => `menu-item ${isActive ? "active" : ""}`}
+              className={({ isActive }) =>
+                `${styles.menuItem} ${
+                  isActive ? styles.active : ""
+                }`
+              }
               onClick={handleMenuClick}
             >
-              <div className="sidebar-link">
-                <div className="link-content">
-                  <i className="fas fa-tachometer-alt sideBar-icon"></i>
-                  <span className="menu-text">Self Dashboard</span>
+              <div className={styles.sidebarLink}>
+                <div className={styles.linkContent}>
+                  <i
+                    className={`fas fa-tachometer-alt ${styles.sideBarIcon}`}
+                  ></i>
+
+                  <span className={styles.menuText}>
+                    Self Dashboard
+                  </span>
                 </div>
               </div>
             </NavLink>
           </div>
 
-          {/* Project Management */}
-          <div className="nav-section">
-            <div className="section-title">Project Management</div>
+          {/* Management */}
+          <div className={styles.navSection}>
+            <div className={styles.sectionTitle}>
+              Management
+            </div>
+
             {role?.role === "SUPER_ADMIN" && (
               <NavLink
                 to="/dashboard/admin"
-                className={({ isActive }) => `menu-item ${isActive ? "active" : ""}`}
+                className={({ isActive }) =>
+                  `${styles.menuItem} ${
+                    isActive ? styles.active : ""
+                  }`
+                }
                 onClick={handleMenuClick}
               >
-                <div className="sidebar-link">
-                  <div className="link-content">
-                    <i className="fas fa-user-shield sideBar-icon"></i>
-                    <span className="menu-text">User Management</span>
+                <div className={styles.sidebarLink}>
+                  <div className={styles.linkContent}>
+                    <i
+                      className={`fas fa-user-shield ${styles.sideBarIcon}`}
+                    ></i>
+
+                    <span className={styles.menuText}>
+                      User Management
+                    </span>
                   </div>
                 </div>
               </NavLink>
             )}
+
             <NavLink
               to="/dashboard/project"
-              className={({ isActive }) => `menu-item ${isActive ? "active" : ""}`}
+              className={({ isActive }) =>
+                `${styles.menuItem} ${
+                  isActive ? styles.active : ""
+                }`
+              }
               onClick={handleMenuClick}
             >
-              <div className="sidebar-link">
-                <div className="link-content">
-                  <i className="fas fa-folder-open sideBar-icon"></i>
-                  <span className="menu-text">Project Management</span>
+              <div className={styles.sidebarLink}>
+                <div className={styles.linkContent}>
+                  <i
+                    className={`fas fa-folder-open ${styles.sideBarIcon}`}
+                  ></i>
+
+                  <span className={styles.menuText}>
+                    Project Management
+                  </span>
                 </div>
               </div>
             </NavLink>
+
             <NavLink
               to="/dashboard/report"
-              className={({ isActive }) => `menu-item ${isActive ? "active" : ""}`}
+              className={({ isActive }) =>
+                `${styles.menuItem} ${
+                  isActive ? styles.active : ""
+                }`
+              }
               onClick={handleMenuClick}
             >
-              <div className="sidebar-link">
-                <div className="link-content">
-                  <i className="fas fa-chart-bar sideBar-icon"></i>
-                  <span className="menu-text">Report</span>
+              <div className={styles.sidebarLink}>
+                <div className={styles.linkContent}>
+                  <i
+                    className={`fas fa-chart-bar ${styles.sideBarIcon}`}
+                  ></i>
+
+                  <span className={styles.menuText}>
+                    Report
+                  </span>
                 </div>
               </div>
             </NavLink>
           </div>
 
           {/* Tools */}
-          <div className="nav-section">
-            <div className="section-title">Tools</div>
+          <div className={styles.navSection}>
+            <div className={styles.sectionTitle}>
+              Tools
+            </div>
+
             <NavLink
               to="/dashboard/documentation"
-              className={({ isActive }) => `menu-item ${isActive ? "active" : ""}`}
+              className={({ isActive }) =>
+                `${styles.menuItem} ${
+                  isActive ? styles.active : ""
+                }`
+              }
               onClick={handleMenuClick}
             >
-              <div className="sidebar-link">
-                <div className="link-content">
-                  <i className="fas fa-book sideBar-icon"></i>
-                  <span className="menu-text">Documentation</span>
+              <div className={styles.sidebarLink}>
+                <div className={styles.linkContent}>
+                  <i
+                    className={`fas fa-book ${styles.sideBarIcon}`}
+                  ></i>
+
+                  <span className={styles.menuText}>
+                    Documentation
+                  </span>
                 </div>
               </div>
             </NavLink>
           </div>
         </div>
 
-        {/* Logout button */}
-        <div className="logout-btn-container">
+        {/* Logout */}
+        <div className={styles.logoutBtnContainer}>
           <button
-            className={`logout-button ${isLoggingOut ? "logging-out" : ""}`}
+            className={`${styles.logoutButton} ${
+              isLoggingOut ? styles.loggingOut : ""
+            }`}
             onClick={handleLogoutClick}
             disabled={isLoggingOut}
           >
             {isLoggingOut ? (
               <>
                 <i className="fas fa-spinner fa-pulse"></i>
+
                 <span>Logging out...</span>
               </>
             ) : (
               <>
                 <i className="fas fa-sign-out-alt"></i>
+
                 <span>Log Out</span>
               </>
             )}
@@ -178,17 +273,29 @@ export default function Sidebar() {
         </div>
       </aside>
 
-      {/* Logout confirmation popup */}
+      {/* Popup */}
       {showPopup && (
-        <div className="popup-overlay">
-          <div className="popup-box">
+        <div className={styles.popupOverlay}>
+          <div className={styles.popupBox}>
             <h3>Are you sure?</h3>
-            <p>Do you really want to log out of the system?</p>
-            <div className="popup-actions">
-              <button className="btn-no" onClick={() => setShowPopup(false)}>
+
+            <p>
+              Do you really want to log out of the
+              system?
+            </p>
+
+            <div className={styles.popupActions}>
+              <button
+                className={styles.btnNo}
+                onClick={() => setShowPopup(false)}
+              >
                 No
               </button>
-              <button className="btn-yes" onClick={handleConfirmLogout}>
+
+              <button
+                className={styles.btnYes}
+                onClick={handleConfirmLogout}
+              >
                 Yes, Log out
               </button>
             </div>
