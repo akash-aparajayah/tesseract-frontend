@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/ProjectDashboard.css";
+import { Eye, Pencil, Globe, Trash2, Plus, MoreVertical, Search, FileText } from 'lucide-react';
 
 interface Project {
   id: number;
@@ -198,32 +199,46 @@ export default function ProjectDashboard() {
     <div className="project-dashboard">
       <div className="dashboard-header">
         <div>
-          <h1>Projects Control Center</h1>
+          <h1>Project Management</h1>
           <p className="subtitle">Manage and monitor all your projects</p>
         </div>
-        <button className="create-project-btn" onClick={() => navigate("/dashboard/project-create")}>
-          + Create Project
-        </button>
+
       </div>
 
       {/* Stat Cards */}
       <div className="stats-container">
         <div className="stat-card total">
-          <div className="stat-icon">📋</div>
+          <div className="stat-icon total-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <line x1="3" y1="9" x2="21" y2="9" />
+              <line x1="9" y1="21" x2="9" y2="9" />
+            </svg>
+          </div>
           <div className="stat-info">
             <div className="stat-number">{projects.length}</div>
             <div className="stat-label">Total Projects</div>
           </div>
         </div>
         <div className="stat-card active">
-          <div className="stat-icon">🚀</div>
+          <div className="stat-icon active-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+          </div>
           <div className="stat-info">
             <div className="stat-number">{activeCount}</div>
             <div className="stat-label">Active Projects</div>
           </div>
         </div>
         <div className="stat-card inactive">
-          <div className="stat-icon">⏸️</div>
+          <div className="stat-icon inactive-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="8" y1="12" x2="16" y2="12" />
+            </svg>
+          </div>
           <div className="stat-info">
             <div className="stat-number">{inactiveCount}</div>
             <div className="stat-label">Inactive Projects</div>
@@ -231,13 +246,19 @@ export default function ProjectDashboard() {
         </div>
       </div>
 
-      <div className="search-bar">
-        <input
-          type="text"
-          placeholder="Search by project name or description..."
-          value={searchTerm}
-          onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-        />
+      <div className="search-create-row">
+        <div className="search-bar">
+          <Search size={16} className="search-icon" />
+          <input
+            type="text"
+            placeholder="Search by project name or description..."
+            value={searchTerm}
+            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+          />
+        </div>
+        <button className="create-project-btn" onClick={() => navigate("/dashboard/project-create")}>
+          <Plus size={16} /> Create Project
+        </button>
       </div>
 
       <div className="table-wrapper">
@@ -276,27 +297,41 @@ export default function ProjectDashboard() {
                   <td>{project.created}</td>
                   <td>
                     <button className="logs-btn" onClick={() => navigate(`/dashboard/project/${project.id}/logs`)}>
-                      📋 View Logs
+                      <FileText size={14} /> View Logs
                     </button>
                   </td>
                   <td>
                     <div className="actions-dropdown">
-                      <button className="three-dots">⋮</button>
+                      <button className="three-dots">
+                        <MoreVertical size={18} />
+                      </button>
                       <div className="dropdown-menu">
                         <div className="dropdown-item" onClick={() => handleView(project)}>
-                          👁️ View
+                          <Eye size={14} /> View
                         </div>
                         <div className="dropdown-item" onClick={() => navigate(`/dashboard/project-edit-basic/${project.id}`, { state: { project } })}>
-                          ✏️ Edit
+                          <Pencil size={14} /> Edit
                         </div>
                         <div className="dropdown-item" onClick={() => {
                           localStorage.setItem('currentProject', JSON.stringify(project));
-                          navigate("/dashboard/provider-config", { state: { project, environmentName: '' } });
+                          navigate("/dashboard/environments", { state: { project } }); localStorage.setItem(
+                            'currentProject',
+                            JSON.stringify(project)
+                          );
+
+                          navigate(
+                            "/dashboard/provider-config",
+                            {
+                              state: {
+                                project
+                              }
+                            }
+                          );
                         }}>
-                          🌍 Environments
+                          <Globe size={14} /> Environments
                         </div>
                         <div className="dropdown-item delete" onClick={() => setShowDeleteConfirm(project.id)}>
-                          🗑️ Delete
+                          <Trash2 size={14} /> Delete
                         </div>
                       </div>
                     </div>

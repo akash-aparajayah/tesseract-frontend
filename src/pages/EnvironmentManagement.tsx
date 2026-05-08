@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "../hooks/useToast";
 import "../styles/EnvironmentManagement.css";
 import { createPortal } from 'react-dom';
-interface EnvironmentProvider {
+import { MoreVertical, Pencil, Copy, Trash2, AlertTriangle, X, MessageSquare, Mail, MessageCircle, Globe, Plus, Cloud } from 'lucide-react'; interface EnvironmentProvider {
     id: string;
     name: string;
     serviceCounts: {
@@ -108,7 +108,11 @@ export default function EnvironmentManagement() {
     const [customEnvName, setCustomEnvName] = useState("");
     const [configuredEnvironments, setConfiguredEnvironments] = useState<EnvironmentProvider[]>([]);
     const [showAddForm, setShowAddForm] = useState(false);
-
+    const [showEditEnvModal, setShowEditEnvModal] = useState(false);
+    const [editingEnv, setEditingEnv] = useState<EnvironmentProvider | null>(null);
+    const [editEnvName, setEditEnvName] = useState("");
+    const [showDeleteEnvModal, setShowDeleteEnvModal] = useState(false);
+    const [deletingEnv, setDeletingEnv] = useState<EnvironmentProvider | null>(null);
     // Clone modal states
     const [showCloneModal, setShowCloneModal] = useState(false);
     const [cloneSource, setCloneSource] = useState<string>("");
@@ -142,21 +146,29 @@ export default function EnvironmentManagement() {
     }, [menuOpen]);
 
     const loadConfiguredEnvironments = () => {
-        const envNames = ['Local', 'Dev', 'Staging', 'Live'];
+        const presetEnvs = ['Local', 'Dev', 'Staging', 'Live'];
         const allKeys = Object.keys(localStorage);
-        const customEnvs = new Set<string>();
+        const envSet = new Set<string>();
 
         allKeys.forEach(key => {
             const match = key.match(/^env_(.+)_(sms|email|whatsapp)_providers$/);
-            if (match && !envNames.includes(match[1])) {
-                customEnvs.add(match[1]);
+            if (match) {
+                envSet.add(match[1]);
             }
         });
 
-        const allEnvs = [...envNames, ...customEnvs];
+        presetEnvs.forEach(env => {
+            const smsKey = `env_${env}_sms_providers`;
+            const emailKey = `env_${env}_email_providers`;
+            const whatsappKey = `env_${env}_whatsapp_providers`;
+            if (localStorage.getItem(smsKey) || localStorage.getItem(emailKey) || localStorage.getItem(whatsappKey)) {
+                envSet.add(env);
+            }
+        });
+
         const environments: EnvironmentProvider[] = [];
 
-        allEnvs.forEach(envName => {
+        envSet.forEach(envName => {
             const smsKey = `env_${envName}_sms_providers`;
             const emailKey = `env_${envName}_email_providers`;
             const whatsappKey = `env_${envName}_whatsapp_providers`;
@@ -165,34 +177,17 @@ export default function EnvironmentManagement() {
             const emailData = JSON.parse(localStorage.getItem(emailKey) || '{"providers":[]}');
             const whatsappData = JSON.parse(localStorage.getItem(whatsappKey) || '{"providers":[]}');
 
-            const serviceCounts = {
-                sms: smsData.providers?.length || 0,
-                email: emailData.providers?.length || 0,
-                whatsapp: whatsappData.providers?.length || 0
-            };
-
-            const totalProviders = serviceCounts.sms + serviceCounts.email + serviceCounts.whatsapp;
-
-            if (totalProviders > 0) {
-                const timestamps = [
-                    smsData.timestamp,
-                    emailData.timestamp,
-                    whatsappData.timestamp
-                ].filter(Boolean);
-
-                environments.push({
-                    id: envName,
-                    name: envName,
-                    serviceCounts,
-                    lastModified: timestamps.length ? new Date(Math.max(...timestamps)).toLocaleDateString() : 'N/A'
-                });
-            }
-        });
-
-        environments.sort((a, b) => {
-            const aTime = a.lastModified !== 'N/A' ? new Date(a.lastModified).getTime() : 0;
-            const bTime = b.lastModified !== 'N/A' ? new Date(b.lastModified).getTime() : 0;
-            return bTime - aTime;
+            // Show ALL environments that have storage (even with 0 providers)
+            environments.push({
+                id: envName,
+                name: envName,
+                serviceCounts: {
+                    sms: smsData.providers?.length || 0,
+                    email: emailData.providers?.length || 0,
+                    whatsapp: whatsappData.providers?.length || 0
+                },
+                lastModified: new Date().toLocaleDateString(),
+            });
         });
 
         setConfiguredEnvironments(environments);
@@ -270,6 +265,25 @@ export default function EnvironmentManagement() {
         }
 
         if (envName) {
+            // Create empty storage for this environment
+            const smsKey = `env_${envName}_sms_providers`;
+            const emailKey = `env_${envName}_email_providers`;
+            const whatsappKey = `env_${envName}_whatsapp_providers`;
+
+            if (!localStorage.getItem(smsKey)) {
+                localStorage.setItem(smsKey, JSON.stringify({ providers: [], timestamp: Date.now() }));
+            }
+            if (!localStorage.getItem(emailKey)) {
+                localStorage.setItem(emailKey, JSON.stringify({ providers: [], timestamp: Date.now() }));
+            }
+            if (!localStorage.getItem(whatsappKey)) {
+                localStorage.setItem(whatsappKey, JSON.stringify({ providers: [], timestamp: Date.now() }));
+            }
+
+            // Reload environments to show the card immediately
+            loadConfiguredEnvironments();
+
+            // Navigate to Provider Config
             navigate(`/dashboard/provider-config/${envName}`, {
                 state: { project, environmentName: envName }
             });
@@ -328,6 +342,60 @@ export default function EnvironmentManagement() {
     const hasConfiguredEnvs = configuredEnvironments.length > 0;
     const availableTargets = getAvailableTargetEnvs();
 
+    const handleEditEnvironment = () => {
+        if (!editingEnv || !editEnvName.trim()) {
+            showToast("Environment name is required", "error");
+            return;
+        }
+
+        if (editEnvName.trim() === editingEnv.name) {
+            setShowEditEnvModal(false);
+            return;
+        }
+
+        // Check if new name already exists
+        if (configuredEnvironments.some(e => e.name.toLowerCase() === editEnvName.trim().toLowerCase() && e.name !== editingEnv.name)) {
+            showToast("An environment with this name already exists", "error");
+            return;
+        }
+
+        const oldName = editingEnv.name;
+        const newName = editEnvName.trim();
+
+        // Rename all storage keys
+        const services = ['sms', 'email', 'whatsapp'];
+        services.forEach(service => {
+            const oldKey = `env_${oldName}_${service}_providers`;
+            const newKey = `env_${newName}_${service}_providers`;
+            const data = localStorage.getItem(oldKey);
+            if (data) {
+                localStorage.setItem(newKey, data);
+                localStorage.removeItem(oldKey);
+            }
+        });
+
+        // Reload environments
+        loadConfiguredEnvironments();
+        showToast(`Environment renamed to "${newName}"`, "success");
+        setShowEditEnvModal(false);
+        setEditingEnv(null);
+        setEditEnvName("");
+    };
+
+    const handleDeleteEnvironment = (env: EnvironmentProvider) => {
+        // Remove all storage keys for this environment
+        const services = ['sms', 'email', 'whatsapp'];
+        services.forEach(service => {
+            localStorage.removeItem(`env_${env.name}_${service}_providers`);
+        });
+
+        // Reload environments
+        loadConfiguredEnvironments();
+        showToast(`Environment "${env.name}" deleted successfully`, "success");
+        setShowDeleteEnvModal(false);
+        setDeletingEnv(null);
+    };
+
     return (
         <div className={hasConfiguredEnvs ? "env-grid-container" : "env-container-simple"}>
             <ToastContainer />
@@ -353,15 +421,40 @@ export default function EnvironmentManagement() {
                                                 setMenuOpen(menuOpen === env.id ? null : env.id);
                                             }}
                                         >
-                                            ⋮
+                                            <MoreVertical size={18} />
                                         </button>
                                         {menuOpen === env.id && (
                                             <div className="menu-dropdown">
                                                 <button onClick={(e) => {
                                                     e.stopPropagation();
+                                                    setEditingEnv(env);
+                                                    setEditEnvName(env.name);
+                                                    setShowEditEnvModal(true);
+                                                    setMenuOpen(null);
+                                                }}>
+                                                    <Pencil size={14} /> Edit Name
+                                                </button>
+                                                <button onClick={(e) => {
+                                                    e.stopPropagation();
                                                     openCloneModal(env.name);
                                                 }}>
-                                                    📋 Clone Environment
+                                                    <Copy size={14} /> Clone
+                                                </button>
+                                                <button
+                                                    className="delete-item"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        const totalProviders = env.serviceCounts.sms + env.serviceCounts.email + env.serviceCounts.whatsapp;
+                                                        if (totalProviders > 0) {
+                                                            setDeletingEnv(env);
+                                                            setShowDeleteEnvModal(true);
+                                                        } else {
+                                                            handleDeleteEnvironment(env);
+                                                        }
+                                                        setMenuOpen(null);
+                                                    }}
+                                                >
+                                                    <Trash2 size={14} /> Delete
                                                 </button>
                                             </div>
                                         )}
@@ -377,7 +470,7 @@ export default function EnvironmentManagement() {
                                                 handleEnvCardClick(env, 'SMS');
                                             }}
                                         >
-                                            💬 SMS ({env.serviceCounts.sms})
+                                            <MessageSquare size={12} /> SMS ({env.serviceCounts.sms})
                                         </span>
                                     )}
                                     {env.serviceCounts.email > 0 && (
@@ -388,7 +481,7 @@ export default function EnvironmentManagement() {
                                                 handleEnvCardClick(env, 'EMAIL');
                                             }}
                                         >
-                                            ✉️ Email ({env.serviceCounts.email})
+                                            <Mail size={12} /> Email ({env.serviceCounts.email})
                                         </span>
                                     )}
                                     {env.serviceCounts.whatsapp > 0 && (
@@ -399,7 +492,7 @@ export default function EnvironmentManagement() {
                                                 handleEnvCardClick(env, 'WHATSAPP');
                                             }}
                                         >
-                                            💚 WhatsApp ({env.serviceCounts.whatsapp})
+                                            <MessageCircle size={12} /> WhatsApp ({env.serviceCounts.whatsapp})
                                         </span>
                                     )}
                                 </div>
@@ -414,19 +507,17 @@ export default function EnvironmentManagement() {
                         {!showAddForm ? (
                             <div className="env-grid-card add-new-card" onClick={() => setShowAddForm(true)}>
                                 <div className="add-card-content">
-                                    <span className="add-icon">+</span>
+                                    <Plus size={32} color="#94a3b8" />
                                     <span className="add-text">Add Environment</span>
                                 </div>
                             </div>
                         ) : (
                             <div className="env-grid-card add-form-card" onClick={(e) => e.stopPropagation()}>
-                                <div className="env-card-simple-small">
-                                    <div className="env-icon-small">🌍</div>
-                                    <h3>Add Environment</h3>
-
+                                <div className="add-form-inner">
+                                    <h4 className="add-form-title">New Environment</h4>
                                     <div className="env-controls-small">
                                         <select
-                                            className="env-dropdown"
+                                            className="env-dropdown-small"
                                             value={isCustomMode ? "__custom__" : selectedEnvironment}
                                             onChange={(e) => {
                                                 const value = e.target.value;
@@ -453,7 +544,6 @@ export default function EnvironmentManagement() {
                                                 placeholder="Enter name"
                                                 value={customEnvName}
                                                 onChange={(e) => setCustomEnvName(e.target.value)}
-                                                onKeyPress={(e) => e.key === 'Enter' && addEnvironment()}
                                                 className="custom-input-small"
                                                 autoFocus
                                             />
@@ -461,7 +551,7 @@ export default function EnvironmentManagement() {
 
                                         {((selectedEnvironment && !isCustomMode) || (isCustomMode && customEnvName.trim())) && (
                                             <button className="add-btn-small" onClick={addEnvironment}>
-                                                Continue →
+                                                Create & Continue →
                                             </button>
                                         )}
 
@@ -619,7 +709,7 @@ export default function EnvironmentManagement() {
                     {/* Right Panel - Form with Custom Dropdown */}
                     <div className="env-form-panel">
                         <div className="env-card-simple">
-                            <span className="env-icon">☁️</span>
+                            <span className="env-icon"><Cloud size={56} color="#6366f1" /></span>
                             <h2>{project?.name}</h2>
                             <p>Select or create an environment to configure SMS, Email & WhatsApp providers</p>
 
@@ -706,6 +796,82 @@ export default function EnvironmentManagement() {
                             >
                                 Clone Environment
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Environment Warning Modal */}
+            {showDeleteEnvModal && deletingEnv && (
+                <div className="modal-overlay" onClick={() => setShowDeleteEnvModal(false)}>
+                    <div className="modal-container" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <AlertTriangle size={24} color="#f59e0b" />
+                            <h3>Cannot Delete Environment</h3>
+                            <button className="close-btn" onClick={() => setShowDeleteEnvModal(false)}><X size={20} /></button>
+                        </div>
+                        <div className="modal-body">
+                            <p>Environment <strong>"{deletingEnv.name}"</strong> cannot be deleted because it has providers associated with it.</p>
+                            <div className="provider-summary">
+                                {deletingEnv.serviceCounts.sms > 0 && (
+                                    <span className="summary-item">
+                                        <MessageSquare size={14} /> SMS: {deletingEnv.serviceCounts.sms} provider(s)
+                                    </span>
+                                )}
+                                {deletingEnv.serviceCounts.email > 0 && (
+                                    <span className="summary-item">
+                                        <Mail size={14} /> Email: {deletingEnv.serviceCounts.email} provider(s)
+                                    </span>
+                                )}
+                                {deletingEnv.serviceCounts.whatsapp > 0 && (
+                                    <span className="summary-item">
+                                        <MessageCircle size={14} /> WhatsApp: {deletingEnv.serviceCounts.whatsapp} provider(s)
+                                    </span>
+                                )}
+                            </div>
+                            <p className="warning-text">Please remove all providers before deleting this environment.</p>
+                        </div>
+                        <div className="modal-actions">
+                            <button className="btn-cancel" onClick={() => setShowDeleteEnvModal(false)}>Close</button>
+                            <button
+                                className="btn-create"
+                                onClick={() => {
+                                    navigate(`/dashboard/provider-config/${deletingEnv.name}`, {
+                                        state: { project, environmentName: deletingEnv.name }
+                                    });
+                                }}
+                            >
+                                Go to Providers
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Edit Environment Name Modal */}
+            {showEditEnvModal && editingEnv && (
+                <div className="modal-overlay" onClick={() => setShowEditEnvModal(false)}>
+                    <div className="modal-container" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <Pencil size={20} />
+                            <h3>Edit Environment Name</h3>
+                            <button className="close-btn" onClick={() => setShowEditEnvModal(false)}><X size={20} /></button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="form-group">
+                                <label>Environment Name *</label>
+                                <input
+                                    type="text"
+                                    value={editEnvName}
+                                    onChange={(e) => setEditEnvName(e.target.value)}
+                                    className="custom-input-small"
+                                    placeholder="Enter new name"
+                                    autoFocus
+                                />
+                            </div>
+                        </div>
+                        <div className="modal-actions">
+                            <button className="btn-cancel" onClick={() => setShowEditEnvModal(false)}>Cancel</button>
+                            <button className="btn-create" onClick={handleEditEnvironment}>Save Changes</button>
                         </div>
                     </div>
                 </div>

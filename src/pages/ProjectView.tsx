@@ -2,6 +2,10 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import "../styles/ProjectView.css";
+import {
+  Pencil, FolderOpen,
+  Plus, MessageSquare, Mail, MessageCircle, Plug, Check
+} from 'lucide-react';
 
 interface Project {
   id: number;
@@ -287,9 +291,9 @@ export default function ProjectView() {
 
   const getEnvIcon = (name: string) => {
     const icons: Record<string, string> = {
-      'Local': '🏠', 'Dev': '💻', 'Staging': '🚀', 'Live': '🌍'
+      'Local': '', 'Dev': '', 'Staging': '', 'Live': ''
     };
-    return icons[name] || '🔧';
+    return icons[name] || '';
   };
 
   if (!project) {
@@ -306,7 +310,7 @@ export default function ProjectView() {
         <div className="breadcrumbs-row">
           <button className="breadcrumb-link" onClick={() => navigate("/dashboard")}>Dashboard</button>
           <span className="breadcrumb-separator">›</span>
-          <button className="breadcrumb-link" onClick={() => navigate("/dashboard")}>Projects</button>
+          <button className="breadcrumb-link" onClick={() => navigate("/dashboard/project")}>Projects</button>
           <span className="breadcrumb-separator">›</span>
           <span className="breadcrumb-current">{project.name}</span>
         </div>
@@ -322,7 +326,7 @@ export default function ProjectView() {
                 <label className="project-logo editable-logo" style={{ cursor: 'pointer' }}>
                   {project.logo ? (
                     <img src={project.logo} alt="Project logo" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '20px' }} />
-                  ) : '📁'}
+                  ) : <FolderOpen size={40} color="#818cf8" />}
                   <input
                     type="file"
                     accept="image/jpeg,image/png,image/gif,image/webp"
@@ -375,8 +379,8 @@ export default function ProjectView() {
                         onChange={(e) => setEditForm({ ...editForm, status: e.target.value as "active" | "inactive" })}
                         className="inline-select"
                       >
-                        <option value="active">🟢 Active</option>
-                        <option value="inactive">🔴 Inactive</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
                       </select>
                     </div>
                   </div>
@@ -393,22 +397,22 @@ export default function ProjectView() {
 
                 <div className="project-meta-grid">
                   <div className="meta-item">
-                    <span className="meta-icon">🆔</span>
+                    <span className="meta-icon"></span>
                     <span className="meta-label">Project ID:</span>
                     <span className="meta-value">#{project.id}</span>
                   </div>
                   <div className="meta-item">
-                    <span className="meta-icon">📅</span>
+                    <span className="meta-icon"></span>
                     <span className="meta-label">Created:</span>
                     <span className="meta-value">{project.created}</span>
                   </div>
                   <div className="meta-item">
-                    <span className="meta-icon">👤</span>
+                    <span className="meta-icon"></span>
                     <span className="meta-label">Created By:</span>
                     <span className="meta-value">{project.createdBy || "Admin"}</span>
                   </div>
                   <div className="meta-item">
-                    <span className="meta-icon">📅</span>
+                    <span className="meta-icon"></span>
                     <span className="meta-label">Last Updated:</span>
                     <span className="meta-value">{project.updatedAt || project.created}</span>
                   </div>
@@ -420,7 +424,7 @@ export default function ProjectView() {
                 <div className="project-name-row">
                   <h2>{project.name}</h2>
                   <span className={`status-badge ${project.status}`}>
-                    {project.status === "active" ? "🟢 Active" : "🔴 Inactive"}
+                    {project.status === "active" ? " Active" : " Inactive"}
                   </span>
                 </div>
 
@@ -428,7 +432,7 @@ export default function ProjectView() {
                   {/* Left Column */}
                   <div className="details-left">
                     <div className="detail-item">
-                      <span className="meta-icon">🆔</span>
+                      <span className="meta-icon"></span>
                       <div className="detail-content">
                         <span className="meta-label">Project ID</span>
                         <span className="meta-value">#{project.id}</span>
@@ -437,7 +441,7 @@ export default function ProjectView() {
 
                     {/* Description under Project ID */}
                     <div className="detail-item description-item">
-                      <span className="meta-icon">📝</span>
+                      <span className="meta-icon"></span>
                       <div className="detail-content">
                         <span className="meta-label">Description</span>
                         <span className="meta-value desc-text">{project.description || "No description"}</span>
@@ -445,7 +449,7 @@ export default function ProjectView() {
                     </div>
 
                     <div className="detail-item">
-                      <span className="meta-icon">👤</span>
+                      <span className="meta-icon"></span>
                       <div className="detail-content">
                         <span className="meta-label">Created By</span>
                         <span className="meta-value">{project.createdBy || "Admin"}</span>
@@ -456,21 +460,21 @@ export default function ProjectView() {
                   {/* Right Column */}
                   <div className="details-right">
                     <div className="detail-item">
-                      <span className="meta-icon">📅</span>
+                      <span className="meta-icon"></span>
                       <div className="detail-content">
                         <span className="meta-label">Created At</span>
                         <span className="meta-value">{project.created}</span>
                       </div>
                     </div>
                     <div className="detail-item">
-                      <span className="meta-icon">🔄</span>
+                      <span className="meta-icon"></span>
                       <div className="detail-content">
                         <span className="meta-label">Updated At</span>
                         <span className="meta-value">{project.updatedAt || project.created}</span>
                       </div>
                     </div>
                     <div className="detail-item">
-                      <span className="meta-icon">✏️</span>
+                      <span className="meta-icon"></span>
                       <div className="detail-content">
                         <span className="meta-label">Last Updated By</span>
                         <span className="meta-value">{project.updatedBy || "Admin"}</span>
@@ -486,15 +490,15 @@ export default function ProjectView() {
             {isEditing ? (
               <>
                 <button className="action-btn save" onClick={handleSaveEdit}>
-                  💾 Save Changes
+                  Save Changes
                 </button>
                 <button className="action-btn cancel" onClick={handleCancelEdit}>
-                  ❌ Cancel
+                  Cancel
                 </button>
               </>
             ) : (
               <button className="action-btn edit" onClick={() => setIsEditing(true)}>
-                ✏️ Edit Project
+                <Pencil size={16} /> Edit Project
               </button>
             )}
           </div>
@@ -505,7 +509,7 @@ export default function ProjectView() {
       <div className="environment-section">
         <div className="environment-section-header">
           <div className="environment-section-title">
-            <h3>🌍 Environment & Providers</h3>
+            <h3>Environment & Providers</h3>
           </div>
 
           {environments.length > 0 && (
@@ -522,7 +526,7 @@ export default function ProjectView() {
                 ))}
               </select>
               <button className="btn-new-env" onClick={handleCreateEnvironment}>
-                + New Environment
+                <Plus size={16} /> New Environment
               </button>
             </div>
           )}
@@ -530,11 +534,11 @@ export default function ProjectView() {
 
         {environments.length === 0 ? (
           <div className="no-env-state">
-            <span className="no-env-icon">📭</span>
+            <FolderOpen size={48} color="#94a3b8" />
             <h4>No Environments Configured</h4>
             <p>Create your first environment and start configuring providers for SMS, Email & WhatsApp services.</p>
             <button className="btn-create-first-env" onClick={handleCreateEnvironment}>
-              + Create First Environment
+              <Plus size={16} /> Create First Environment
             </button>
           </div>
         ) : (
@@ -550,7 +554,11 @@ export default function ProjectView() {
                     backgroundColor: activeService === service ? `${SERVICE_COLORS[service]}10` : 'transparent'
                   }}
                 >
-                  <span className="service-sidebar-icon">{SERVICE_ICONS[service]}</span>
+                  <span className="service-sidebar-icon">
+                    {service === "SMS" && <MessageSquare size={18} />}
+                    {service === "EMAIL" && <Mail size={18} />}
+                    {service === "WHATSAPP" && <MessageCircle size={18} />}
+                  </span>
                   <div className="service-sidebar-info">
                     <div>{service}</div>
                     <div className="service-sidebar-count">
@@ -572,21 +580,20 @@ export default function ProjectView() {
                   style={{ backgroundColor: SERVICE_COLORS[activeService] }}
                   onClick={handleNavigateToProviderConfig}
                 >
-                  + Add Provider
+                  <Plus size={16} /> Add Provider
                 </button>
               </div>
 
               <div className="providers-list-embedded">
                 {providers.length === 0 ? (
                   <div className="empty-state-embedded">
-                    <span className="empty-state-icon">📭</span>
-                    <h4>No {activeService} providers configured</h4>
+                    <FolderOpen size={40} color="#cbd5e1" />                    <h4>No {activeService} providers configured</h4>
                     <p>Add your first provider to get started</p>
                     <button
                       className="btn-empty-action"
                       onClick={handleNavigateToProviderConfig}
                     >
-                      + Add Provider
+                      <Plus size={16} /> Add Provider
                     </button>
                   </div>
                 ) : (
@@ -602,18 +609,18 @@ export default function ProjectView() {
                     >
                       <div className="provider-card-header-embedded">
                         <div className="provider-card-title">
-                          <span className="provider-card-icon">🔌</span>
+                          <Plug size={16} />
                           {provider.name.replace('_', ' ')}
                           <span className="configured-badge" style={{
                             background: `${SERVICE_COLORS[activeService]}20`,
                             color: SERVICE_COLORS[activeService]
                           }}>
-                            ✓ Configured
+                            <Check size={14} /> Configured
                           </span>
                         </div>
                         <div className="provider-card-actions">
                           <button className="btn-edit-small" onClick={(e) => { e.stopPropagation(); handleNavigateToProviderConfig(); }}>
-                            ✏️
+                            <Pencil size={14} />
                           </button>
                         </div>
                       </div>

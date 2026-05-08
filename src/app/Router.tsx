@@ -10,7 +10,7 @@ import AdminCreate from "../pages/AdminCreate";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ProjectEditForm from "@/pages/ProjectEditForm";
 import ProjectBasicEdit from "@/pages/ProjectBasicEdit";
-import EnvironmentManagement from "@/pages/EnvironmentManagement";
+// import EnvironmentManagement from "@/pages/EnvironmentManagement";
 import ProviderConfig from "@/pages/ProviderConfig";
 
 const router = createBrowserRouter([
@@ -62,6 +62,10 @@ const router = createBrowserRouter([
         path: "project/:projectId/logs",
         element: <ProjectView />,
       },
+      // {
+      //   path: "environments",
+      //   element: <EnvironmentManagement />,
+      // },
       // Environment routes
       {
         path: "provider-config",
