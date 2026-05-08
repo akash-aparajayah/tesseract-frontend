@@ -10,7 +10,8 @@ import ProjectDashboard from "../pages/ProjectDashboard";
 import ProjectCreateForm from "../pages/ProjectCreateForm";
 import ProjectView from "../pages/ProjectView";
 import ProjectEditForm from "@/pages/ProjectEditForm";
-import ProjectBasicEdit from "@/pages/ProjectBasicEdit";
+import ProjectEdit from "@/pages/ProjectBasicEdit";
+
 // import EnvironmentManagement from "@/pages/EnvironmentManagement";
 import ProviderConfig from "@/pages/ProviderConfig";
 
@@ -49,7 +50,7 @@ const router = createBrowserRouter([
 
           { path: "project/:projectId/logs", element: <ProjectView /> },
 
-          { path: "environments", element: <EnvironmentManagement /> },
+          // { path: "environments", element: <EnvironmentManagement /> },
           { path: "provider-config/:environmentName", element: <ProviderConfig /> },
         ],
       },
