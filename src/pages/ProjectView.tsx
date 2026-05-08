@@ -1,192 +1,669 @@
-import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import "../styles/ProjectRequestLogs.css";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+import "../styles/ProjectView.css";
 
-interface RequestLog {
+interface Project {
   id: number;
-  method: string;
-  endpoint: string;
-  timestamp: string;
-  statusCode: number;
-  responseTime: string;
+  name: string;
+  description?: string;
+  status: "active" | "inactive";
+  created: string;
+  createdBy?: string;
+  updatedAt?: string;
+  updatedBy?: string;
+  logo?: string;
+  services: string[];
 }
 
-// Mock logs per project ID
-const logsData: Record<number, RequestLog[]> = {
-  1: [
-    { id: 1, method: "POST", endpoint: "/api/notify/sms", timestamp: "2025-04-28 10:23:15", statusCode: 200, responseTime: "124ms" },
-    { id: 2, method: "GET", endpoint: "/api/health", timestamp: "2025-04-28 09:15:22", statusCode: 200, responseTime: "45ms" },
-    { id: 3, method: "POST", endpoint: "/api/notify/email", timestamp: "2025-04-27 18:30:01", statusCode: 201, responseTime: "210ms" },
-    { id: 4, method: "GET", endpoint: "/api/status", timestamp: "2025-04-27 12:00:00", statusCode: 200, responseTime: "32ms" },
-    { id: 5, method: "POST", endpoint: "/api/notify/whatsapp", timestamp: "2025-04-26 22:15:30", statusCode: 500, responseTime: "340ms" },
+interface Provider {
+  id: number;
+  name: string;
+  fields: Record<string, string>;
+}
+
+// Provider fields map
+const PROVIDER_FIELDS_MAP: Record<string, { name: string; label: string; type: string; required?: boolean; icon?: string }[]> = {
+  MSG91: [
+    { name: "apiKey", label: "API Key", type: "password", required: true, icon: "🔑" },
+    { name: "endpoint", label: "Endpoint URL", type: "text", required: false, icon: "🌐" },
+    { name: "senderId", label: "Sender ID", type: "text", required: true, icon: "📱" },
+    { name: "templateId", label: "Template ID (DLT)", type: "text", required: true, icon: "📝" },
   ],
-  2: [
-    { id: 1, method: "GET", endpoint: "/api/products", timestamp: "2025-04-28 11:20:30", statusCode: 200, responseTime: "340ms" },
-    { id: 2, method: "POST", endpoint: "/api/order", timestamp: "2025-04-28 10:15:10", statusCode: 200, responseTime: "89ms" },
+  Twilio: [
+    { name: "accountSid", label: "Account SID", type: "text", required: true, icon: "🆔" },
+    { name: "authToken", label: "Auth Token", type: "password", required: true, icon: "🔒" },
+    { name: "phoneNumber", label: "Phone Number", type: "text", required: true, icon: "📞" },
   ],
-  3: [
-    { id: 1, method: "POST", endpoint: "/api/employee", timestamp: "2025-04-28 09:45:00", statusCode: 200, responseTime: "156ms" },
+  SendGrid: [
+    { name: "apiKey", label: "API Key", type: "password", required: true, icon: "🔑" },
+    { name: "fromEmail", label: "From Email", type: "email", required: true, icon: "✉️" },
+    { name: "fromName", label: "From Name", type: "text", required: false, icon: "👤" },
   ],
-  4: [
-    { id: 1, method: "PUT", endpoint: "/api/ticket/42", timestamp: "2025-04-28 12:10:22", statusCode: 200, responseTime: "78ms" },
-    { id: 2, method: "GET", endpoint: "/api/tickets", timestamp: "2025-04-28 11:30:11", statusCode: 200, responseTime: "112ms" },
+  AWS_SES: [
+    { name: "accessKeyId", label: "Access Key ID", type: "text", required: true, icon: "🆔" },
+    { name: "secretAccessKey", label: "Secret Access Key", type: "password", required: true, icon: "🔒" },
+    { name: "region", label: "Region", type: "text", required: true, icon: "🌍" },
+    { name: "fromEmail", label: "From Email", type: "email", required: true, icon: "✉️" },
   ],
-  5: [
-    { id: 1, method: "GET", endpoint: "/api/sales/daily", timestamp: "2025-04-28 07:00:00", statusCode: 200, responseTime: "210ms" },
-    { id: 2, method: "POST", endpoint: "/api/refresh", timestamp: "2025-04-28 06:30:00", statusCode: 200, responseTime: "67ms" },
+  Mailgun: [
+    { name: "apiKey", label: "API Key", type: "password", required: true, icon: "🔑" },
+    { name: "domain", label: "Domain", type: "text", required: true, icon: "🌐" },
+    { name: "fromEmail", label: "From Email", type: "email", required: true, icon: "✉️" },
+  ],
+  WhatsApp_Twilio: [
+    { name: "accountSid", label: "Account SID", type: "text", required: true, icon: "🆔" },
+    { name: "authToken", label: "Auth Token", type: "password", required: true, icon: "🔒" },
+    { name: "phoneNumber", label: "WhatsApp Number", type: "text", required: true, icon: "💬" },
+  ],
+  Meta_Cloud: [
+    { name: "phoneNumberId", label: "Phone Number ID", type: "text", required: true, icon: "🆔" },
+    { name: "accessToken", label: "Access Token", type: "password", required: true, icon: "🔑" },
+    { name: "businessAccountId", label: "Business Account ID", type: "text", required: true, icon: "🏢" },
   ],
 };
 
-const projectNames: Record<number, string> = {
-  1: "Notification System",
-  2: "E-Commerce App",
-  3: "HR Management System",
-  4: "Support Tracker",
-  5: "Sales Dashboard",
-  6: "Inventory Manager",
-  7: "Customer Portal",
-  8: "Analytics Pipeline",
-  9: "API Gateway",
+const SERVICE_TYPES = ["SMS", "EMAIL", "WHATSAPP"];
+const SERVICE_ICONS: Record<string, string> = {
+  SMS: "💬",
+  EMAIL: "✉️",
+  WHATSAPP: "💬"
+};
+const SERVICE_COLORS: Record<string, string> = {
+  SMS: "#10b981",
+  EMAIL: "#6366f1",
+  WHATSAPP: "#25D366"
 };
 
-export default function ProjectRequestLogs() {
-  const { projectId } = useParams<{ projectId: string }>();
+export default function ProjectView() {
   const navigate = useNavigate();
-  const id = Number(projectId);
-  const allLogs = logsData[id] || [];
-  const projectName = projectNames[id] || "Project";
+  const { projectId } = useParams();
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [project, setProject] = useState<Project | null>(null);
+  const [environments, setEnvironments] = useState<string[]>([]);
+  const [selectedEnv, setSelectedEnv] = useState<string>("");
+  const [activeService, setActiveService] = useState<string>("SMS");
+  const [providers, setProviders] = useState<Provider[]>([]);
+  const [serviceProviderCounts, setServiceProviderCounts] = useState<Record<string, number>>({
+    SMS: 0, EMAIL: 0, WHATSAPP: 0
+  });
+  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
+  const [expandedProviders, setExpandedProviders] = useState<Record<number, boolean>>({});
 
-  // Filter logs by endpoint or method
-  const filteredLogs = allLogs.filter(log =>
-    log.endpoint.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    log.method.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    log.statusCode.toString().includes(searchTerm)
-  );
+  // Inline editing states
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    description: "",
+    status: "active" as "active" | "inactive",
+  });
 
-  const totalPages = Math.ceil(filteredLogs.length / rowsPerPage);
-  const startIndex = (currentPage - 1) * rowsPerPage;
-  const paginatedLogs = filteredLogs.slice(startIndex, startIndex + rowsPerPage);
+  useEffect(() => {
+    const loadProject = () => {
+      const projectData = localStorage.getItem(`project_${projectId}`);
+      const currentProject = localStorage.getItem('currentProject');
 
-  const goToPage = (page: number) => {
-    if (page >= 1 && page <= totalPages) setCurrentPage(page);
+      let projectToLoad = null;
+
+      if (projectData) {
+        projectToLoad = JSON.parse(projectData);
+      } else if (currentProject) {
+        projectToLoad = JSON.parse(currentProject);
+      }
+
+      if (projectToLoad) {
+        setProject({
+          ...projectToLoad,
+          createdBy: projectToLoad.createdBy || "Admin User",
+          updatedAt: projectToLoad.updatedAt || projectToLoad.created,
+          updatedBy: projectToLoad.updatedBy || "Admin User",
+        });
+        setEditForm({
+          name: projectToLoad.name || "",
+          description: projectToLoad.description || "",
+          status: projectToLoad.status || "active",
+        });
+      }
+    };
+
+    loadProject();
+    loadEnvironments();
+
+    const handleProjectUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const updatedProject = customEvent.detail;
+      setProject({
+        ...updatedProject,
+        createdBy: updatedProject.createdBy || "Admin User",
+        updatedAt: updatedProject.updatedAt || updatedProject.created,
+        updatedBy: updatedProject.updatedBy || "Admin User",
+      });
+      setEditForm({
+        name: updatedProject.name || "",
+        description: updatedProject.description || "",
+        status: updatedProject.status || "active",
+      });
+    };
+
+    window.addEventListener('projectUpdated', handleProjectUpdate);
+    return () => window.removeEventListener('projectUpdated', handleProjectUpdate);
+  }, [projectId]);
+
+  useEffect(() => {
+    if (selectedEnv) {
+      loadProviders();
+    }
+  }, [selectedEnv, activeService]);
+
+  const loadEnvironments = () => {
+    const envNames = ['Local', 'Dev', 'Staging', 'Live'];
+    const allKeys = Object.keys(localStorage);
+    const customEnvs = new Set<string>();
+
+    allKeys.forEach(key => {
+      const match = key.match(/^env_(.+)_(sms|email|whatsapp)_providers$/);
+      if (match && !envNames.includes(match[1])) {
+        const data = JSON.parse(localStorage.getItem(key) || '{"providers":[]}');
+        if (data.providers?.length > 0) {
+          customEnvs.add(match[1]);
+        }
+      }
+    });
+
+    const configuredEnvs = envNames.filter(env => {
+      const smsKey = `env_${env}_sms_providers`;
+      const emailKey = `env_${env}_email_providers`;
+      const whatsappKey = `env_${env}_whatsapp_providers`;
+      const sms = JSON.parse(localStorage.getItem(smsKey) || '{"providers":[]}');
+      const email = JSON.parse(localStorage.getItem(emailKey) || '{"providers":[]}');
+      const whatsapp = JSON.parse(localStorage.getItem(whatsappKey) || '{"providers":[]}');
+      return (sms.providers?.length || 0) + (email.providers?.length || 0) + (whatsapp.providers?.length || 0) > 0;
+    });
+
+    const allEnvs = [...configuredEnvs, ...Array.from(customEnvs)];
+    setEnvironments(allEnvs);
+
+    if (allEnvs.length > 0 && !selectedEnv) {
+      setSelectedEnv(allEnvs[0]);
+    }
   };
 
-  const handleRowsChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setRowsPerPage(Number(e.target.value));
-    setCurrentPage(1);
+  const loadProviders = () => {
+    if (!selectedEnv) return;
+
+    const storageKey = `env_${selectedEnv}_${activeService.toLowerCase()}_providers`;
+    const savedData = localStorage.getItem(storageKey);
+
+    if (savedData) {
+      const parsed = JSON.parse(savedData);
+      setProviders(parsed.providers || []);
+    } else {
+      setProviders([]);
+    }
+
+    updateAllServiceCounts();
   };
 
-  // Stats
-  const totalLogs = allLogs.length;
-  const successCount = allLogs.filter(log => log.statusCode < 400).length;
-  const errorCount = allLogs.filter(log => log.statusCode >= 400).length;
+  const updateAllServiceCounts = () => {
+    if (!selectedEnv) return;
+
+    const counts: Record<string, number> = {};
+    SERVICE_TYPES.forEach(service => {
+      const key = `env_${selectedEnv}_${service.toLowerCase()}_providers`;
+      const data = localStorage.getItem(key);
+      if (data) {
+        const parsed = JSON.parse(data);
+        counts[service] = parsed.providers?.length || 0;
+      } else {
+        counts[service] = 0;
+      }
+    });
+    setServiceProviderCounts(counts);
+  };
+
+  // Handle save edit
+  const handleSaveEdit = () => {
+    if (!project) return;
+
+    if (!editForm.name.trim()) {
+      alert("Project name is required");
+      return;
+    }
+
+    const updatedProject = {
+      ...project,
+      name: editForm.name.trim(),
+      description: editForm.description.trim(),
+      status: editForm.status,
+      updatedAt: new Date().toISOString().split('T')[0],
+      updatedBy: "Current User",
+    };
+
+    // Update state
+    setProject(updatedProject);
+    setIsEditing(false);
+
+    // Save to localStorage
+    localStorage.setItem(`project_${project.id}`, JSON.stringify(updatedProject));
+    localStorage.setItem('currentProject', JSON.stringify(updatedProject));
+
+    // Update in allProjects
+    const allProjects = JSON.parse(localStorage.getItem('allProjects') || '[]');
+    const updatedAllProjects = allProjects.map((p: Project) =>
+      p.id === project.id ? updatedProject : p
+    );
+    localStorage.setItem('allProjects', JSON.stringify(updatedAllProjects));
+
+    // Dispatch event
+    window.dispatchEvent(new CustomEvent('projectUpdated', {
+      detail: updatedProject
+    }));
+  };
+
+  // Handle cancel edit
+  const handleCancelEdit = () => {
+    if (project) {
+      setEditForm({
+        name: project.name,
+        description: project.description || "",
+        status: project.status,
+      });
+    }
+    setIsEditing(false);
+  };
+
+  const handleCreateEnvironment = () => {
+    localStorage.setItem('currentProject', JSON.stringify(project));
+    navigate("/dashboard/provider-config", { state: { project, environmentName: '' } });
+  };
+
+  const handleNavigateToProviderConfig = () => {
+    if (selectedEnv) {
+      navigate(`/dashboard/provider-config/${selectedEnv}`, {
+        state: { project, environmentName: selectedEnv, activeService }
+      });
+    }
+  };
+
+  const getEnvIcon = (name: string) => {
+    const icons: Record<string, string> = {
+      'Local': '🏠', 'Dev': '💻', 'Staging': '🚀', 'Live': '🌍'
+    };
+    return icons[name] || '🔧';
+  };
+
+  if (!project) {
+    return <div className="loading">Loading...</div>;
+  }
 
   return (
-    <div className="logs-page">
-      <div className="logs-header">
-        <button className="back-btn" onClick={() => navigate("/dashboard/project")}>
-          ← Back to Projects
-        </button>
-        <h1>Request Logs: {projectName}</h1>
-        <p className="subtitle">Service request history for this project</p>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="logs-stats">
-        <div className="stat-card">
-          <div className="stat-icon">📊</div>
-          <div className="stat-info">
-            <div className="stat-number">{totalLogs}</div>
-            <div className="stat-label">Total Requests</div>
-          </div>
+    <div className="project-view-page">
+      {/* Top Bar with Heading and Breadcrumbs */}
+      <div className="view-top-bar">
+        <div className="page-header">
+          <h1>Project Details</h1>
         </div>
-        <div className="stat-card success">
-          <div className="stat-icon">✅</div>
-          <div className="stat-info">
-            <div className="stat-number">{successCount}</div>
-            <div className="stat-label">Successful</div>
-          </div>
-        </div>
-        <div className="stat-card error">
-          <div className="stat-icon">❌</div>
-          <div className="stat-info">
-            <div className="stat-number">{errorCount}</div>
-            <div className="stat-label">Errors</div>
-          </div>
+        <div className="breadcrumbs-row">
+          <button className="breadcrumb-link" onClick={() => navigate("/dashboard")}>Dashboard</button>
+          <span className="breadcrumb-separator">›</span>
+          <button className="breadcrumb-link" onClick={() => navigate("/dashboard")}>Projects</button>
+          <span className="breadcrumb-separator">›</span>
+          <span className="breadcrumb-current">{project.name}</span>
         </div>
       </div>
 
-      <div className="search-bar">
-        <input
-          type="text"
-          placeholder="Search by endpoint, method, or status code..."
-          value={searchTerm}
-          onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-        />
-      </div>
-
-      <div className="table-wrapper">
-        <table className="logs-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Method</th>
-              <th>Endpoint</th>
-              <th>Timestamp</th>
-              <th>Status Code</th>
-              <th>Response Time</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedLogs.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="empty-row">No logs found.</td>
-              </tr>
+      {/* Project Details Card */}
+      <div className="project-details-card">
+        <div className="project-details-content">
+          <div className="project-logo-section">
+            {isEditing ? (
+              <div className="logo-edit-wrapper">
+                <label className="logo-label">Logo</label>
+                <label className="project-logo editable-logo" style={{ cursor: 'pointer' }}>
+                  {project.logo ? (
+                    <img src={project.logo} alt="Project logo" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '20px' }} />
+                  ) : '📁'}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          const base64 = reader.result as string;
+                          setProject({ ...project, logo: base64 });
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    style={{ display: 'none' }}
+                  />
+                  <div className="image-overlay-edit">
+                    <span>Click to Change</span>
+                  </div>
+                </label>
+              </div>
             ) : (
-              paginatedLogs.map(log => (
-                <tr key={log.id}>
-                  <td>{log.id}</td>
-                  <td>
-                    <span className={`method-badge ${log.method.toLowerCase()}`}>
-                      {log.method}
-                    </span>
-                  </td>
-                  <td className="endpoint-cell">{log.endpoint}</td>
-                  <td>{log.timestamp}</td>
-                  <td>
-                    <span className={`status-code ${log.statusCode >= 400 ? "error" : "success"}`}>
-                      {log.statusCode}
-                    </span>
-                  </td>
-                  <td>{log.responseTime}</td>
-                </tr>
-              ))
+              <div className="project-logo">
+                {project.logo ? (
+                  <img src={project.logo} alt="Project logo" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '20px' }} />
+                ) : '📁'}
+              </div>
             )}
-          </tbody>
-        </table>
-      </div>
-
-      {filteredLogs.length > 0 && (
-        <div className="pagination-container">
-          <div className="rows-selector">
-            <span>Rows per page:</span>
-            <select value={rowsPerPage} onChange={handleRowsChange}>
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-              <option value={15}>15</option>
-            </select>
           </div>
-          <div className="pagination">
-            <button onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1}>← Previous</button>
-            <span className="page-info">Page {currentPage} of {totalPages}</span>
-            <button onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages}>Next →</button>
+
+          <div className="project-info-section">
+            {isEditing ? (
+              // EDIT MODE
+              <>
+                <div className="edit-inline-form">
+                  <div className="edit-row">
+                    <div className="form-group-inline flex-1">
+                      <label>Project Name</label>
+                      <input
+                        type="text"
+                        value={editForm.name}
+                        onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                        className="inline-input"
+                      />
+                    </div>
+                    <div className="form-group-inline" style={{ width: '200px' }}>
+                      <label>Status</label>
+                      <select
+                        value={editForm.status}
+                        onChange={(e) => setEditForm({ ...editForm, status: e.target.value as "active" | "inactive" })}
+                        className="inline-select"
+                      >
+                        <option value="active">🟢 Active</option>
+                        <option value="inactive">🔴 Inactive</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="form-group-inline">
+                    <label>Description</label>
+                    <textarea
+                      value={editForm.description}
+                      onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                      className="inline-textarea"
+                      rows={2}
+                    />
+                  </div>
+                </div>
+
+                <div className="project-meta-grid">
+                  <div className="meta-item">
+                    <span className="meta-icon">🆔</span>
+                    <span className="meta-label">Project ID:</span>
+                    <span className="meta-value">#{project.id}</span>
+                  </div>
+                  <div className="meta-item">
+                    <span className="meta-icon">📅</span>
+                    <span className="meta-label">Created:</span>
+                    <span className="meta-value">{project.created}</span>
+                  </div>
+                  <div className="meta-item">
+                    <span className="meta-icon">👤</span>
+                    <span className="meta-label">Created By:</span>
+                    <span className="meta-value">{project.createdBy || "Admin"}</span>
+                  </div>
+                  <div className="meta-item">
+                    <span className="meta-icon">📅</span>
+                    <span className="meta-label">Last Updated:</span>
+                    <span className="meta-value">{project.updatedAt || project.created}</span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              // VIEW MODE
+              <>
+                <div className="project-name-row">
+                  <h2>{project.name}</h2>
+                  <span className={`status-badge ${project.status}`}>
+                    {project.status === "active" ? "🟢 Active" : "🔴 Inactive"}
+                  </span>
+                </div>
+
+                <div className="project-details-grid">
+                  {/* Left Column */}
+                  <div className="details-left">
+                    <div className="detail-item">
+                      <span className="meta-icon">🆔</span>
+                      <div className="detail-content">
+                        <span className="meta-label">Project ID</span>
+                        <span className="meta-value">#{project.id}</span>
+                      </div>
+                    </div>
+
+                    {/* Description under Project ID */}
+                    <div className="detail-item description-item">
+                      <span className="meta-icon">📝</span>
+                      <div className="detail-content">
+                        <span className="meta-label">Description</span>
+                        <span className="meta-value desc-text">{project.description || "No description"}</span>
+                      </div>
+                    </div>
+
+                    <div className="detail-item">
+                      <span className="meta-icon">👤</span>
+                      <div className="detail-content">
+                        <span className="meta-label">Created By</span>
+                        <span className="meta-value">{project.createdBy || "Admin"}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column */}
+                  <div className="details-right">
+                    <div className="detail-item">
+                      <span className="meta-icon">📅</span>
+                      <div className="detail-content">
+                        <span className="meta-label">Created At</span>
+                        <span className="meta-value">{project.created}</span>
+                      </div>
+                    </div>
+                    <div className="detail-item">
+                      <span className="meta-icon">🔄</span>
+                      <div className="detail-content">
+                        <span className="meta-label">Updated At</span>
+                        <span className="meta-value">{project.updatedAt || project.created}</span>
+                      </div>
+                    </div>
+                    <div className="detail-item">
+                      <span className="meta-icon">✏️</span>
+                      <div className="detail-content">
+                        <span className="meta-label">Last Updated By</span>
+                        <span className="meta-value">{project.updatedBy || "Admin"}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="project-actions">
+            {isEditing ? (
+              <>
+                <button className="action-btn save" onClick={handleSaveEdit}>
+                  💾 Save Changes
+                </button>
+                <button className="action-btn cancel" onClick={handleCancelEdit}>
+                  ❌ Cancel
+                </button>
+              </>
+            ) : (
+              <button className="action-btn edit" onClick={() => setIsEditing(true)}>
+                ✏️ Edit Project
+              </button>
+            )}
           </div>
         </div>
-      )}
+      </div>
+
+      {/* Environment & Provider Section */}
+      <div className="environment-section">
+        <div className="environment-section-header">
+          <div className="environment-section-title">
+            <h3>🌍 Environment & Providers</h3>
+          </div>
+
+          {environments.length > 0 && (
+            <div className="env-selector-row">
+              <select
+                className="env-select"
+                value={selectedEnv}
+                onChange={(e) => setSelectedEnv(e.target.value)}
+              >
+                {environments.map(env => (
+                  <option key={env} value={env}>
+                    {getEnvIcon(env)} {env}
+                  </option>
+                ))}
+              </select>
+              <button className="btn-new-env" onClick={handleCreateEnvironment}>
+                + New Environment
+              </button>
+            </div>
+          )}
+        </div>
+
+        {environments.length === 0 ? (
+          <div className="no-env-state">
+            <span className="no-env-icon">📭</span>
+            <h4>No Environments Configured</h4>
+            <p>Create your first environment and start configuring providers for SMS, Email & WhatsApp services.</p>
+            <button className="btn-create-first-env" onClick={handleCreateEnvironment}>
+              + Create First Environment
+            </button>
+          </div>
+        ) : (
+          <div className="embedded-provider-config">
+            <div className="services-sidebar-embedded">
+              {SERVICE_TYPES.map((service) => (
+                <div
+                  key={service}
+                  className={`service-sidebar-item ${activeService === service ? 'active' : ''}`}
+                  onClick={() => setActiveService(service)}
+                  style={{
+                    borderLeftColor: activeService === service ? SERVICE_COLORS[service] : 'transparent',
+                    backgroundColor: activeService === service ? `${SERVICE_COLORS[service]}10` : 'transparent'
+                  }}
+                >
+                  <span className="service-sidebar-icon">{SERVICE_ICONS[service]}</span>
+                  <div className="service-sidebar-info">
+                    <div>{service}</div>
+                    <div className="service-sidebar-count">
+                      {serviceProviderCounts[service] || 0} provider(s)
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="providers-panel-embedded">
+              <div className="providers-panel-header">
+                <div className="providers-panel-title">
+                  <span className="panel-service-icon">{SERVICE_ICONS[activeService]}</span>
+                  {activeService} Providers
+                </div>
+                <button
+                  className="btn-add-provider"
+                  style={{ backgroundColor: SERVICE_COLORS[activeService] }}
+                  onClick={handleNavigateToProviderConfig}
+                >
+                  + Add Provider
+                </button>
+              </div>
+
+              <div className="providers-list-embedded">
+                {providers.length === 0 ? (
+                  <div className="empty-state-embedded">
+                    <span className="empty-state-icon">📭</span>
+                    <h4>No {activeService} providers configured</h4>
+                    <p>Add your first provider to get started</p>
+                    <button
+                      className="btn-empty-action"
+                      onClick={handleNavigateToProviderConfig}
+                    >
+                      + Add Provider
+                    </button>
+                  </div>
+                ) : (
+                  providers.map((provider) => (
+                    <div
+                      key={provider.id}
+                      className="provider-card-embedded"
+                      style={{ borderTopColor: SERVICE_COLORS[activeService] }}
+                      onClick={() => setExpandedProviders(prev => ({
+                        ...prev,
+                        [provider.id]: !prev[provider.id]
+                      }))}
+                    >
+                      <div className="provider-card-header-embedded">
+                        <div className="provider-card-title">
+                          <span className="provider-card-icon">🔌</span>
+                          {provider.name.replace('_', ' ')}
+                          <span className="configured-badge" style={{
+                            background: `${SERVICE_COLORS[activeService]}20`,
+                            color: SERVICE_COLORS[activeService]
+                          }}>
+                            ✓ Configured
+                          </span>
+                        </div>
+                        <div className="provider-card-actions">
+                          <button className="btn-edit-small" onClick={(e) => { e.stopPropagation(); handleNavigateToProviderConfig(); }}>
+                            ✏️
+                          </button>
+                        </div>
+                      </div>
+
+                      {expandedProviders[provider.id] && (
+                        <div className="provider-card-body" onClick={(e) => e.stopPropagation()}>
+                          <div className="credential-mini">
+                            {Object.entries(provider.fields).map(([key, value]) => {
+                              const fieldConfig = PROVIDER_FIELDS_MAP[provider.name]?.find((f: any) => f.name === key);
+                              const isPassword = fieldConfig?.type === "password" || key.includes("Key") || key.includes("Token");
+                              const passwordKey = `${provider.id}_${key}`;
+
+                              return (
+                                <div className="credential-mini-row" key={key}>
+                                  <span className="credential-mini-label">
+                                    {fieldConfig?.icon || "📝"} {fieldConfig?.label || key}:
+                                  </span>
+                                  <span className="credential-mini-value">
+                                    {isPassword
+                                      ? (visiblePasswords[passwordKey] ? value : "••••••••")
+                                      : (value || "—")}
+                                  </span>
+                                  {isPassword && value && (
+                                    <button
+                                      className="eye-btn-mini"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setVisiblePasswords((prev: Record<string, boolean>) => ({
+                                          ...prev,
+                                          [passwordKey]: !prev[passwordKey]
+                                        }));
+                                      }}
+                                    >
+                                      {visiblePasswords[passwordKey] ? <FaEyeSlash /> : <FaEye />}
+                                    </button>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

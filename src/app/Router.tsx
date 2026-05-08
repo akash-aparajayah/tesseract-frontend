@@ -9,7 +9,7 @@ import AdminDashboard from "../pages/AdminDashboard";
 import AdminCreate from "../pages/AdminCreate";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ProjectEditForm from "@/pages/ProjectEditForm";
-import ProjectEdit from "@/pages/ProjectEdit";
+import ProjectBasicEdit from "@/pages/ProjectBasicEdit";
 import EnvironmentManagement from "@/pages/EnvironmentManagement";
 import ProviderConfig from "@/pages/ProviderConfig";
 
@@ -47,12 +47,16 @@ const router = createBrowserRouter([
         element: <ProjectCreateForm />,
       },
       {
+        path: "/dashboard/project/:projectId/view",
+        element: <ProjectView />,
+      },
+      {
         path: "project-edit/:projectId",
         element: <ProjectEditForm />,
       },
       {
         path: "project-edit-basic/:projectId",
-        element: <ProjectEdit />,
+        element: <ProjectBasicEdit />,
       },
       {
         path: "project/:projectId/logs",
@@ -60,8 +64,8 @@ const router = createBrowserRouter([
       },
       // Environment routes
       {
-        path: "environments",
-        element: <EnvironmentManagement />,
+        path: "provider-config",
+        element: <ProviderConfig />,
       },
       {
         path: "provider-config/:environmentName",

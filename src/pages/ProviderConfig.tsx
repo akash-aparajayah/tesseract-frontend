@@ -6,7 +6,6 @@ import "../styles/EnvironmentManagement.css";
 
 // Provider field definitions
 const PROVIDER_FIELDS_MAP: Record<string, { name: string; label: string; type: string; required?: boolean; icon?: string }[]> = {
-    // SMS Providers
     MSG91: [
         { name: "apiKey", label: "API Key", type: "password", required: true, icon: "🔑" },
         { name: "endpoint", label: "Endpoint URL", type: "text", required: false, icon: "🌐" },
@@ -17,39 +16,18 @@ const PROVIDER_FIELDS_MAP: Record<string, { name: string; label: string; type: s
         { name: "accountSid", label: "Account SID", type: "text", required: true, icon: "🆔" },
         { name: "authToken", label: "Auth Token", type: "password", required: true, icon: "🔒" },
         { name: "phoneNumber", label: "Phone Number", type: "text", required: true, icon: "📞" },
-        { name: "endpoint", label: "API Endpoint", type: "text", required: false, icon: "🌐" },
     ],
     Gupshup: [
         { name: "apiKey", label: "API Key", type: "password", required: true, icon: "🔑" },
-        { name: "endpoint", label: "Endpoint URL", type: "text", required: false, icon: "🌐" },
         { name: "senderId", label: "Sender ID", type: "text", required: true, icon: "📱" },
     ],
     Vonage: [
         { name: "apiKey", label: "API Key", type: "password", required: true, icon: "🔑" },
         { name: "apiSecret", label: "API Secret", type: "password", required: true, icon: "🔒" },
-        { name: "senderId", label: "Sender ID (optional)", type: "text", required: false, icon: "📱" },
-        { name: "endpoint", label: "API Endpoint", type: "text", required: false, icon: "🌐" },
+        { name: "senderId", label: "Sender ID", type: "text", required: false, icon: "📱" },
     ],
-    Kaleyra: [
-        { name: "apiKey", label: "API Key", type: "password", required: true, icon: "🔑" },
-        { name: "endpoint", label: "Endpoint URL", type: "text", required: false, icon: "🌐" },
-        { name: "senderId", label: "Sender ID", type: "text", required: true, icon: "📱" },
-    ],
-    Textlocal: [
-        { name: "apiKey", label: "API Key", type: "password", required: true, icon: "🔑" },
-        { name: "endpoint", label: "API Endpoint", type: "text", required: false, icon: "🌐" },
-        { name: "senderId", label: "Sender ID (optional)", type: "text", required: false, icon: "📱" },
-    ],
-    TrueDialog: [
-        { name: "apiKey", label: "API Key", type: "password", required: true, icon: "🔑" },
-        { name: "apiSecret", label: "API Secret / Token", type: "password", required: true, icon: "🔒" },
-        { name: "phoneNumber", label: "Phone Number", type: "text", required: true, icon: "📞" },
-        { name: "endpoint", label: "API Endpoint", type: "text", required: false, icon: "🌐" },
-    ],
-    // Email Providers
     SendGrid: [
         { name: "apiKey", label: "API Key", type: "password", required: true, icon: "🔑" },
-        { name: "endpoint", label: "API Endpoint", type: "text", required: false, icon: "🌐" },
         { name: "fromEmail", label: "From Email", type: "email", required: true, icon: "✉️" },
         { name: "fromName", label: "From Name", type: "text", required: false, icon: "👤" },
     ],
@@ -62,7 +40,6 @@ const PROVIDER_FIELDS_MAP: Record<string, { name: string; label: string; type: s
     Mailgun: [
         { name: "apiKey", label: "API Key", type: "password", required: true, icon: "🔑" },
         { name: "domain", label: "Domain", type: "text", required: true, icon: "🌐" },
-        { name: "endpoint", label: "API Endpoint", type: "text", required: false, icon: "🌍" },
         { name: "fromEmail", label: "From Email", type: "email", required: true, icon: "✉️" },
     ],
     SMTP: [
@@ -72,57 +49,33 @@ const PROVIDER_FIELDS_MAP: Record<string, { name: string; label: string; type: s
         { name: "password", label: "Password", type: "password", required: true, icon: "🔒" },
         { name: "fromEmail", label: "From Email", type: "email", required: true, icon: "✉️" },
     ],
-    Postmark: [
-        { name: "serverToken", label: "Server Token", type: "password", required: true, icon: "🔑" },
-        { name: "endpoint", label: "API Endpoint", type: "text", required: false, icon: "🌐" },
-        { name: "fromEmail", label: "From Email", type: "email", required: true, icon: "✉️" },
-    ],
-    // WhatsApp Providers
     WhatsApp_Twilio: [
         { name: "accountSid", label: "Account SID", type: "text", required: true, icon: "🆔" },
         { name: "authToken", label: "Auth Token", type: "password", required: true, icon: "🔒" },
         { name: "phoneNumber", label: "WhatsApp Number", type: "text", required: true, icon: "💬" },
     ],
-    WhatsApp_Gupshup: [
-        { name: "apiKey", label: "API Key", type: "password", required: true, icon: "🔑" },
-        { name: "senderId", label: "Sender ID", type: "text", required: true, icon: "📱" },
-        { name: "appName", label: "App Name", type: "text", required: false, icon: "📱" },
-    ],
     Meta_Cloud: [
         { name: "phoneNumberId", label: "Phone Number ID", type: "text", required: true, icon: "🆔" },
         { name: "accessToken", label: "Access Token", type: "password", required: true, icon: "🔑" },
         { name: "businessAccountId", label: "Business Account ID", type: "text", required: true, icon: "🏢" },
-        { name: "endpoint", label: "API Endpoint", type: "text", required: false, icon: "🌐" },
-    ],
-    WhatsApp_Kaleyra: [
-        { name: "apiKey", label: "API Key", type: "password", required: true, icon: "🔑" },
-        { name: "senderId", label: "Sender ID", type: "text", required: true, icon: "📱" },
-    ],
-    WhatsApp_Vonage: [
-        { name: "apiKey", label: "API Key", type: "password", required: true, icon: "🔑" },
-        { name: "apiSecret", label: "API Secret", type: "password", required: true, icon: "🔒" },
-        { name: "senderId", label: "Sender ID", type: "text", required: true, icon: "📱" },
     ],
 };
 
 const SERVICE_TYPES = ["SMS", "EMAIL", "WHATSAPP"];
-
-const PROVIDERS_BY_SERVICE: Record<string, string[]> = {
-    SMS: ["MSG91", "Twilio", "Gupshup", "Vonage", "Kaleyra", "Textlocal", "TrueDialog"],
-    EMAIL: ["SendGrid", "AWS_SES", "Mailgun", "SMTP", "Postmark"],
-    WHATSAPP: ["WhatsApp_Twilio", "WhatsApp_Gupshup", "Meta_Cloud", "WhatsApp_Kaleyra", "WhatsApp_Vonage"]
-};
-
 const SERVICE_ICONS: Record<string, string> = {
     SMS: "💬",
     EMAIL: "✉️",
     WHATSAPP: "💬"
 };
-
 const SERVICE_COLORS: Record<string, string> = {
-    SMS: "#00c896",
-    EMAIL: "#4f8ef7",
+    SMS: "#10b981",
+    EMAIL: "#6366f1",
     WHATSAPP: "#25D366"
+};
+const PROVIDERS_BY_SERVICE: Record<string, string[]> = {
+    SMS: ["MSG91", "Twilio", "Gupshup", "Vonage", "Kaleyra", "Textlocal", "TrueDialog"],
+    EMAIL: ["SendGrid", "AWS_SES", "Mailgun", "SMTP", "Postmark"],
+    WHATSAPP: ["WhatsApp_Twilio", "WhatsApp_Gupshup", "Meta_Cloud", "WhatsApp_Kaleyra", "WhatsApp_Vonage"]
 };
 
 interface Provider {
@@ -131,83 +84,207 @@ interface Provider {
     fields: Record<string, string>;
 }
 
+interface EnvironmentInfo {
+    name: string;
+    icon: string;
+    hasProviders: boolean;
+    providerCount: number;
+}
+
 export default function ProviderConfig() {
-    // Clone modal states
-    const [showCloneModal, setShowCloneModal] = useState(false);
-    const [cloneTarget, setCloneTarget] = useState<string>("");
-    const [cloneCustomMode, setCloneCustomMode] = useState(false);
-    const [cloneCustomName, setCloneCustomName] = useState("");
     const navigate = useNavigate();
     const location = useLocation();
     const { project, environmentName, activeService: initialService } = location.state || {};
     const { showToast, ToastContainer } = useToast();
-    const [expandedProviders, setExpandedProviders] = useState<Record<number, boolean>>({});
+
+    // Environment tabs
+    const [environments, setEnvironments] = useState<EnvironmentInfo[]>([]);
+    const [selectedEnv, setSelectedEnv] = useState<string>(environmentName || "");
+
+    // Service & Providers
     const [activeService, setActiveService] = useState<string>(initialService || "SMS");
-    const [showAddProviderModal, setShowAddProviderModal] = useState(false);
-    const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState<{ id: number; name: string } | null>(null);
-    const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false);
+    const [providers, setProviders] = useState<Provider[]>([]);
+    const [expandedProviders, setExpandedProviders] = useState<Record<number, boolean>>({});
+    const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
+    const [serviceProviderCounts, setServiceProviderCounts] = useState<Record<string, number>>({
+        SMS: 0, EMAIL: 0, WHATSAPP: 0
+    });
+
+    // Add Provider Modal
+    const [showAddModal, setShowAddModal] = useState(false);
     const [selectedProvider, setSelectedProvider] = useState("");
     const [providerFields, setProviderFields] = useState<Record<string, string>>({});
     const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
-    const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
     const [editingProvider, setEditingProvider] = useState<Provider | null>(null);
     const [saving, setSaving] = useState(false);
-    const [providers, setProviders] = useState<Provider[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [serviceProviderCounts, setServiceProviderCounts] = useState<Record<string, number>>({
-        SMS: 0,
-        EMAIL: 0,
-        WHATSAPP: 0
-    });
+    const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+
+    // Delete Modal
+    const [showDeleteModal, setShowDeleteModal] = useState<{ id: number; name: string } | null>(null);
+
+    // Clone Modal
+    const [showCloneModal, setShowCloneModal] = useState(false);
+    const [cloneTarget, setCloneTarget] = useState("");
+    const [cloneCustomMode, setCloneCustomMode] = useState(false);
+    const [cloneCustomName, setCloneCustomName] = useState("");
+
+    // Add Environment Modal
+    const [showAddEnvModal, setShowAddEnvModal] = useState(false);
+    const [newEnvName, setNewEnvName] = useState("");
+    const [isCustomEnv, setIsCustomEnv] = useState(false);
+    const [customEnvInput, setCustomEnvInput] = useState("");
 
     useEffect(() => {
-        if (!project || !environmentName) {
+        if (!project) {
             showToast("Invalid request. Redirecting...", "error");
             setTimeout(() => navigate("/dashboard/project"), 1500);
             return;
         }
-        loadProviders();
-        updateAllServiceCounts();
-    }, [environmentName, activeService]);
+        loadEnvironments();
+    }, []);
 
-    // Add this useEffect to auto-expand all providers when they change
-    // Remove the old useEffect and add this:
     useEffect(() => {
-        if (providers.length > 0) {
-            const expanded: Record<number, boolean> = {};
-            providers.forEach(p => {
-                // If only 1 provider, expand it. If multiple, collapse all
-                expanded[p.id] = providers.length === 1;
-            });
-            setExpandedProviders(expanded);
+        if (selectedEnv) {
+            loadProviders();
         }
-    }, [providers.length]);
+    }, [selectedEnv, activeService]);
+
+    const loadEnvironments = () => {
+        const presetEnvs = ['Local', 'Dev', 'Staging', 'Live'];
+        const allKeys = Object.keys(localStorage);
+        const envSet = new Set<string>();
+
+        // Find all environments that have any provider storage
+        allKeys.forEach(key => {
+            const match = key.match(/^env_(.+)_(sms|email|whatsapp)_providers$/);
+            if (match) {
+                envSet.add(match[1]);
+            }
+        });
+
+        // Also check for preset envs that might have been created
+        presetEnvs.forEach(env => {
+            const smsKey = `env_${env}_sms_providers`;
+            const emailKey = `env_${env}_email_providers`;
+            const whatsappKey = `env_${env}_whatsapp_providers`;
+
+            if (localStorage.getItem(smsKey) || localStorage.getItem(emailKey) || localStorage.getItem(whatsappKey)) {
+                envSet.add(env);
+            }
+        });
+
+        const configuredEnvs: EnvironmentInfo[] = [];
+
+        envSet.forEach(envName => {
+            const smsKey = `env_${envName}_sms_providers`;
+            const emailKey = `env_${envName}_email_providers`;
+            const whatsappKey = `env_${envName}_whatsapp_providers`;
+
+            const sms = JSON.parse(localStorage.getItem(smsKey) || '{"providers":[]}');
+            const email = JSON.parse(localStorage.getItem(emailKey) || '{"providers":[]}');
+            const whatsapp = JSON.parse(localStorage.getItem(whatsappKey) || '{"providers":[]}');
+
+            const totalProviders = (sms.providers?.length || 0) + (email.providers?.length || 0) + (whatsapp.providers?.length || 0);
+
+            configuredEnvs.push({
+                name: envName,
+                icon: getEnvIcon(envName),
+                hasProviders: totalProviders > 0,
+                providerCount: totalProviders
+            });
+        });
+
+        // Sort: preset envs first, then custom
+        configuredEnvs.sort((a, b) => {
+            const aPreset = presetEnvs.indexOf(a.name);
+            const bPreset = presetEnvs.indexOf(b.name);
+            if (aPreset !== -1 && bPreset !== -1) return aPreset - bPreset;
+            if (aPreset !== -1) return -1;
+            if (bPreset !== -1) return 1;
+            return a.name.localeCompare(b.name);
+        });
+
+        setEnvironments(configuredEnvs);
+
+        if (configuredEnvs.length > 0) {
+            if (!selectedEnv || !configuredEnvs.some(e => e.name === selectedEnv)) {
+                setSelectedEnv(configuredEnvs[0].name);
+            }
+        }
+    };
 
     const loadProviders = () => {
-        const storageKey = `env_${environmentName}_${activeService.toLowerCase()}_providers`;
+        if (!selectedEnv) return;
+
+        const storageKey = `env_${selectedEnv}_${activeService.toLowerCase()}_providers`;
         const savedData = localStorage.getItem(storageKey);
 
         if (savedData) {
             const parsed = JSON.parse(savedData);
-            const oneHourAgo = Date.now() - 60 * 60 * 1000;
-            if (parsed.timestamp > oneHourAgo && parsed.providers) {
-                setProviders(parsed.providers);
-            } else {
-                setProviders([]);
-            }
+            setProviders(parsed.providers || []);
         } else {
             setProviders([]);
         }
 
-        updateAllServiceCounts();
-        setIsLoading(false);
+        updateServiceCounts();
     };
+    const executeClone = () => {
+        let targetName = cloneTarget;
 
-    const updateAllServiceCounts = () => {
+        if (cloneCustomMode && cloneCustomName.trim()) {
+            targetName = cloneCustomName.trim();
+        }
+
+        if (!targetName) {
+            showToast("Please select or enter a target environment", "error");
+            return;
+        }
+
+        // Clone all services from source to target
+        const services = ['sms', 'email', 'whatsapp'];
+        let hasProviders = false;
+
+        services.forEach(service => {
+            const sourceKey = `env_${selectedEnv}_${service}_providers`;
+            const sourceData = localStorage.getItem(sourceKey);
+
+            if (sourceData) {
+                const parsed = JSON.parse(sourceData);
+                if (parsed.providers?.length > 0) {
+                    hasProviders = true;
+                    const destKey = `env_${targetName}_${service}_providers`;
+                    localStorage.setItem(destKey, JSON.stringify({
+                        providers: parsed.providers,
+                        timestamp: Date.now()
+                    }));
+                } else {
+                    // Create empty storage if source exists but empty
+                    const destKey = `env_${targetName}_${service}_providers`;
+                    localStorage.setItem(destKey, JSON.stringify({
+                        providers: [],
+                        timestamp: Date.now()
+                    }));
+                }
+            }
+        });
+
+        // Reload environments
+        loadEnvironments();
+        setSelectedEnv(targetName);
+        loadProviders();
+
+        showToast(`Environment cloned to "${targetName}" successfully!`, "success");
+        setShowCloneModal(false);
+        setCloneTarget("");
+        setCloneCustomMode(false);
+        setCloneCustomName("");
+    };
+    const updateServiceCounts = () => {
+        if (!selectedEnv) return;
+
         const counts: Record<string, number> = {};
-
         SERVICE_TYPES.forEach(service => {
-            const key = `env_${environmentName}_${service.toLowerCase()}_providers`;
+            const key = `env_${selectedEnv}_${service.toLowerCase()}_providers`;
             const data = localStorage.getItem(key);
             if (data) {
                 const parsed = JSON.parse(data);
@@ -216,29 +293,87 @@ export default function ProviderConfig() {
                 counts[service] = 0;
             }
         });
-
         setServiceProviderCounts(counts);
     };
 
     const saveToLocalStorage = (updatedProviders: Provider[]) => {
-        const storageKey = `env_${environmentName}_${activeService.toLowerCase()}_providers`;
-        const dataToSave = {
+        const storageKey = `env_${selectedEnv}_${activeService.toLowerCase()}_providers`;
+        localStorage.setItem(storageKey, JSON.stringify({
             providers: updatedProviders,
             timestamp: Date.now()
-        };
-        localStorage.setItem(storageKey, JSON.stringify(dataToSave));
-    };
-    const toggleProviderExpand = (providerId: number) => {
-        setExpandedProviders(prev => ({
-            ...prev,
-            [providerId]: !prev[providerId]
         }));
     };
-    const updateEnvironmentCounts = () => {
-        const event = new CustomEvent('providerCountsUpdated');
-        window.dispatchEvent(event);
+
+    const getEnvIcon = (name: string) => {
+        const icons: Record<string, string> = {
+            'Local': '🏠', 'Dev': '💻', 'Staging': '🚀', 'Live': '🌍'
+        };
+        return icons[name] || '🔧';
     };
 
+    // Add Environment
+    const handleAddEnvironment = () => {
+        let envName = newEnvName;
+        if (isCustomEnv && customEnvInput.trim()) {
+            envName = customEnvInput.trim();
+        }
+
+        if (!envName) {
+            showToast("Please select or enter an environment name", "error");
+            return;
+        }
+
+        // Check if environment already exists in current list
+        if (environments.some(e => e.name.toLowerCase() === envName.toLowerCase())) {
+            showToast("This environment already exists!", "error");
+            return;
+        }
+
+        // Create empty provider storage for this environment
+        const smsKey = `env_${envName}_sms_providers`;
+        const emailKey = `env_${envName}_email_providers`;
+        const whatsappKey = `env_${envName}_whatsapp_providers`;
+
+        if (!localStorage.getItem(smsKey)) {
+            localStorage.setItem(smsKey, JSON.stringify({ providers: [], timestamp: Date.now() }));
+        }
+        if (!localStorage.getItem(emailKey)) {
+            localStorage.setItem(emailKey, JSON.stringify({ providers: [], timestamp: Date.now() }));
+        }
+        if (!localStorage.getItem(whatsappKey)) {
+            localStorage.setItem(whatsappKey, JSON.stringify({ providers: [], timestamp: Date.now() }));
+        }
+
+        // Add to environments list directly
+        const newEnv: EnvironmentInfo = {
+            name: envName,
+            icon: getEnvIcon(envName),
+            hasProviders: false,
+            providerCount: 0
+        };
+
+        setEnvironments(prev => {
+            // Double check no duplicate
+            if (prev.some(e => e.name === envName)) {
+                return prev;
+            }
+            return [...prev, newEnv];
+        });
+
+        setSelectedEnv(envName);
+        setProviders([]);
+        setServiceProviderCounts({ SMS: 0, EMAIL: 0, WHATSAPP: 0 });
+
+        // Reset modal
+        setShowAddEnvModal(false);
+        setNewEnvName("");
+        setIsCustomEnv(false);
+        setCustomEnvInput("");
+
+        showToast(`Environment "${envName}" created!`, "success");
+    };
+
+    // Add/Edit Provider
     const handleProviderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const provider = e.target.value;
         setSelectedProvider(provider);
@@ -246,7 +381,6 @@ export default function ProviderConfig() {
         const newFields: Record<string, string> = {};
         fieldsDef.forEach((field: any) => { newFields[field.name] = ""; });
         setProviderFields(newFields);
-        setShowPasswords({});
     };
 
     const handleFieldChange = (fieldName: string, value: string) => {
@@ -264,412 +398,456 @@ export default function ProviderConfig() {
         }
 
         const fieldsDef = PROVIDER_FIELDS_MAP[selectedProvider];
-        for (const field of fieldsDef) {
-            if (field.required && !providerFields[field.name]) {
-                showToast(`${field.label} is required`, "error");
-                return;
+        if (fieldsDef) {
+            for (const field of fieldsDef) {
+                if (field.required && !providerFields[field.name]) {
+                    showToast(`${field.label} is required`, "error");
+                    return;
+                }
             }
         }
 
         setSaving(true);
-        await new Promise(resolve => setTimeout(resolve, 500));
 
-        let updatedProviders: Provider[];
+        // Simulate API call
+        setTimeout(() => {
+            let updatedProviders: Provider[];
 
-        if (editingProvider) {
-            updatedProviders = providers.map(p =>
-                p.id === editingProvider.id
-                    ? { ...p, name: selectedProvider, fields: { ...providerFields } }
-                    : p
-            );
-            showToast(`${selectedProvider} updated successfully!`, "success");
-        } else {
-            const newProvider: Provider = {
-                id: Date.now(),
-                name: selectedProvider,
-                fields: { ...providerFields },
-            };
-            updatedProviders = [newProvider, ...providers];
-            showToast(`${selectedProvider} added successfully!`, "success");
-        }
+            if (editingProvider) {
+                updatedProviders = providers.map(p =>
+                    p.id === editingProvider.id
+                        ? { ...p, name: selectedProvider, fields: { ...providerFields } }
+                        : p
+                );
+                showToast(`${selectedProvider.replace(/_/g, ' ')} updated successfully!`, "success");
+            } else {
+                const newProvider: Provider = {
+                    id: Date.now(),
+                    name: selectedProvider,
+                    fields: { ...providerFields },
+                };
+                updatedProviders = [...providers, newProvider];
+                showToast(`${selectedProvider.replace(/_/g, ' ')} added successfully!`, "success");
+            }
 
-        setProviders(updatedProviders);
-        saveToLocalStorage(updatedProviders);
-        updateEnvironmentCounts();
-        updateAllServiceCounts();
-        setShowAddProviderModal(false);
-        setEditingProvider(null);
-        setSelectedProvider("");
-        setProviderFields({});
-        setSaving(false);
+            setProviders(updatedProviders);
+            saveToLocalStorage(updatedProviders);
+            updateServiceCounts();
+            loadEnvironments();
+
+            // Reset all modal states
+            setShowAddModal(false);
+            setEditingProvider(null);
+            setSelectedProvider("");
+            setProviderFields({});
+            setShowPasswords({});
+            setSaving(false);
+        }, 800);
     };
 
     const editProvider = (provider: Provider) => {
         setEditingProvider(provider);
         setSelectedProvider(provider.name);
         setProviderFields({ ...provider.fields });
-        setShowAddProviderModal(true);
+        setShowAddModal(true);
     };
 
     const deleteProvider = () => {
-        if (showDeleteConfirmModal) {
-            const updatedProviders = providers.filter(p => p.id !== showDeleteConfirmModal.id);
+        if (showDeleteModal) {
+            const updatedProviders = providers.filter(p => p.id !== showDeleteModal.id);
             setProviders(updatedProviders);
             saveToLocalStorage(updatedProviders);
-            updateEnvironmentCounts();
-            updateAllServiceCounts();
-            showToast(`${showDeleteConfirmModal.name} deleted`, "success");
-            setShowDeleteConfirmModal(null);
+            updateServiceCounts();
+            loadEnvironments();
+            showToast(`${showDeleteModal.name} deleted`, "success");
+            setShowDeleteModal(null);
         }
     };
 
-    const handleCancelAddProvider = () => {
-        if (selectedProvider || Object.values(providerFields).some(val => val)) {
-            setShowCancelConfirmModal(true);
-        } else {
-            closeAddProviderModal();
-        }
-    };
-
-    const closeAddProviderModal = () => {
-        setShowAddProviderModal(false);
+    const closeAddModal = () => {
+        setShowAddModal(false);
         setEditingProvider(null);
         setSelectedProvider("");
         setProviderFields({});
         setShowPasswords({});
+        setShowCancelConfirm(false);
     };
 
-    const confirmCancel = () => {
-        closeAddProviderModal();
-        setShowCancelConfirmModal(false);
-        showToast("Provider creation cancelled", "success");
+    const handleCancelAdd = () => {
+        if (selectedProvider || Object.values(providerFields).some(val => val)) {
+            setShowCancelConfirm(true);
+        } else {
+            closeAddModal();
+        }
     };
 
-
-
-    if (!project || !environmentName) {
+    if (!project) {
         return <div className="loading">Loading...</div>;
     }
 
-    if (isLoading) return <div className="loading">Loading...</div>;
-
-
-    const getAvailableTargetEnvs = () => {
-        const presetEnvs = ['Local', 'Dev', 'Staging', 'Live'];
-        const allKeys = Object.keys(localStorage);
-        const configuredEnvs = new Set<string>();
-
-        allKeys.forEach(key => {
-            const match = key.match(/^env_(.+)_(sms|email|whatsapp)_providers$/);
-            if (match) {
-                const data = JSON.parse(localStorage.getItem(key) || '{"providers":[]}');
-                if (data.providers?.length > 0) {
-                    configuredEnvs.add(match[1]);
-                }
-            }
-        });
-
-        return presetEnvs.filter(env => !configuredEnvs.has(env));
-    };
-
-    const executeClone = () => {
-        let targetName = cloneTarget;
-
-        if (cloneCustomMode && cloneCustomName.trim()) {
-            targetName = cloneCustomName.trim();
-        }
-
-        if (!targetName) {
-            showToast("Please select or enter a target environment", "error");
-            return;
-        }
-
-        const services = ['sms', 'email', 'whatsapp'];
-        let hasProviders = false;
-
-        services.forEach(service => {
-            const sourceKey = `env_${environmentName}_${service}_providers`;
-            const sourceData = localStorage.getItem(sourceKey);
-            if (sourceData) {
-                const parsed = JSON.parse(sourceData);
-                if (parsed.providers?.length > 0) {
-                    hasProviders = true;
-                    const destKey = `env_${targetName}_${service}_providers`;
-                    localStorage.setItem(destKey, JSON.stringify({
-                        ...parsed,
-                        timestamp: Date.now()
-                    }));
-                }
-            }
-        });
-
-        if (hasProviders) {
-            window.dispatchEvent(new CustomEvent('providerCountsUpdated'));
-            showToast(`Environment cloned to "${targetName}"!`, "success");
-            setShowCloneModal(false);
-
-            setTimeout(() => {
-                navigate(`/dashboard/provider-config/${targetName}`, {
-                    state: { project, environmentName: targetName, activeService }
-                });
-            }, 500);
-        }
-    };
-
-    const handleCloneTargetChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const value = e.target.value;
-        if (value === "__custom__") {
-            setCloneCustomMode(true);
-            setCloneTarget("");
-        } else {
-            setCloneCustomMode(false);
-            setCloneTarget(value);
-        }
-    };
-
-
     return (
-        <div className="provider-config-container">
+        <div className="provider-config-redesign">
             <ToastContainer />
 
-            <div className="config-header">
-                <div className="config-title">
-                    <h2>{project?.name} - {environmentName}</h2>
-                    <p>Configure providers for this environment</p>
+            {/* Header with Breadcrumbs */}
+            {/* Header */}
+            <div className="pc-header">
+                <div className="pc-header-top">
+                    <h1>Provider Configuration</h1>
+                    <div className="pc-breadcrumbs">
+                        <button onClick={() => navigate("/dashboard")}>Dashboard</button>
+                        <span>›</span>
+                        <button onClick={() => navigate("/dashboard/project")}>Projects</button>
+                        <span>›</span>
+                        <button onClick={() => navigate(`/dashboard/project/${project.id}/view`)}>
+                            {project.name}
+                        </button>
+                    </div>
                 </div>
-                {/* Only show clone button if there are providers in any service */}
-                {Object.values(serviceProviderCounts).some(count => count > 0) && (
+                <p className="pc-project-name">
                     <button
-                        className="clone-env-btn"
-                        onClick={() => {
-                            setCloneTarget("");
-                            setCloneCustomMode(false);
-                            setCloneCustomName("");
-                            setShowCloneModal(true);
-                        }}
-                        title="Clone this environment"
+                        className="pc-project-link"
+                        onClick={() => navigate(`/dashboard/project/${project.id}/view`)}
                     >
-                        📋 Clone
+                        {project.name}
                     </button>
-                )}
+                    {selectedEnv && (
+                        <>
+                            <span className="pc-separator"> - </span>
+                            <span className="pc-env-name">{getEnvIcon(selectedEnv)} {selectedEnv}</span>
+                        </>
+                    )}
+                </p>
             </div>
 
-            <div className="config-content">
-                {/* Left Sidebar - Services */}
-                <div className="services-sidebar">
-                    {SERVICE_TYPES.map((service) => (
-                        <div
-                            key={service}
-                            className={`service-item ${activeService === service ? 'active' : ''}`}
-                            onClick={() => {
-                                setActiveService(service);
-                                loadProviders();
-                            }}
-                            style={{
-                                borderLeftColor: activeService === service ? SERVICE_COLORS[service] : 'transparent',
-                                backgroundColor: activeService === service ? `${SERVICE_COLORS[service]}10` : 'transparent'
-                            }}
-                        >
-                            <span className="service-icon">{SERVICE_ICONS[service]}</span>
-                            <div className="service-info">
-                                <div className="service-name">{service}</div>
-                                <div className="service-stats">
-                                    {serviceProviderCounts[service] || 0} provider(s)
+
+            {/* Main Content */}
+            {environments.length === 0 ? (
+                // NO ENVIRONMENTS - Show Create First Environment Screen
+                <div className="pc-no-env-container">
+                    <div className="pc-no-env-card">
+                        <div className="pc-no-env-icon">🌍</div>
+                        <h2>No Environments Yet</h2>
+                        <p>Create your first environment to start configuring SMS, Email & WhatsApp providers.</p>
+                        <div className="pc-no-env-steps">
+                            <div className="pc-step">
+                                <div className="pc-step-number">1</div>
+                                <div className="pc-step-text">
+                                    <strong>Create an Environment</strong>
+                                    <span>Choose from Local, Dev, Staging, Live or create a custom one</span>
+                                </div>
+                            </div>
+                            <div className="pc-step">
+                                <div className="pc-step-number">2</div>
+                                <div className="pc-step-text">
+                                    <strong>Add Providers</strong>
+                                    <span>Configure SMS, Email & WhatsApp providers for each service</span>
+                                </div>
+                            </div>
+                            <div className="pc-step">
+                                <div className="pc-step-number">3</div>
+                                <div className="pc-step-text">
+                                    <strong>Start Sending</strong>
+                                    <span>Your providers are ready to send notifications</span>
                                 </div>
                             </div>
                         </div>
-                    ))}
-                </div>
-
-                {/* Right Panel - Providers */}
-                <div className="providers-panel">
-                    <div className="panel-header">
-                        <div className="panel-title">
-                            <span className="panel-icon">{SERVICE_ICONS[activeService]}</span>
-                            <h3>{activeService} Providers</h3>
-                        </div>
-                        <button
-                            className="add-provider-btn-main"
-                            onClick={() => {
-                                setEditingProvider(null);
-                                setSelectedProvider("");
-                                setProviderFields({});
-                                setShowAddProviderModal(true);
-                            }}
-                            style={{ backgroundColor: SERVICE_COLORS[activeService] }}
-                        >
-                            + Add Provider
+                        <button className="pc-create-first-env-btn" onClick={() => setShowAddEnvModal(true)}>
+                            + Create First Environment
                         </button>
                     </div>
+                </div>
+            ) : selectedEnv ? (
+                // HAS ENVIRONMENTS - Show tabs, sidebar, and providers
+                <>
+                    {/* Environment Tabs */}
+                    <div className="env-tabs-container">
+                        <div className="env-tabs-wrapper">
+                            <div className="env-tabs">
+                                {environments.map((env) => (
+                                    <div
+                                        key={env.name}
+                                        className={`env-tab ${selectedEnv === env.name ? 'active' : ''}`}
+                                        onClick={() => setSelectedEnv(env.name)}
+                                    >
+                                        <span className="env-tab-icon">{env.icon}</span>
+                                        <span className="env-tab-name">{env.name}</span>
+                                        <span className={`env-tab-dot ${env.hasProviders ? '' : 'empty'}`}>
+                                            {env.hasProviders ? '●' : '○'}
+                                        </span>
+                                    </div>
+                                ))}
+                                <div className="env-tab add-tab" onClick={() => {
+                                    setNewEnvName("");
+                                    setIsCustomEnv(false);
+                                    setCustomEnvInput("");
+                                    setShowAddEnvModal(true);
+                                }}>
+                                    <span className="env-tab-icon">+</span>
+                                    <span className="env-tab-name">New</span>
+                                </div>
+                            </div>
+                            <button
+                                className="pc-clone-btn"
+                                onClick={() => {
+                                    setCloneTarget("");
+                                    setCloneCustomMode(false);
+                                    setCloneCustomName("");
+                                    setShowCloneModal(true);
+                                }}
+                            >
+                                📋 Clone
+                            </button>
+                        </div>
+                    </div>
 
-                    <div className="providers-list">
-                        {providers.length === 0 ? (
-                            <div className="empty-providers">
-                                <span className="empty-icon">📭</span>
-                                <p>No {activeService} providers configured yet</p>
+                    {/* Service Sidebar + Providers */}
+                    <div className="pc-main-content">
+                        {/* Service Sidebar */}
+                        <div className="pc-sidebar">
+                            {SERVICE_TYPES.map((service) => (
+                                <div
+                                    key={service}
+                                    className={`pc-sidebar-item ${activeService === service ? 'active' : ''}`}
+                                    onClick={() => setActiveService(service)}
+                                    style={{
+                                        borderLeftColor: activeService === service ? SERVICE_COLORS[service] : 'transparent'
+                                    }}
+                                >
+                                    <span className="pc-sidebar-icon">{SERVICE_ICONS[service]}</span>
+                                    <div className="pc-sidebar-info">
+                                        <div className="pc-sidebar-name">{service}</div>
+                                        <div className="pc-sidebar-count">{serviceProviderCounts[service] || 0} provider(s)</div>
+                                    </div>
+                                    {activeService === service && (
+                                        <div className="pc-sidebar-active-indicator" style={{ background: SERVICE_COLORS[service] }}></div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Providers Panel */}
+                        <div className="pc-providers-panel">
+                            <div className="pc-panel-header">
+                                <div className="pc-panel-title">
+                                    <span>{SERVICE_ICONS[activeService]}</span>
+                                    <h3>{activeService} Providers</h3>
+                                    <span className="pc-panel-count">{serviceProviderCounts[activeService] || 0}</span>
+                                </div>
                                 <button
-                                    className="empty-add-btn"
+                                    className="pc-add-btn"
+                                    style={{ backgroundColor: SERVICE_COLORS[activeService] }}
                                     onClick={() => {
                                         setEditingProvider(null);
                                         setSelectedProvider("");
                                         setProviderFields({});
-                                        setShowAddProviderModal(true);
+                                        setShowAddModal(true);
                                     }}
-                                    style={{ borderColor: SERVICE_COLORS[activeService], color: SERVICE_COLORS[activeService] }}
                                 >
-                                    + Add your first provider
+                                    + Add Provider
                                 </button>
                             </div>
-                        ) : (
-                            providers.map((provider) => {
-                                const isExpanded = expandedProviders[provider.id] ?? false;
-                                const isOnlyOne = providers.length === 1;
-                                const showBody = isOnlyOne || isExpanded;
 
-                                return (
-                                    <div
-                                        key={provider.id}
-                                        className={`provider-view-card ${!isOnlyOne ? 'accordion-card' : ''}`}
-                                        style={{
-                                            borderTopColor: SERVICE_COLORS[activeService],
-                                            cursor: !isOnlyOne ? 'pointer' : 'default'
-                                        }}
-                                        onClick={() => {
-                                            if (!isOnlyOne) {
-                                                toggleProviderExpand(provider.id);
-                                            }
-                                        }}
-                                    >
-                                        <div className="provider-view-header">
-                                            <div className="provider-view-title">
-                                                <span className="provider-view-icon">🔌</span>
-                                                <span className="provider-view-name">{provider.name.replace('_', ' ')}</span>
-                                                <span className="saved-badge" style={{ background: `${SERVICE_COLORS[activeService]}20`, color: SERVICE_COLORS[activeService] }}>
-                                                    ✓ Configured
-                                                </span>
+                            <div className="pc-providers-list">
+                                {providers.length === 0 ? (
+                                    <div className="pc-empty-state">
+                                        <span className="pc-empty-icon">📭</span>
+                                        <h4>No {activeService} providers yet</h4>
+                                        <p>Add your first provider to start sending {activeService.toLowerCase()} messages</p>
+                                    </div>
+                                ) : (
+                                    providers.map((provider) => (
+                                        <div
+                                            key={provider.id}
+                                            className={`pc-provider-card ${expandedProviders[provider.id] ? 'expanded' : ''}`}
+                                            style={{ borderLeftColor: SERVICE_COLORS[activeService] }}
+                                        >
+                                            <div
+                                                className="pc-provider-card-header"
+                                                onClick={() => setExpandedProviders(prev => ({
+                                                    ...prev,
+                                                    [provider.id]: !prev[provider.id]
+                                                }))}
+                                            >
+                                                <div className="pc-provider-title">
+                                                    <span className="pc-provider-icon">🔌</span>
+                                                    <span>{provider.name.replace(/_/g, ' ')}</span>
+                                                    <span className="pc-configured-badge" style={{
+                                                        background: `${SERVICE_COLORS[activeService]}15`,
+                                                        color: SERVICE_COLORS[activeService]
+                                                    }}>
+                                                        ✓ Configured
+                                                    </span>
+                                                </div>
+                                                <div className="pc-provider-actions" onClick={(e) => e.stopPropagation()}>
+                                                    <button className="pc-edit-btn" onClick={() => editProvider(provider)}>
+                                                        ✏️
+                                                    </button>
+                                                    <button className="pc-delete-btn" onClick={() => setShowDeleteModal({ id: provider.id, name: provider.name })}>
+                                                        🗑️
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <div className="provider-actions-buttons">
-                                                <button
-                                                    className="edit-provider-btn"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        editProvider(provider);
-                                                    }}
-                                                >
-                                                    ✏️ Edit
-                                                </button>
-                                                <button
-                                                    className="delete-provider-btn"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setShowDeleteConfirmModal({ id: provider.id, name: provider.name.replace('_', ' ') });
-                                                    }}
-                                                >
-                                                    🗑️ Remove
-                                                </button>
-                                            </div>
-                                        </div>
 
-                                        {showBody && (
-                                            <div className="provider-view-body" onClick={(e) => e.stopPropagation()}>
-                                                <div className="credentials-view">
-                                                    <div className="section-title">📋 Credentials</div>
+                                            {expandedProviders[provider.id] && (
+                                                <div className="pc-provider-card-body">
                                                     {Object.entries(provider.fields).map(([key, value]) => {
                                                         const fieldConfig = PROVIDER_FIELDS_MAP[provider.name]?.find((f: any) => f.name === key);
-                                                        const isPassword = fieldConfig?.type === "password" || key.includes("Key") || key.includes("Token") || key.includes("Secret");
+                                                        const isPassword = fieldConfig?.type === "password" || key.includes("Key") || key.includes("Token");
                                                         const passwordKey = `${provider.id}_${key}`;
 
                                                         return (
-                                                            <div className="credential-row" key={key}>
-                                                                <span className="credential-label">
-                                                                    {fieldConfig?.icon || "📝"} {fieldConfig?.label || key}:
+                                                            <div className="pc-credential-row" key={key}>
+                                                                <span className="pc-credential-label">
+                                                                    {fieldConfig?.icon || "📝"} {fieldConfig?.label || key}
                                                                 </span>
-                                                                <div className="credential-value">
-                                                                    <span>
-                                                                        {isPassword
-                                                                            ? (visiblePasswords[passwordKey] ? (value || "—") : "••••••••")
-                                                                            : (value || "—")}
-                                                                    </span>
-                                                                    {isPassword && value && (
-                                                                        <button
-                                                                            className="eye-btn-small"
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                setVisiblePasswords((prev: Record<string, boolean>) => ({
-                                                                                    ...prev,
-                                                                                    [passwordKey]: !prev[passwordKey]
-                                                                                }));
-                                                                            }}
-                                                                        >
-                                                                            {visiblePasswords[passwordKey] ? <FaEyeSlash /> : <FaEye />}
-                                                                        </button>
-                                                                    )}
-                                                                </div>
+                                                                <span className="pc-credential-value">
+                                                                    {isPassword
+                                                                        ? (visiblePasswords[passwordKey] ? value : "••••••••••")
+                                                                        : (value || "—")}
+                                                                </span>
+                                                                {isPassword && value && (
+                                                                    <button
+                                                                        className="pc-eye-btn"
+                                                                        onClick={() => setVisiblePasswords(prev => ({
+                                                                            ...prev,
+                                                                            [passwordKey]: !prev[passwordKey]
+                                                                        }))}
+                                                                    >
+                                                                        {visiblePasswords[passwordKey] ? <FaEyeSlash /> : <FaEye />}
+                                                                    </button>
+                                                                )}
                                                             </div>
                                                         );
                                                     })}
                                                 </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })
-                        )}
+                                            )}
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
                     </div>
+                </>
+            ) : null}
 
-
+            {/* Add Environment Modal */}
+            {showAddEnvModal && (
+                <div className="pc-modal-overlay" onClick={() => setShowAddEnvModal(false)}>
+                    <div className="pc-modal" onClick={e => e.stopPropagation()}>
+                        <div className="pc-modal-header">
+                            <h3>➕ Add Environment</h3>
+                            <button className="pc-modal-close" onClick={() => setShowAddEnvModal(false)}>×</button>
+                        </div>
+                        <div className="pc-modal-body">
+                            <p className="pc-modal-desc">Select an environment or create a custom one</p>
+                            <div className="pc-env-options">
+                                {['Local', 'Dev', 'Staging', 'Live']
+                                    .filter(env => !environments.some(e => e.name === env))
+                                    .map(env => (
+                                        <div
+                                            key={env}
+                                            className={`pc-env-option ${newEnvName === env && !isCustomEnv ? 'selected' : ''}`}
+                                            onClick={() => {
+                                                setNewEnvName(env);
+                                                setIsCustomEnv(false);
+                                            }}
+                                        >
+                                            <span className="pc-env-option-icon">{getEnvIcon(env)}</span>
+                                            <span>{env}</span>
+                                            {newEnvName === env && !isCustomEnv && <span className="pc-check">✓</span>}
+                                        </div>
+                                    ))
+                                }
+                                <div
+                                    className={`pc-env-option custom ${isCustomEnv ? 'selected' : ''}`}
+                                    onClick={() => {
+                                        setIsCustomEnv(true);
+                                        setNewEnvName("");
+                                    }}
+                                >
+                                    <span className="pc-env-option-icon">🔧</span>
+                                    <span>Custom Environment</span>
+                                    {isCustomEnv && <span className="pc-check">✓</span>}
+                                </div>
+                            </div>
+                            {isCustomEnv && (
+                                <div className="pc-form-group">
+                                    <label>Environment Name *</label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g., Production, Testing, QA"
+                                        value={customEnvInput}
+                                        onChange={(e) => setCustomEnvInput(e.target.value)}
+                                        className="pc-input"
+                                        autoFocus
+                                    />
+                                </div>
+                            )}
+                        </div>
+                        <div className="pc-modal-footer">
+                            <button className="pc-btn-cancel" onClick={() => {
+                                setShowAddEnvModal(false);
+                                setNewEnvName("");
+                                setIsCustomEnv(false);
+                                setCustomEnvInput("");
+                            }}>Cancel</button>
+                            <button
+                                className="pc-btn-primary"
+                                onClick={handleAddEnvironment}
+                                disabled={(!isCustomEnv && !newEnvName) || (isCustomEnv && !customEnvInput.trim())}
+                            >
+                                Save Environment
+                            </button>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Add/Edit Provider Modal */}
-            {showAddProviderModal && (
-                <div className="modal-overlay" onClick={handleCancelAddProvider}>
-                    <div className="modal-container provider-modal" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h3>{editingProvider ? `Edit ${activeService} Provider` : `Add ${activeService} Provider`}</h3>
-                            <button className="close-btn" onClick={handleCancelAddProvider}>×</button>
+            {showAddModal && (
+                <div className="pc-modal-overlay" onClick={handleCancelAdd}>
+                    <div className="pc-modal pc-modal-provider" onClick={e => e.stopPropagation()}>
+                        <div className="pc-modal-header">
+                            <h3>{editingProvider ? '✏️ Edit Provider' : '➕ Add Provider'}</h3>
+                            <button className="pc-modal-close" onClick={handleCancelAdd}>×</button>
                         </div>
-                        <div className="modal-body">
-                            <div className="form-group">
+                        <div className="pc-modal-body">
+                            <div className="pc-form-group">
                                 <label>Select Provider *</label>
                                 <select
                                     value={selectedProvider}
                                     onChange={handleProviderChange}
-                                    className="provider-select"
+                                    className="pc-select"
                                 >
-                                    <option value="">-- Choose a provider --</option>
+                                    <option value="">-- Choose provider --</option>
                                     {PROVIDERS_BY_SERVICE[activeService]
-                                        ?.filter(p => {
-                                            // When editing, show the current provider
-                                            if (editingProvider && editingProvider.name === p) return true;
-                                            // Hide already added providers
-                                            return !providers.some(provider => provider.name === p);
-                                        })
+                                        ?.filter(p => editingProvider?.name === p || !providers.some(prov => prov.name === p))
                                         .map(p => (
-                                            <option key={p} value={p}>{p.replace('_', ' ')}</option>
+                                            <option key={p} value={p}>{p.replace(/_/g, ' ')}</option>
                                         ))
                                     }
                                 </select>
                             </div>
 
                             {selectedProvider && PROVIDER_FIELDS_MAP[selectedProvider] && (
-                                <div className="credentials-section">
-                                    <div className="section-title">🔐 Credentials</div>
+                                <div className="pc-credentials-section">
+                                    <h4>🔐 Credentials</h4>
                                     {PROVIDER_FIELDS_MAP[selectedProvider].map((field: any) => (
-                                        <div className="form-group" key={field.name}>
+                                        <div className="pc-form-group" key={field.name}>
                                             <label>{field.label}{field.required && " *"}</label>
-                                            <div className="input-with-icon">
+                                            <div className="pc-input-wrapper">
                                                 <input
                                                     type={field.type === "password" && !showPasswords[field.name] ? "password" : "text"}
                                                     value={providerFields[field.name] || ""}
                                                     onChange={(e) => handleFieldChange(field.name, e.target.value)}
                                                     placeholder={`Enter ${field.label}`}
-                                                    required={field.required}
+                                                    className="pc-input"
                                                 />
                                                 {field.type === "password" && (
                                                     <button
                                                         type="button"
-                                                        className="eye-btn"
+                                                        className="pc-eye-btn"
                                                         onClick={() => togglePasswordVisibility(field.name)}
                                                     >
                                                         {showPasswords[field.name] ? <FaEyeSlash /> : <FaEye />}
@@ -681,42 +859,10 @@ export default function ProviderConfig() {
                                 </div>
                             )}
                         </div>
-                        <div className="modal-actions">
-                            <button className="btn-cancel" onClick={handleCancelAddProvider}>
-                                Cancel
-                            </button>
-                            <button
-                                className="btn-create"
-                                onClick={saveProvider}
-                                disabled={saving}
-                                style={{ backgroundColor: SERVICE_COLORS[activeService] }}
-                            >
-                                {saving ? (editingProvider ? "Updating..." : "Adding...") : (editingProvider ? "Update Provider" : "Add Provider")}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Delete Confirmation Modal */}
-            {showDeleteConfirmModal && (
-                <div className="modal-overlay" onClick={() => setShowDeleteConfirmModal(null)}>
-                    <div className="modal-container delete-confirm-modal" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <div className="warning-icon">⚠️</div>
-                            <h3>Delete Provider</h3>
-                            <button className="close-btn" onClick={() => setShowDeleteConfirmModal(null)}>×</button>
-                        </div>
-                        <div className="modal-body">
-                            <p>Are you sure you want to delete <strong>{showDeleteConfirmModal.name}</strong>?</p>
-                            <p className="warning-text">This action cannot be undone. All credentials for this provider will be permanently removed.</p>
-                        </div>
-                        <div className="modal-actions">
-                            <button className="btn-cancel" onClick={() => setShowDeleteConfirmModal(null)}>
-                                Cancel
-                            </button>
-                            <button className="btn-delete" onClick={deleteProvider}>
-                                Delete Provider
+                        <div className="pc-modal-footer">
+                            <button className="pc-btn-cancel" onClick={handleCancelAdd}>Cancel</button>
+                            <button className="pc-btn-primary" onClick={saveProvider} disabled={saving}>
+                                {saving ? 'Saving...' : editingProvider ? 'Update Provider' : 'Add Provider'}
                             </button>
                         </div>
                     </div>
@@ -724,80 +870,114 @@ export default function ProviderConfig() {
             )}
 
             {/* Cancel Confirmation Modal */}
-            {showCancelConfirmModal && (
-                <div className="modal-overlay" onClick={() => setShowCancelConfirmModal(false)}>
-                    <div className="modal-container cancel-confirm-modal" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <div className="warning-icon">⚠️</div>
-                            <h3>Cancel Provider Setup</h3>
-                            <button className="close-btn" onClick={() => setShowCancelConfirmModal(false)}>×</button>
+            {showCancelConfirm && (
+                <div className="pc-modal-overlay" onClick={() => setShowCancelConfirm(false)}>
+                    <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}>
+                        <div className="pc-modal-header">
+                            <h3>⚠️ Discard Changes?</h3>
+                            <button className="pc-modal-close" onClick={() => setShowCancelConfirm(false)}>×</button>
                         </div>
-                        <div className="modal-body">
-                            <p>You have entered credentials that haven't been saved.</p>
-                            <p className="warning-text">Are you sure you want to cancel? All entered data will be lost.</p>
+                        <div className="pc-modal-body">
+                            <p>You have unsaved changes. Are you sure you want to discard them?</p>
                         </div>
-                        <div className="modal-actions">
-                            <button className="btn-cancel" onClick={() => setShowCancelConfirmModal(false)}>
-                                Continue Editing
-                            </button>
-                            <button className="btn-delete" onClick={confirmCancel}>
-                                Discard Changes
-                            </button>
+                        <div className="pc-modal-footer">
+                            <button className="pc-btn-cancel" onClick={() => setShowCancelConfirm(false)}>Continue Editing</button>
+                            <button className="pc-btn-danger" onClick={closeAddModal}>Discard</button>
                         </div>
                     </div>
                 </div>
             )}
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && (
+                <div className="pc-modal-overlay" onClick={() => setShowDeleteModal(null)}>
+                    <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}>
+                        <div className="pc-modal-header">
+                            <h3>🗑️ Delete Provider</h3>
+                            <button className="pc-modal-close" onClick={() => setShowDeleteModal(null)}>×</button>
+                        </div>
+                        <div className="pc-modal-body">
+                            <p>Are you sure you want to delete <strong>{showDeleteModal.name.replace(/_/g, ' ')}</strong>?</p>
+                            <p className="pc-warning-text">This action cannot be undone.</p>
+                        </div>
+                        <div className="pc-modal-footer">
+                            <button className="pc-btn-cancel" onClick={() => setShowDeleteModal(null)}>Cancel</button>
+                            <button className="pc-btn-danger" onClick={deleteProvider}>Delete</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Clone Modal */}
             {showCloneModal && (
-                <div className="modal-overlay" onClick={() => setShowCloneModal(false)}>
-                    <div className="modal-container clone-modal" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
+                <div className="pc-modal-overlay" onClick={() => setShowCloneModal(false)}>
+                    <div className="pc-modal" onClick={e => e.stopPropagation()}>
+                        <div className="pc-modal-header">
                             <h3>📋 Clone Environment</h3>
-                            <button className="close-btn" onClick={() => setShowCloneModal(false)}>×</button>
+                            <button className="pc-modal-close" onClick={() => setShowCloneModal(false)}>×</button>
                         </div>
-                        <div className="modal-body">
+                        <div className="pc-modal-body">
                             <div className="clone-source-info">
                                 <label>Source Environment</label>
-                                <div className="clone-source-name">🌍 {environmentName}</div>
+                                <div className="clone-source-name">
+                                    {getEnvIcon(selectedEnv)} {selectedEnv}
+                                </div>
                             </div>
 
-                            <div className="form-group">
+                            <div className="pc-form-group">
                                 <label>Select Target Environment</label>
-                                <select
-                                    className="provider-select"
-                                    value={cloneCustomMode ? "__custom__" : cloneTarget}
-                                    onChange={handleCloneTargetChange}
-                                >
-                                    <option value="">-- Select target --</option>
-                                    {getAvailableTargetEnvs().map(env => (
-                                        <option key={env} value={env}>{env}</option>
-                                    ))}
-                                    <option value="__custom__">+ Custom Environment</option>
-                                </select>
+                                <div className="pc-env-options">
+                                    {['Local', 'Dev', 'Staging', 'Live']
+                                        .filter(env => env !== selectedEnv && !environments.some(e => e.name === env))
+                                        .map(env => (
+                                            <div
+                                                key={env}
+                                                className={`pc-env-option ${cloneTarget === env && !cloneCustomMode ? 'selected' : ''}`}
+                                                onClick={() => {
+                                                    setCloneTarget(env);
+                                                    setCloneCustomMode(false);
+                                                }}
+                                            >
+                                                <span className="pc-env-option-icon">{getEnvIcon(env)}</span>
+                                                <span>{env}</span>
+                                                {cloneTarget === env && !cloneCustomMode && <span className="pc-check">✓</span>}
+                                            </div>
+                                        ))
+                                    }
+                                    <div
+                                        className={`pc-env-option custom ${cloneCustomMode ? 'selected' : ''}`}
+                                        onClick={() => {
+                                            setCloneCustomMode(true);
+                                            setCloneTarget("");
+                                        }}
+                                    >
+                                        <span className="pc-env-option-icon">🔧</span>
+                                        <span>Custom Environment</span>
+                                        {cloneCustomMode && <span className="pc-check">✓</span>}
+                                    </div>
+                                </div>
                             </div>
 
                             {cloneCustomMode && (
-                                <div className="form-group">
-                                    <label>Custom Environment Name</label>
+                                <div className="pc-form-group">
+                                    <label>Custom Environment Name *</label>
                                     <input
                                         type="text"
                                         placeholder="Enter environment name"
                                         value={cloneCustomName}
                                         onChange={(e) => setCloneCustomName(e.target.value)}
-                                        className="custom-input-small"
+                                        className="pc-input"
                                         autoFocus
                                     />
                                 </div>
                             )}
                         </div>
-                        <div className="modal-actions">
-                            <button className="btn-cancel" onClick={() => setShowCloneModal(false)}>
-                                Cancel
-                            </button>
+                        <div className="pc-modal-footer">
+                            <button className="pc-btn-cancel" onClick={() => setShowCloneModal(false)}>Cancel</button>
                             <button
-                                className="btn-create"
+                                className="pc-btn-primary"
                                 onClick={executeClone}
-                                disabled={!cloneTarget && !cloneCustomName.trim()}
+                                disabled={(!cloneCustomMode && !cloneTarget) || (cloneCustomMode && !cloneCustomName.trim())}
                             >
                                 Clone Environment
                             </button>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/ProjectDashboard.css";
 
@@ -9,11 +9,13 @@ interface Project {
   status: "active" | "inactive";
   created: string;
   services: string[];
+  logo?: string;
+  updatedAt?: string;
+  updatedBy?: string;
   sms_config?: any;
   email_config?: any;
   whatsapp_config?: any;
 }
-
 
 const mockProjects: Project[] = [
   { id: 1, name: "Notification System", description: "Multi-channel notification service", status: "active", created: "2025-01-10", services: ["sms", "email", "whatsapp"], sms_config: {}, email_config: {}, whatsapp_config: {} },
@@ -29,7 +31,23 @@ const mockProjects: Project[] = [
 
 export default function ProjectDashboard() {
   const navigate = useNavigate();
-  const [projects, setProjects] = useState<Project[]>(mockProjects);
+
+  // Initialize projects from localStorage or mock data
+  const [projects, setProjects] = useState<Project[]>(() => {
+    const savedProjects = localStorage.getItem('allProjects');
+    if (savedProjects) {
+      try {
+        const parsed = JSON.parse(savedProjects);
+        return parsed.length > 0 ? parsed : mockProjects;
+      } catch {
+        return mockProjects;
+      }
+    }
+    // Save initial mock data to localStorage
+    localStorage.setItem('allProjects', JSON.stringify(mockProjects));
+    return mockProjects;
+  });
+
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [rowsPerPage, setRowsPerPage] = useState<number>(5);
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -38,10 +56,40 @@ export default function ProjectDashboard() {
   const [showEditModal, setShowEditModal] = useState<boolean>(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null);
   const [editForm, setEditForm] = useState({ name: "", description: "", status: "", services: [] as string[] });
-  const handleManageEnvironments = (project: Project) => {
-    localStorage.setItem('currentProject', JSON.stringify(project));
-    navigate(`/dashboard/environments/${project.id}`);
-  };
+
+  // Save projects to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('allProjects', JSON.stringify(projects));
+  }, [projects]);
+
+  // Listen for project updates from other pages
+  useEffect(() => {
+    const handleProjectUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const updatedProject = customEvent.detail;
+
+      setProjects(prevProjects =>
+        prevProjects.map(p =>
+          p.id === updatedProject.id
+            ? {
+              ...p,
+              name: updatedProject.name,
+              description: updatedProject.description,
+              status: updatedProject.status,
+              logo: updatedProject.logo,
+              services: updatedProject.services,
+              updatedAt: updatedProject.updatedAt,
+              updatedBy: updatedProject.updatedBy
+            }
+            : p
+        )
+      );
+    };
+
+    window.addEventListener('projectUpdated', handleProjectUpdate);
+    return () => window.removeEventListener('projectUpdated', handleProjectUpdate);
+  }, []);
+
   // Filter & Pagination
   const filteredProjects = projects.filter(p =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -51,29 +99,97 @@ export default function ProjectDashboard() {
   const startIndex = (currentPage - 1) * rowsPerPage;
   const paginatedProjects = filteredProjects.slice(startIndex, startIndex + rowsPerPage);
 
-  const goToPage = (page: number) => { if (page >= 1 && page <= totalPages) setCurrentPage(page); };
-  const handleRowsChange = (e: React.ChangeEvent<HTMLSelectElement>) => { setRowsPerPage(Number(e.target.value)); setCurrentPage(1); };
-  const toggleStatus = (id: number) => { setProjects(prev => prev.map(p => p.id === id ? { ...p, status: p.status === "active" ? "inactive" : "active" } : p)); };
-  const handleDelete = (id: number) => { setProjects(prev => prev.filter(p => p.id !== id)); setShowDeleteConfirm(null); };
-  const handleView = (project: Project) => { setSelectedProject(project); setShowViewModal(true); };
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages) setCurrentPage(page);
+  };
+
+  const handleRowsChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setRowsPerPage(Number(e.target.value));
+    setCurrentPage(1);
+  };
+
+  const toggleStatus = (id: number) => {
+    setProjects(prev => {
+      const updatedProjects = prev.map(p => {
+        if (p.id === id) {
+          const updatedProject = {
+            ...p,
+            status: p.status === "active" ? "inactive" as const : "active" as const,
+            updatedAt: new Date().toISOString().split('T')[0],
+          };
+
+          // Update currentProject if it's the same
+          const currentProject = localStorage.getItem('currentProject');
+          if (currentProject) {
+            try {
+              const parsed = JSON.parse(currentProject);
+              if (parsed.id === id) {
+                localStorage.setItem('currentProject', JSON.stringify(updatedProject));
+              }
+            } catch { }
+          }
+
+          window.dispatchEvent(new CustomEvent('projectUpdated', {
+            detail: updatedProject
+          }));
+
+          return updatedProject;
+        }
+        return p;
+      });
+      return updatedProjects;
+    });
+  };
+
+  const handleDelete = (id: number) => {
+    setProjects(prev => {
+      const updated = prev.filter(p => p.id !== id);
+      return updated;
+    });
+    setShowDeleteConfirm(null);
+  };
+
+  const handleView = (project: Project) => {
+    localStorage.setItem('currentProject', JSON.stringify(project));
+    navigate(`/dashboard/project/${project.id}/view`);
+  };
+
   const handleEditOpen = () => {
     if (selectedProject) {
-      setEditForm({ name: selectedProject.name, description: selectedProject.description || "", status: selectedProject.status, services: [...selectedProject.services] });
+      setEditForm({
+        name: selectedProject.name,
+        description: selectedProject.description || "",
+        status: selectedProject.status,
+        services: [...selectedProject.services]
+      });
       setShowViewModal(false);
       setShowEditModal(true);
     }
   };
+
   const handleUpdate = () => {
     if (selectedProject) {
-      setProjects(prev => prev.map(p => p.id === selectedProject.id ? { ...p, name: editForm.name, description: editForm.description, status: editForm.status as "active" | "inactive", services: editForm.services } : p));
-      setSelectedProject({ ...selectedProject, ...editForm, status: editForm.status as "active" | "inactive" });
+      const updatedProject = {
+        ...selectedProject,
+        name: editForm.name,
+        description: editForm.description,
+        status: editForm.status as "active" | "inactive",
+        services: editForm.services,
+      };
+
+      setProjects(prev => prev.map(p =>
+        p.id === selectedProject.id ? updatedProject : p
+      ));
+      setSelectedProject(updatedProject);
       setShowEditModal(false);
+
+      window.dispatchEvent(new CustomEvent('projectUpdated', {
+        detail: updatedProject
+      }));
+
+      localStorage.setItem('currentProject', JSON.stringify(updatedProject));
     }
   };
-
-
-  // Navigate to service configuration page
-
 
   const activeCount = projects.filter(p => p.status === "active").length;
   const inactiveCount = projects.length - activeCount;
@@ -92,13 +208,36 @@ export default function ProjectDashboard() {
 
       {/* Stat Cards */}
       <div className="stats-container">
-        <div className="stat-card total"><div className="stat-icon">📋</div><div className="stat-info"><div className="stat-number">{projects.length}</div><div className="stat-label">Total Projects</div></div></div>
-        <div className="stat-card active"><div className="stat-icon">🚀</div><div className="stat-info"><div className="stat-number">{activeCount}</div><div className="stat-label">Active Projects</div></div></div>
-        <div className="stat-card inactive"><div className="stat-icon">⏸️</div><div className="stat-info"><div className="stat-number">{inactiveCount}</div><div className="stat-label">Inactive Projects</div></div></div>
+        <div className="stat-card total">
+          <div className="stat-icon">📋</div>
+          <div className="stat-info">
+            <div className="stat-number">{projects.length}</div>
+            <div className="stat-label">Total Projects</div>
+          </div>
+        </div>
+        <div className="stat-card active">
+          <div className="stat-icon">🚀</div>
+          <div className="stat-info">
+            <div className="stat-number">{activeCount}</div>
+            <div className="stat-label">Active Projects</div>
+          </div>
+        </div>
+        <div className="stat-card inactive">
+          <div className="stat-icon">⏸️</div>
+          <div className="stat-info">
+            <div className="stat-number">{inactiveCount}</div>
+            <div className="stat-label">Inactive Projects</div>
+          </div>
+        </div>
       </div>
 
       <div className="search-bar">
-        <input type="text" placeholder="Search by project name or description..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} />
+        <input
+          type="text"
+          placeholder="Search by project name or description..."
+          value={searchTerm}
+          onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+        />
       </div>
 
       <div className="table-wrapper">
@@ -109,14 +248,13 @@ export default function ProjectDashboard() {
               <th>Project Name</th>
               <th>Status</th>
               <th>Created</th>
-
               <th>Logs</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {paginatedProjects.length === 0 ? (
-              <tr><td colSpan={7} className="empty-row">No projects found.</td></tr>
+              <tr><td colSpan={6} className="empty-row">No projects found.</td></tr>
             ) : (
               paginatedProjects.map((project, idx) => (
                 <tr key={project.id} className={project.status === "inactive" ? "inactive-row" : ""}>
@@ -124,14 +262,23 @@ export default function ProjectDashboard() {
                   <td className="project-name">{project.name}</td>
                   <td>
                     <label className="toggle-switch">
-                      <input type="checkbox" checked={project.status === "active"} onChange={() => toggleStatus(project.id)} />
+                      <input
+                        type="checkbox"
+                        checked={project.status === "active"}
+                        onChange={() => toggleStatus(project.id)}
+                      />
                       <span className="slider round"></span>
                     </label>
-                    <span className={`status-text ${project.status}`}>{project.status === "active" ? "Active" : "Inactive"}</span>
+                    <span className={`status-text ${project.status}`}>
+                      {project.status === "active" ? "Active" : "Inactive"}
+                    </span>
                   </td>
                   <td>{project.created}</td>
-
-                  <td><button className="logs-btn" onClick={() => navigate(`/dashboard/project/${project.id}/logs`)}>📋 View Logs</button></td>
+                  <td>
+                    <button className="logs-btn" onClick={() => navigate(`/dashboard/project/${project.id}/logs`)}>
+                      📋 View Logs
+                    </button>
+                  </td>
                   <td>
                     <div className="actions-dropdown">
                       <button className="three-dots">⋮</button>
@@ -142,7 +289,10 @@ export default function ProjectDashboard() {
                         <div className="dropdown-item" onClick={() => navigate(`/dashboard/project-edit-basic/${project.id}`, { state: { project } })}>
                           ✏️ Edit
                         </div>
-                        <div className="dropdown-item" onClick={() => navigate("/dashboard/environments", { state: { project } })}>
+                        <div className="dropdown-item" onClick={() => {
+                          localStorage.setItem('currentProject', JSON.stringify(project));
+                          navigate("/dashboard/provider-config", { state: { project, environmentName: '' } });
+                        }}>
                           🌍 Environments
                         </div>
                         <div className="dropdown-item delete" onClick={() => setShowDeleteConfirm(project.id)}>
@@ -150,7 +300,6 @@ export default function ProjectDashboard() {
                         </div>
                       </div>
                     </div>
-
                   </td>
                 </tr>
               ))
@@ -161,8 +310,19 @@ export default function ProjectDashboard() {
 
       {filteredProjects.length > 0 && (
         <div className="pagination-container">
-          <div className="rows-selector"><span>Rows per page:</span><select value={rowsPerPage} onChange={handleRowsChange}><option value={5}>5</option><option value={10}>10</option><option value={15}>15</option></select></div>
-          <div className="pagination"><button onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1}>← Previous</button><span className="page-info">Page {currentPage} of {totalPages}</span><button onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages}>Next →</button></div>
+          <div className="rows-selector">
+            <span>Rows per page:</span>
+            <select value={rowsPerPage} onChange={handleRowsChange}>
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={15}>15</option>
+            </select>
+          </div>
+          <div className="pagination">
+            <button onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1}>← Previous</button>
+            <span className="page-info">Page {currentPage} of {totalPages}</span>
+            <button onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages}>Next →</button>
+          </div>
         </div>
       )}
 
@@ -170,27 +330,51 @@ export default function ProjectDashboard() {
       {showViewModal && selectedProject && (
         <div className="modal-overlay" onClick={() => setShowViewModal(false)}>
           <div className="modal-container" onClick={e => e.stopPropagation()}>
-            <div className="modal-header"><h2>Project Details</h2><button className="close-btn" onClick={() => setShowViewModal(false)}>×</button></div>
+            <div className="modal-header">
+              <h2>Project Details</h2>
+              <button className="close-btn" onClick={() => setShowViewModal(false)}>×</button>
+            </div>
             <div className="view-details">
               <div className="detail-row"><label>Name:</label><span>{selectedProject.name}</span></div>
               <div className="detail-row"><label>Description:</label><span>{selectedProject.description || "—"}</span></div>
               <div className="detail-row"><label>Status:</label><span className={`status-text ${selectedProject.status}`}>{selectedProject.status === "active" ? "Active" : "Inactive"}</span></div>
               <div className="detail-row"><label>Created:</label><span>{selectedProject.created}</span></div>
             </div>
-            <div className="modal-actions"><button className="btn-edit" onClick={handleEditOpen}>✏️ Edit</button><button className="btn-cancel" onClick={() => setShowViewModal(false)}>Close</button></div>
+            <div className="modal-actions">
+              <button className="btn-edit" onClick={handleEditOpen}>✏️ Edit</button>
+              <button className="btn-cancel" onClick={() => setShowViewModal(false)}>Close</button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* EDIT MODAL (for basic info) */}
+      {/* EDIT MODAL */}
       {showEditModal && selectedProject && (
         <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
           <div className="modal-container" onClick={e => e.stopPropagation()}>
-            <div className="modal-header"><h2>Edit Project</h2><button className="close-btn" onClick={() => setShowEditModal(false)}>×</button></div>
-            <div className="form-group"><label>Project Name</label><input type="text" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} /></div>
-            <div className="form-group"><label>Description</label><textarea value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} rows={3} /></div>
-            <div className="form-group"><label>Status</label><select value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value })}><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
-            <div className="modal-actions"><button className="btn-cancel" onClick={() => setShowEditModal(false)}>Cancel</button><button className="btn-create" onClick={handleUpdate}>Save Changes</button></div>
+            <div className="modal-header">
+              <h2>Edit Project</h2>
+              <button className="close-btn" onClick={() => setShowEditModal(false)}>×</button>
+            </div>
+            <div className="form-group">
+              <label>Project Name</label>
+              <input type="text" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} />
+            </div>
+            <div className="form-group">
+              <label>Description</label>
+              <textarea value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} rows={3} />
+            </div>
+            <div className="form-group">
+              <label>Status</label>
+              <select value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value })}>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+            <div className="modal-actions">
+              <button className="btn-cancel" onClick={() => setShowEditModal(false)}>Cancel</button>
+              <button className="btn-create" onClick={handleUpdate}>Save Changes</button>
+            </div>
           </div>
         </div>
       )}
@@ -201,7 +385,10 @@ export default function ProjectDashboard() {
           <div className="modal-container delete-confirm" onClick={e => e.stopPropagation()}>
             <h3>Delete Project</h3>
             <p>Are you sure you want to delete this project?</p>
-            <div className="modal-actions"><button className="btn-cancel" onClick={() => setShowDeleteConfirm(null)}>Cancel</button><button className="btn-delete" onClick={() => handleDelete(showDeleteConfirm)}>Delete</button></div>
+            <div className="modal-actions">
+              <button className="btn-cancel" onClick={() => setShowDeleteConfirm(null)}>Cancel</button>
+              <button className="btn-delete" onClick={() => handleDelete(showDeleteConfirm)}>Delete</button>
+            </div>
           </div>
         </div>
       )}

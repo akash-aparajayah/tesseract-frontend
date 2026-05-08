@@ -27,11 +27,23 @@ body {
 .admin-panel {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: 32px 40px;
+  animation: fadeIn 0.4s ease;
 }
 
-/* ========== HEADER ========== */
-.admin-header {
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.content-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -99,23 +111,28 @@ body {
   border-color: var(--primary);
 }
 
-.stat-icon-admin {
-  width: 48px;
-  height: 48px;
-  background: #eef3ff;
-  border-radius: 16px;
+.user-card.inactive {
+  opacity: 0.7;
+  background: #fafbfc;
+}
+
+/* Avatar */
+.card-avatar {
+  flex-shrink: 0;
+}
+
+/* .avatar {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #e8f0ff, #c7d8ff);
+  border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 24px;
   color: var(--primary);
-  flex-shrink: 0;
-}
-
-.stat-icon-admin.success {
-  background: #e0faf3;
-  color: var(--success);
-}
+  text-transform: uppercase;
+} */
 
 .stat-icon-admin.danger {
   background: #ffeaea;
@@ -261,18 +278,30 @@ body {
   border-radius: 12px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 18px;
-  color: var(--primary);
-  text-transform: uppercase;
-  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
-.admin-name {
-  font-weight: 700;
-  color: var(--primary-dark);
-  margin-bottom: 2px;
+.role-badge {
+  padding: 4px 12px;
+  border-radius: 30px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.role-badge.admin {
+  background: #eef3ff;
+  color: var(--primary);
+}
+
+.role-badge.super {
+  background: #fff0db;
+  color: var(--warning);
+}
+
+.role-badge.manager {
+  background: #e0faf3;
+  color: var(--success);
 }
 
 .admin-email {
@@ -291,12 +320,30 @@ body {
   white-space: nowrap;
 }
 
-.role-pill.admin { background: #eef3ff; color: var(--primary); }
-.role-pill.super { background: #fff0db; color: #f5a623; }
-.role-pill.manager { background: #e0faf3; color: var(--success); }
+.role-pill.admin {
+  background: #eef3ff;
+  color: var(--primary);
+}
 
-.status-pill.active { background: #e0faf3; color: var(--success); }
-.status-pill.inactive { background: #ffeaea; color: var(--danger); }
+.role-pill.super {
+  background: #fff0db;
+  color: #f5a623;
+}
+
+.role-pill.manager {
+  background: #e0faf3;
+  color: var(--success);
+}
+
+.status-pill.active {
+  background: #e0faf3;
+  color: var(--success);
+}
+
+.status-pill.inactive {
+  background: #ffeaea;
+  color: var(--danger);
+}
 
 /* Action buttons – aligned in a row */
 .action-cell {
@@ -364,11 +411,11 @@ body {
   border-radius: 50%;
 }
 
-input:checked + .toggle-slider {
+input:checked+.slider {
   background-color: var(--success);
 }
 
-input:checked + .toggle-slider:before {
+input:checked+.slider:before {
   transform: translateX(20px);
 }
 
@@ -404,6 +451,17 @@ input:checked + .toggle-slider:before {
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  animation: fadeBg 0.2s;
+}
+
+@keyframes fadeBg {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .modal-card {
@@ -416,8 +474,15 @@ input:checked + .toggle-slider:before {
 }
 
 @keyframes modalPop {
-  from { transform: scale(0.96); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .modal-card-header {
@@ -501,9 +566,9 @@ input:checked + .toggle-slider:before {
   padding: 16px 24px 24px;
 }
 
-.btn-secondary,
-.btn-primary {
-  padding: 8px 20px;
+.btn-cancel,
+.btn-create {
+  padding: 10px 20px;
   border-radius: 40px;
   font-weight: 600;
   font-size: 14px;
@@ -544,70 +609,28 @@ input:checked + .toggle-slider:before {
     padding: 20px;
   }
 
-  .admin-header {
-    flex-direction: column;
-    align-items: stretch;
+  .users-grid {
+    grid-template-columns: 1fr;
   }
 
-  .btn-add-admin {
-    align-self: flex-start;
-  }
-
-  .stats-grid-admin {
-    gap: 16px;
-  }
-
-  .admin-controls {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .search-field {
-    max-width: 100%;
-  }
-
-  .admin-table-modern th,
-  .admin-table-modern td {
-    padding: 12px 14px;
-  }
-
-  /* Action buttons wrap on very small screens */
-  .action-cell {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .modal-card {
-    width: 95%;
-    margin: 0 16px;
-  }
-
-  .modal-card-header,
-  .modal-card-body,
-  .modal-card-footer {
-    padding-left: 20px;
-    padding-right: 20px;
-  }
-}
-
-@media (max-width: 550px) {
-  .admin-info {
+  .content-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 6px;
   }
 
-  .admin-avatar {
-    width: 32px;
-    height: 32px;
-    font-size: 14px;
+  .user-card {
+    flex-direction: column;
+    text-align: center;
   }
 
-  .stat-card-admin {
-    padding: 14px 16px;
+  .card-avatar {
+    display: flex;
+    justify-content: center;
   }
 
-  .stat-value-admin {
-    font-size: 28px;
+  .info-row,
+  .meta-row,
+  .toggle-row {
+    justify-content: center;
   }
 }

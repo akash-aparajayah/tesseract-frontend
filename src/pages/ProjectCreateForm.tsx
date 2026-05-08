@@ -185,6 +185,30 @@ export default function ProjectCreateForm() {
         new Promise(resolve => setTimeout(resolve, MIN_LOAD_TIME_MS))
       ]);
       if (res?.data?.success) {
+        // Create new project object
+        const newProject = {
+          id: res.data.project?.id || Date.now(),
+          name: formData.project_name.trim(),
+          description: formData.project_description.trim(),
+          status: "active" as const,
+          created: new Date().toISOString().split('T')[0],
+          services: [],
+          logo: formData.image_url || "",
+          sms_config: {},
+          email_config: {},
+          whatsapp_config: {}
+        };
+
+        // Save to localStorage
+        const existingProjects = JSON.parse(localStorage.getItem('allProjects') || '[]');
+        const updatedProjects = [newProject, ...existingProjects];
+        localStorage.setItem('allProjects', JSON.stringify(updatedProjects));
+
+        // Dispatch event
+        window.dispatchEvent(new CustomEvent('projectUpdated', {
+          detail: newProject
+        }));
+
         showToast("Project created successfully!", "success");
         setTimeout(() => navigate("/dashboard/project"), 1500);
       }
