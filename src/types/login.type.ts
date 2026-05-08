@@ -15,4 +15,8 @@ type Toast = {
   type: "success" | "error" | "";
 };
 
-export type { FormState, Errors, Toast };
+type JwtPayload ={
+  exp: number; // expiry time from backend token
+};
+
+export type { FormState, Errors, Toast, JwtPayload };

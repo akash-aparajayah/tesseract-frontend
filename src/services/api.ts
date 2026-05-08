@@ -21,7 +21,22 @@ api.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
+);
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401) {
+      // 🚨 AUTO LOGOUT
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+
+      window.location.href = "/"; // go to login
+    }
+
+    return Promise.reject(error);
+  },
 );
 
 export default api;

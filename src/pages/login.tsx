@@ -58,9 +58,16 @@ export default function Login() {
       if (res?.data?.success) {
         const { accessToken, refreshToken } = res.data.data;
 
+        if (!accessToken) {
+          showToast("Invalid login response", "error");
+          return;
+        }
+
         localStorage.setItem("accessToken", accessToken);
 
-        localStorage.setItem("refreshToken", refreshToken);
+        if (refreshToken) {
+          localStorage.setItem("refreshToken", refreshToken);
+        }
 
         showToast("Login successful 🎉", "success");
 
@@ -77,7 +84,7 @@ export default function Login() {
 
       console.error(errorMessage);
 
-      showToast(`❌ ${errorMessage} !`,  "error");
+      showToast(`❌ ${errorMessage} !`, "error");
     } finally {
       setLoading(false);
     }
