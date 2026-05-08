@@ -1,403 +1,435 @@
-/* ========== ROOT VARIABLES ========== */
+/* =========================================================
+   ROOT VARIABLES
+========================================================= */
 :root {
   --deep-navy: #002c5b;
-  --zoho-blue: #1b72e8;
-  --safety-green: #2ecc71;
-  --vibrant-cyan: #00f2fe;
-  --pure-white: #ffffff;
-  --slate-gray: #5a6e8a;
-  --soft-border: #e9edf2;
-  --bg-light: #eef2fa;
+  --primary-blue: #1b72e8;
+  --cyan: #00c6ff;
+
+  --white: #ffffff;
+  --light-bg: #f4f8ff;
+
+  --border: #dce7f5;
+  --border-soft: #d7e2f0;
+
+  --text-main: #1e293b;
+  --text-muted: #5a6e8a;
+
+  --danger: #d32f2f;
+
+  --shadow-soft: 0 4px 12px rgba(27, 114, 232, 0.08);
+  --shadow-medium: 0 10px 30px rgba(0, 0, 0, 0.08);
+
+  --transition: all 0.25s ease;
 }
 
-/* ========== TOP BAR - ENTRANCE ANIMATION (NEW) ========== */
+/* =========================================================
+   TOPBAR
+========================================================= */
 .topBar {
   position: fixed;
   top: 0;
   left: var(--sidebar-width);
   right: 0;
+
   height: 70px;
-  background: #F4F8FF;  /* very light blue-white */
+
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 32px;
+
+  padding: 0 28px;
+
+  background: var(--light-bg);
+
+  border-bottom: 1px solid var(--border);
+
+  box-shadow: 0 2px 8px rgba(27, 114, 232, 0.04);
+
   z-index: 1000;
-  border-bottom: 1px solid #DCE7F5;
-  box-shadow: 0 2px 8px rgba(27, 114, 232, 0.05);
-  
-  /* NEW: entrance animation */
-  animation: slideDownFade 0.45s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+
+  animation: topbarEnter 0.45s ease;
 }
 
-@keyframes slideDownFade {
-  0% {
+@keyframes topbarEnter {
+  from {
     opacity: 0;
-    transform: translateY(-40px);
+    transform: translateY(-20px);
   }
-  60% {
-    opacity: 1;
-    transform: translateY(4px);
-  }
-  100% {
+
+  to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-/* ========== LEFT SIDE ========== */
+/* =========================================================
+   LEFT SECTION
+========================================================= */
 .topBarLeft {
   display: flex;
   align-items: center;
-  gap: 36px;
-  min-width: 0;
 }
 
-/* ========== SEARCH BAR (ENHANCED FOCUS F/X) ========== */
+/* =========================================================
+   SEARCH BAR
+========================================================= */
 .searchForm {
   display: flex;
   align-items: center;
-  background: #f8fbff;
+
+  width: 250px;
+  height: 46px;
+
+  padding: 0 16px;
+
+  background: var(--white);
+
+  border: 1.5px solid var(--border-soft);
+
   border-radius: 40px;
-  padding: 6px 18px;
-  height: 48px;
-  margin-left: 48px;
-  border: 1.5px solid #d7e2f0;
-  transition: all 0.25s ease;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.03);
-  position: relative;
-  overflow: hidden;
+
+  transition: var(--transition);
+
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
-/* NEW: focused pulse ring */
+.searchForm:hover {
+  border-color: #9fc2ee;
+}
+
 .searchForm:focus-within {
-  background: white;
-  border-color: var(--zoho-blue);
-  box-shadow: 0 0 0 4px rgba(27,114,232,0.12), 0 2px 8px rgba(27,114,232,0.08);
-  animation: searchPulse 0.4s ease-out;
-}
+  border-color: var(--primary-blue);
 
-@keyframes searchPulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(27,114,232,0.2);
-  }
-  100% {
-    box-shadow: 0 0 0 6px rgba(27,114,232,0);
-  }
+  box-shadow:
+    0 0 0 4px rgba(27, 114, 232, 0.12),
+    0 2px 10px rgba(27, 114, 232, 0.08);
 }
 
 .searchIcon {
-  color: var(--slate-gray);
-  margin-right: 8px;
   font-size: 14px;
-  transition: transform 0.2s ease;
+  color: var(--text-muted);
+
+  margin-right: 10px;
+
+  transition: var(--transition);
 }
 
 .searchForm:focus-within .searchIcon {
+  color: var(--primary-blue);
   transform: scale(1.05);
-  color: var(--zoho-blue);
 }
 
 .searchForm input {
-  background: transparent;
+  flex: 1;
+
   border: none;
-  color: #1e293b;
-  font-size: 14px;
-  width: 200px;
   outline: none;
+
+  background: transparent;
+
+  font-size: 14px;
+  color: var(--text-main);
 }
 
 .searchForm input::placeholder {
-  color: var(--slate-gray);
-  opacity: 0.7;
-  transition: opacity 0.2s;
+  color: var(--text-muted);
 }
 
-.searchForm input:focus::placeholder {
-  opacity: 0.3;
-}
-
-/* ========== RIGHT SIDE ========== */
+/* =========================================================
+   RIGHT SECTION
+========================================================= */
 .topBarRight {
   display: flex;
   align-items: center;
-  gap: 20px;
-  flex-shrink: 0;
+  gap: 16px;
 }
 
-/* ========== BELL (ENHANCED WITH RIPPLE) ========== */
-.bell {
-  position: relative;
-  cursor: pointer;
-  background: #f8fbff;
+/* =========================================================
+   COMMON ICON BUTTON STYLE
+========================================================= */
+.passwordButton,
+.bell,
+.settingsIcon {
   width: 42px;
   height: 42px;
-  border-radius: 50%;
-  border: 1.5px solid #d7e2f0;
+
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.25s ease;
-  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  background: var(--white);
+
+  border: 1.5px solid var(--border-soft);
+
+  cursor: pointer;
+
+  transition: var(--transition);
+
+  position: relative;
+
   overflow: hidden;
 }
 
-/* NEW: ripple effect on click */
-.bell:active::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle, rgba(27,114,232,0.3) 0%, rgba(27,114,232,0) 80%);
-  transform: translate(-50%, -50%) scale(0);
-  animation: ripple 0.5s ease-out;
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-@keyframes ripple {
-  to {
-    transform: translate(-50%, -50%) scale(2);
-    opacity: 0;
-  }
-}
-
-.bell:hover {
-  background: white;
-  border-color: #bfd3ec;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-}
-
-.bell svg {
+.passwordButton svg,
+.bell svg,
+.settingsIcon svg {
+  font-size: 17px;
   color: var(--deep-navy);
-  font-size: 18px;
-  transition: color 0.2s ease, transform 0.2s;
+
+  transition: var(--transition);
 }
 
-.bell:hover svg {
-  color: var(--zoho-blue);
-  transform: scale(1.05);
+/* =========================================================
+   HOVER EFFECT
+========================================================= */
+.passwordButton:hover,
+.bell:hover,
+.settingsIcon:hover {
+  transform: translateY(-2px);
+
+  border-color: #9fc2ee;
+
+  box-shadow: var(--shadow-soft);
+
+  background: #f8fbff;
 }
 
-/* Existing shake animation */
-@keyframes gentleShake {
+.passwordButton:hover svg,
+.bell:hover svg,
+.settingsIcon:hover svg {
+  color: var(--primary-blue);
+}
+
+/* =========================================================
+   SETTINGS ROTATION
+========================================================= */
+.settingsIcon:hover svg {
+  transform: rotate(45deg);
+}
+
+/* =========================================================
+   BELL SHAKE
+========================================================= */
+.animate svg {
+  animation: bellShake 0.4s ease;
+}
+
+@keyframes bellShake {
   0% { transform: rotate(0deg); }
-  25% { transform: rotate(6deg); }
-  50% { transform: rotate(-6deg); }
-  75% { transform: rotate(3deg); }
+  25% { transform: rotate(10deg); }
+  50% { transform: rotate(-10deg); }
+  75% { transform: rotate(5deg); }
   100% { transform: rotate(0deg); }
 }
 
-.animate svg {
-  animation: gentleShake 0.3s ease-in-out;
-}
-
-/* Badge + pulse */
+/* =========================================================
+   NOTIFICATION BADGE
+========================================================= */
 .badge {
   position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 11px;
-  height: 11px;
-  background: #ff3b30;
+
+  top: 5px;
+  right: 5px;
+
+  width: 10px;
+  height: 10px;
+
   border-radius: 50%;
+
+  background: #ff3b30;
+
   border: 2px solid white;
-  box-sizing: border-box;
-  box-shadow: 0 0 6px rgba(255,59,48,0.45);
+
+  animation: badgePulse 1.8s infinite;
 }
 
 @keyframes badgePulse {
-  0% { transform: scale(0.8); opacity: 0.7; }
-  50% { transform: scale(1.2); background: #ff6b6b; }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.3);
+    opacity: 0.7;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
-.animate .badge {
-  animation: badgePulse 0.3s ease-out;
-}
-
-/* ========== PROFILE (NEW HOVER & GLOW) ========== */
+/* =========================================================
+   PROFILE
+========================================================= */
 .profile {
   display: flex;
   align-items: center;
+
   gap: 12px;
-  background: #f8fbff;
+
   padding: 6px 14px 6px 8px;
-  border-radius: 40px;
-  border: 1.5px solid #d7e2f0;
-  transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-  max-width: 280px;
-  min-width: 0;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
-  position: relative;
-  overflow: hidden;
-}
 
-/* NEW: gradient border sweep on hover */
-.profile::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 40px;
-  padding: 2px;
-  background: linear-gradient(120deg, var(--zoho-blue), var(--vibrant-cyan));
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask-composite: exclude;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
-}
+  background: var(--white);
 
-.profile:hover::before {
-  opacity: 1;
+  border: 1.5px solid var(--border-soft);
+
+  border-radius: 40px;
+
+  transition: var(--transition);
+
+  cursor: pointer;
 }
 
 .profile:hover {
-  background: white;
-  border-color: transparent;
-  transform: translateY(-2px) scale(1.01);
-  box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+
+  border-color: #9fc2ee;
+
+  box-shadow: var(--shadow-soft);
 }
 
+/* =========================================================
+   AVATAR
+========================================================= */
 .avatar {
   width: 36px;
   height: 36px;
-  background: linear-gradient(135deg, var(--zoho-blue), var(--deep-navy));
-  border-radius: 50%;
+
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  transition: transform 0.2s ease;
+
+  border-radius: 50%;
+
+  background: linear-gradient(
+    135deg,
+    var(--primary-blue),
+    #4d9eff
+  );
+
+  transition: all 0.3s ease;
+
+  /* CLEAN SOFT GLOW */
+  box-shadow:
+    0 0 0 rgba(27, 114, 232, 0.25);
+
+  animation: softGlow 2.8s ease-in-out infinite;
 }
 
-.profile:hover .avatar {
-  transform: rotate(4deg) scale(1.02);
-}
-
+/* ICON */
 .avatar svg {
   color: white;
-  font-size: 16px;
+  font-size: 15px;
 }
 
+/* SOFT PREMIUM GLOW */
+@keyframes softGlow {
+  0% {
+    box-shadow:
+      0 0 0 0 rgba(27, 114, 232, 0.15),
+      0 4px 10px rgba(27, 114, 232, 0.12);
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 6px rgba(27, 114, 232, 0),
+      0 6px 18px rgba(27, 114, 232, 0.22);
+  }
+
+  100% {
+    box-shadow:
+      0 0 0 0 rgba(27, 114, 232, 0),
+      0 4px 10px rgba(27, 114, 232, 0.12);
+  }
+}
+
+/* HOVER EFFECT */
+.profile:hover .avatar {
+  transform: scale(1.05);
+}
+
+/* =========================================================
+   USER INFO
+========================================================= */
 .info {
   display: flex;
   flex-direction: column;
+
   line-height: 1.2;
-  overflow: hidden;
-  min-width: 0;
 }
 
 .name {
-  font-weight: 600;
   font-size: 14px;
+  font-weight: 600;
+
   color: var(--deep-navy);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .role {
   font-size: 11px;
-  color: var(--slate-gray);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+
+  color: var(--text-muted);
 }
 
-/* ========== PASSWORD BUTTON (RIPPLE + WIGGLE) ========== */
-.passwordButton {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 42px;
-  padding: 0 16px;
-  background: #f8fbff;
-  border: 1.5px solid #d7e2f0;
-  border-radius: 40px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--deep-navy);
-  cursor: pointer;
-  transition: all 0.25s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-/* NEW: wiggle on click */
-.passwordButton:active {
-  animation: wiggle 0.2s ease-in-out;
-}
-
-@keyframes wiggle {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-2px); }
-  75% { transform: translateX(2px); }
-}
-
-/* NEW: ripple effect */
-.passwordButton:active::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle, rgba(27,114,232,0.2) 0%, rgba(27,114,232,0) 80%);
-  transform: translate(-50%, -50%) scale(0);
-  animation: ripple 0.6s ease-out;
-  border-radius: 40px;
-}
-
-.passwordButton:hover {
-  background: white;
-  border-color: #bfd3ec;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-}
-
-/* ========== MODAL (NEW SCALE + FADE IN) ========== */
+/* =========================================================
+   MODAL OVERLAY
+========================================================= */
 .modalOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.35);
+
   display: flex;
   align-items: center;
   justify-content: center;
+
+  background: rgba(0, 0, 0, 0.35);
+
+  backdrop-filter: blur(3px);
+
   z-index: 3000;
-  animation: fadeInBackdrop 0.2s ease;
+
+  animation: overlayFade 0.25s ease;
 }
 
-@keyframes fadeInBackdrop {
+@keyframes overlayFade {
   from {
-    backdrop-filter: blur(0);
-    background: rgba(0,0,0,0);
+    opacity: 0;
   }
+
   to {
-    backdrop-filter: blur(2px);
-    background: rgba(0, 0, 0, 0.35);
+    opacity: 1;
   }
 }
 
+/* =========================================================
+   MODAL BOX
+========================================================= */
 .modalBox {
   width: 400px;
+
   background: white;
-  padding: 28px;
+
   border-radius: 24px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
-  animation: modalPopIn 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
+
+  padding: 28px;
+
+  box-shadow: var(--shadow-medium);
+
+  animation: modalPop 0.3s ease;
 }
 
-@keyframes modalPopIn {
-  0% {
+@keyframes modalPop {
+  from {
     opacity: 0;
-    transform: scale(0.95) translateY(10px);
+    transform: scale(0.94) translateY(10px);
   }
-  100% {
+
+  to {
     opacity: 1;
     transform: scale(1) translateY(0);
   }
@@ -405,118 +437,58 @@
 
 .modalBox h2 {
   margin-bottom: 20px;
+
   color: var(--deep-navy);
 }
 
+/* =========================================================
+   FORM
+========================================================= */
 .modalBox form {
   display: flex;
   flex-direction: column;
+
   gap: 16px;
 }
 
-.modalBox input {
-  height: 48px;
-  padding: 0 14px;
-  border-radius: 12px;
-  border: 1.5px solid #d7e2f0;
-  outline: none;
-  transition: all 0.2s;
-}
-
-/* NEW: input focus glow */
-.modalBox input:focus {
-  border-color: var(--zoho-blue);
-  box-shadow: 0 0 0 3px rgba(27,114,232,0.15);
-  transform: scale(1.01);
-}
-
-.modalActions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 10px;
-}
-
-.cancelButton,
-.saveButton {
-  height: 42px;
-  padding: 0 18px;
-  border-radius: 12px;
-  font-weight: 600;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.cancelButton {
-  background: #eef2f7;
-  border: none;
-}
-
-.cancelButton:hover {
-  background: #e2e8f0;
-  transform: translateY(-1px);
-}
-
-.saveButton {
-  background: var(--zoho-blue);
-  color: white;
-  border: none;
-}
-
-.saveButton:hover {
-  background: #0f5bc2;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(27,114,232,0.3);
-}
-
- .closeButton {
-  float: right;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 36px;
-  height: 36px;
-
-  border: none;
-  border-radius: 50%;
-
-  background: transparent;
-  cursor: pointer;
-
-  font-size: 18px;
-  font-weight: bold;
-
-  transition: all 0.2s ease;
-}
-
-.closeButton:hover {
-  color: #d32f2f;
-  background-color: rgba(211, 47, 47, 0.1);
-
-  outline: 2px solid #d32f2f;
-  outline-offset: 2px;
-}
-
-.closeButton:focus-visible {
-  outline: 3px solid #0066cc;
-  outline-offset: 2px;
-}
-
+/* =========================================================
+   INPUT
+========================================================= */
 .passwordWrapper {
   position: relative;
-  display: flex;
-  align-items: center;
 }
 
 .passwordWrapper input {
   width: 100%;
+  height: 48px;
+
+  padding: 0 45px 0 14px;
+
+  border-radius: 12px;
+
+  border: 1.5px solid var(--border-soft);
+
+  outline: none;
+
+  transition: var(--transition);
 }
 
+.passwordWrapper input:focus {
+  border-color: var(--primary-blue);
+
+  box-shadow: 0 0 0 4px rgba(27, 114, 232, 0.12);
+}
+
+/* =========================================================
+   EYE BUTTON
+========================================================= */
 .eyeButton {
   position: absolute;
+
+  top: 50%;
   right: 12px;
+
+  transform: translateY(-50%);
 
   border: none;
   background: transparent;
@@ -528,46 +500,167 @@
   justify-content: center;
 
   color: #666;
+
   font-size: 16px;
-}
-/* ========== RESPONSIVE (unchanged) ========== */
-@media (max-width: 800px) {
-  .topBar { padding: 0 20px; }
-  .searchForm input { width: 150px; }
-  .profile { padding: 6px 10px; }
+
+  transition: var(--transition);
 }
 
-@media (max-width: 680px) {
-  .info { display: none; }
-  .profile { padding: 6px 8px; }
+.eyeButton:hover {
+  color: var(--primary-blue);
+}
+
+/* =========================================================
+   MODAL ACTIONS
+========================================================= */
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+
+  gap: 12px;
+
+  margin-top: 10px;
+}
+
+.cancelButton,
+.saveButton {
+  height: 42px;
+
+  padding: 0 18px;
+
+  border: none;
+
+  border-radius: 12px;
+
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: var(--transition);
+}
+
+.cancelButton {
+  background: #eef2f7;
+}
+
+.cancelButton:hover {
+  background: #dfe7f1;
+}
+
+.saveButton {
+  background: var(--primary-blue);
+  color: white;
+}
+
+.saveButton:hover {
+  background: #0f5bc2;
+
+  transform: translateY(-1px);
+
+  box-shadow: 0 6px 18px rgba(27, 114, 232, 0.2);
+}
+
+/* =========================================================
+   CLOSE BUTTON
+========================================================= */
+.closeButton {
+  width: 36px;
+  height: 36px;
+
+  margin-left: auto;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: none;
+
+  border-radius: 50%;
+
+  background: transparent;
+
+  cursor: pointer;
+
+  transition: var(--transition);
+}
+
+.closeButton:hover {
+  color: var(--danger);
+
+  background: rgba(211, 47, 47, 0.08);
+
+  transform: rotate(90deg);
+}
+
+/* =========================================================
+   TOOLTIP
+========================================================= */
+.tooltipWrapper {
+  position: relative;
+}
+
+.tooltip {
+  position: absolute;
+
+  bottom: -38px;
+  left: 50%;
+
+  transform: translateX(-50%);
+
+  background: var(--deep-navy);
+
+  color: white;
+
+  font-size: 11px;
+
+  padding: 6px 10px;
+
+  border-radius: 8px;
+
+  white-space: nowrap;
+
+  opacity: 0;
+  visibility: hidden;
+
+  transition: var(--transition);
+
+  pointer-events: none;
+}
+
+.tooltipWrapper:hover .tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+@media (max-width: 900px) {
+  .searchForm {
+    width: 180px;
+  }
+}
+
+@media (max-width: 700px) {
+  .info {
+    display: none;
+  }
+
+  .profile {
+    padding: 6px 8px;
+  }
+
+  .topBar {
+    padding: 0 16px;
+  }
 }
 
 @media (max-width: 550px) {
-  .searchForm input { width: 100px; }
-  .topBarLeft { gap: 20px; }
-}
+  .searchForm {
+    width: 130px;
+  }
 
-/* Search bar, bell, profile, password button - white with subtle blue hover */
-.searchForm, .bell, .profile, .passwordButton {
-  background: #FFFFFF;
-  border-color: #CDDFF5;
-}
-
-.searchForm:hover, .bell:hover, .profile:hover, .passwordButton:hover {
-  background: #F8FBFE;
-  border-color: #8BB3E0;
-  box-shadow: 0 2px 8px rgba(27, 114, 232, 0.1);
-}
-
-/* Icons turn blue on hover */
-.searchForm:focus-within .searchIcon,
-.bell:hover svg,
-.passwordButton:hover svg,
-.profile:hover .avatar svg {
-  color: #1B72E8;
-}
-
-/* Avatar background gradient (white-blue) */
-.avatar {
-  background: linear-gradient(135deg, #1B72E8, #4D9EFF);
+  .topBarRight {
+    gap: 10px;
+  }
 }
