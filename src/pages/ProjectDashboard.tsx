@@ -314,10 +314,7 @@ export default function ProjectDashboard() {
                         </div>
                         <div className="dropdown-item" onClick={() => {
                           localStorage.setItem('currentProject', JSON.stringify(project));
-                          navigate("/dashboard/environments", { state: { project } }); localStorage.setItem(
-                            'currentProject',
-                            JSON.stringify(project)
-                          );
+
 
                           navigate(
                             "/dashboard/provider-config",

@@ -47,7 +47,7 @@ const router = createBrowserRouter([
         element: <ProjectCreateForm />,
       },
       {
-        path: "/dashboard/project/:projectId/view",
+        path: "project/:projectId/view",
         element: <ProjectView />,
       },
       {
