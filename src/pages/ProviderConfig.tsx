@@ -460,9 +460,7 @@ export default function ProviderConfig() {
                     <div className="pc-breadcrumbs">
                         <button onClick={() => navigate("/dashboard/project")}>Projects</button>
                         <span>›</span>
-                        <button onClick={() => navigate("/dashboard/environments", { state: { project } })}>
-                            Environments
-                        </button>
+                        <span className="current">Environment Management</span>
                     </div>
                 </div>
                 <p className="pc-project-name">
@@ -735,9 +733,7 @@ export default function ProviderConfig() {
                                     <div className="pc-panel-title">
                                         <h3>{activeService} Providers</h3>
 
-                                        <span className="pc-panel-count">
-                                            {serviceProviderCounts[activeService] || 0}
-                                        </span>
+
                                     </div>
 
                                     <button
@@ -857,40 +853,16 @@ export default function ProviderConfig() {
                                                             return (
                                                                 <div className="pc-credential-row" key={key}>
                                                                     <span className="pc-credential-label">{fieldConfig?.label || key}</span>
-
-                                                                    <div className="pc-credential-value-wrapper">
-                                                                        <span className="pc-credential-value">
-                                                                            {isPassword ? (visiblePasswords[passwordKey] ? value : "••••••••••") : value || "—"}
-                                                                        </span>
-
-                                                                        {isPassword &&
-                                                                            value && (
-                                                                                <button
-                                                                                    className="pc-eye-btn"
-                                                                                    onClick={() =>
-                                                                                        setVisiblePasswords(
-                                                                                            (
-                                                                                                prev
-                                                                                            ) => ({
-                                                                                                ...prev,
-                                                                                                [passwordKey]:
-                                                                                                    !prev[
-                                                                                                    passwordKey
-                                                                                                    ]
-                                                                                            })
-                                                                                        )
-                                                                                    }
-                                                                                >
-                                                                                    {visiblePasswords[
-                                                                                        passwordKey
-                                                                                    ] ? (
-                                                                                        <FaEyeSlash />
-                                                                                    ) : (
-                                                                                        <FaEye />
-                                                                                    )}
-                                                                                </button>
-                                                                            )}
-                                                                    </div>
+                                                                    <span className="pc-credential-value">
+                                                                        {isPassword ? (visiblePasswords[passwordKey] ? value : "••••••••••") : value || "—"}
+                                                                    </span>
+                                                                    {isPassword && value && (
+                                                                        <button className="pc-eye-btn-inline" onClick={() => setVisiblePasswords(prev => ({
+                                                                            ...prev, [passwordKey]: !prev[passwordKey]
+                                                                        }))}>
+                                                                            {visiblePasswords[passwordKey] ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
+                                                                        </button>
+                                                                    )}
                                                                 </div>
                                                             );
                                                         })}

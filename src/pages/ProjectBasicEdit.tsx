@@ -69,7 +69,7 @@ export default function ProjectBasicEdit() {
             showToast("Project updated successfully! ✨", "success");
 
             setTimeout(() => {
-                navigate(`/dashboard/project/${project.id}/view`, {
+                navigate(`/dashboard/project`, {
                     state: { project: updatedProject }
                 });
             }, 1000);
@@ -123,7 +123,7 @@ export default function ProjectBasicEdit() {
                 <span className="breadcrumb-separator">›</span>
                 <button
                     className="breadcrumb-link"
-                    onClick={() => navigate(`/dashboard/project/${project.id}/view`)}
+                    onClick={() => navigate(`/dashboard/project`)}
                 >
                     {project.name}
                 </button>
