@@ -2,7 +2,6 @@ import React, { useState, useRef, ChangeEvent, DragEvent, useEffect } from "reac
 import { useNavigate } from "react-router-dom";
 import { createProject } from "../services/projectApi";
 import { useToast } from "../hooks/useToast";
-import Loader from "../components/common/Loader"; // ✅ your existing loader
 import "../styles/ProjectCreation.css";
 
 
@@ -131,7 +130,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
 };
 
 // ============================================================
-// MAIN PROJECT CREATE FORM (uses your existing Loader component)
+// MAIN PROJECT CREATE FORM
 // ============================================================
 export default function ProjectCreateForm() {
   const navigate = useNavigate();
@@ -177,17 +176,27 @@ export default function ProjectCreateForm() {
       isActive: true,
     };
 
-    const MIN_LOAD_TIME_MS = 5000;
-    const apiPromise = createProject(payload);
     try {
-      const [res] = await Promise.all([
-        apiPromise,
-        new Promise(resolve => setTimeout(resolve, MIN_LOAD_TIME_MS))
-      ]);
-      if (res?.data?.success) {
+      const res = await createProject(payload);
+      console.log("Full API Response:", res);
+      console.log("res.data:", res?.data);
+      console.log("res.data.data:", res?.data?.data);
+
+      // Try different possible paths for the project ID
+      const projectId = res?.data?.data?.project?.id ||
+        res?.data?.data?.id ||
+        res?.data?.data?.project_id ||
+        res?.data?.project?.id ||
+        res?.data?.id;
+
+      console.log("Extracted projectId:", projectId);
+
+      if (res?.data?.success && projectId) {
+        console.log("Project created with ID:", projectId);
+
         // Create new project object
         const newProject = {
-          id: res.data.project?.id || Date.now(),
+          id: projectId,
           name: formData.project_name.trim(),
           description: formData.project_description.trim(),
           status: "active" as const,
@@ -210,9 +219,24 @@ export default function ProjectCreateForm() {
         }));
 
         showToast("Project created successfully!", "success");
-        setTimeout(() => navigate("/dashboard/project"), 1500);
+
+        // Navigate to the project view page
+        const navigatePath = `/dashboard/project/${projectId}/view`;
+        console.log("Navigating to:", navigatePath);
+
+        setTimeout(() => {
+          navigate(navigatePath);
+        }, 500);
+      } else {
+        console.error("Project creation failed or no ID:", {
+          success: res?.data?.success,
+          projectId: projectId,
+          fullData: res?.data
+        });
+        showToast("Project created but could not retrieve ID", "error");
       }
     } catch (error: unknown) {
+      console.error("API Error:", error);
       showToast(error instanceof Error ? error.message : "Error creating project", "error");
     } finally {
       setIsSubmitting(false);
@@ -221,9 +245,6 @@ export default function ProjectCreateForm() {
 
   return (
     <>
-      {/* Use your existing Loader component */}
-      {isSubmitting && <Loader />}
-
       <div className="full-page-bg">
         <div className="form-card">
           <div className="form-header">
@@ -280,7 +301,7 @@ export default function ProjectCreateForm() {
                 Cancel
               </button>
               <button type="submit" className="btn-submit" disabled={isSubmitting}>
-                Create Project
+                {isSubmitting ? "Creating..." : "Create Project"}
               </button>
             </div>
           </form>

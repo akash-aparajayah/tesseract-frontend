@@ -4,76 +4,77 @@ import { useToast } from "../hooks/useToast";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import "../styles/EnvironmentManagement.css";
 import {
-    Copy, Plus, Globe, Lock,
-    Monitor, Server,
-    Pencil, Trash2, X, Check, Home,
-    Rocket, Wrench, AlertTriangle
+    Copy, Plus, Globe, Lock, Monitor, Server,
+    Pencil, Trash2, X, Check, Home, Rocket, Wrench, AlertTriangle,
+    MessageSquare, Mail, MessageCircle, Plug
 } from 'lucide-react';
 
-const PROVIDER_FIELDS_MAP: Record<string, { name: string; label: string; type: string; required?: boolean; icon?: string }[]> = {
+const PROVIDER_FIELDS_MAP: Record<string, { name: string; label: string; type: string; required?: boolean }[]> = {
     MSG91: [
-        { name: "apiKey", label: "API Key", type: "password", required: true, icon: "key" },
-        { name: "endpoint", label: "Endpoint URL", type: "text", required: false, icon: "globe" },
-        { name: "senderId", label: "Sender ID", type: "text", required: true, icon: "phone" },
-        { name: "templateId", label: "Template ID (DLT)", type: "text", required: true, icon: "fileText" },
+        { name: "apiKey", label: "API Key", type: "password", required: true },
+        { name: "endpoint", label: "Endpoint URL", type: "text", required: false },
+        { name: "senderId", label: "Sender ID", type: "text", required: true },
+        { name: "templateId", label: "Template ID (DLT)", type: "text", required: true },
     ],
     Twilio: [
-        { name: "accountSid", label: "Account SID", type: "text", required: true, icon: "hash" },
-        { name: "authToken", label: "Auth Token", type: "password", required: true, icon: "lock" },
-        { name: "phoneNumber", label: "Phone Number", type: "text", required: true, icon: "phone" },
+        { name: "accountSid", label: "Account SID", type: "text", required: true },
+        { name: "authToken", label: "Auth Token", type: "password", required: true },
+        { name: "phoneNumber", label: "Phone Number", type: "text", required: true },
     ],
     Gupshup: [
-        { name: "apiKey", label: "API Key", type: "password", required: true, icon: "key" },
-        { name: "senderId", label: "Sender ID", type: "text", required: true, icon: "phone" },
+        { name: "apiKey", label: "API Key", type: "password", required: true },
+        { name: "senderId", label: "Sender ID", type: "text", required: true },
     ],
     Vonage: [
-        { name: "apiKey", label: "API Key", type: "password", required: true, icon: "key" },
-        { name: "apiSecret", label: "API Secret", type: "password", required: true, icon: "lock" },
-        { name: "senderId", label: "Sender ID", type: "text", required: false, icon: "phone" },
+        { name: "apiKey", label: "API Key", type: "password", required: true },
+        { name: "apiSecret", label: "API Secret", type: "password", required: true },
+        { name: "senderId", label: "Sender ID", type: "text", required: false },
     ],
     SendGrid: [
-        { name: "apiKey", label: "API Key", type: "password", required: true, icon: "key" },
-        { name: "fromEmail", label: "From Email", type: "email", required: true, icon: "mail" },
-        { name: "fromName", label: "From Name", type: "text", required: false, icon: "user" },
+        { name: "apiKey", label: "API Key", type: "password", required: true },
+        { name: "fromEmail", label: "From Email", type: "email", required: true },
+        { name: "fromName", label: "From Name", type: "text", required: false },
     ],
     AWS_SES: [
-        { name: "accessKeyId", label: "Access Key ID", type: "text", required: true, icon: "hash" },
-        { name: "secretAccessKey", label: "Secret Access Key", type: "password", required: true, icon: "lock" },
-        { name: "region", label: "Region", type: "text", required: true, icon: "globe" },
-        { name: "fromEmail", label: "From Email", type: "email", required: true, icon: "mail" },
+        { name: "accessKeyId", label: "Access Key ID", type: "text", required: true },
+        { name: "secretAccessKey", label: "Secret Access Key", type: "password", required: true },
+        { name: "region", label: "Region", type: "text", required: true },
+        { name: "fromEmail", label: "From Email", type: "email", required: true },
     ],
     Mailgun: [
-        { name: "apiKey", label: "API Key", type: "password", required: true, icon: "key" },
-        { name: "domain", label: "Domain", type: "text", required: true, icon: "globe" },
-        { name: "fromEmail", label: "From Email", type: "email", required: true, icon: "mail" },
+        { name: "apiKey", label: "API Key", type: "password", required: true },
+        { name: "domain", label: "Domain", type: "text", required: true },
+        { name: "fromEmail", label: "From Email", type: "email", required: true },
     ],
     SMTP: [
-        { name: "host", label: "SMTP Host", type: "text", required: true, icon: "server" },
-        { name: "port", label: "Port", type: "number", required: true, icon: "plug" },
-        { name: "username", label: "Username", type: "text", required: true, icon: "user" },
-        { name: "password", label: "Password", type: "password", required: true, icon: "lock" },
-        { name: "fromEmail", label: "From Email", type: "email", required: true, icon: "mail" },
+        { name: "host", label: "SMTP Host", type: "text", required: true },
+        { name: "port", label: "Port", type: "number", required: true },
+        { name: "username", label: "Username", type: "text", required: true },
+        { name: "password", label: "Password", type: "password", required: true },
+        { name: "fromEmail", label: "From Email", type: "email", required: true },
     ],
     WhatsApp_Twilio: [
-        { name: "accountSid", label: "Account SID", type: "text", required: true, icon: "hash" },
-        { name: "authToken", label: "Auth Token", type: "password", required: true, icon: "lock" },
-        { name: "phoneNumber", label: "WhatsApp Number", type: "text", required: true, icon: "messageCircle" },
+        { name: "accountSid", label: "Account SID", type: "text", required: true },
+        { name: "authToken", label: "Auth Token", type: "password", required: true },
+        { name: "phoneNumber", label: "WhatsApp Number", type: "text", required: true },
     ],
     Meta_Cloud: [
-        { name: "phoneNumberId", label: "Phone Number ID", type: "text", required: true, icon: "hash" },
-        { name: "accessToken", label: "Access Token", type: "password", required: true, icon: "key" },
-        { name: "businessAccountId", label: "Business Account ID", type: "text", required: true, icon: "shield" },
+        { name: "phoneNumberId", label: "Phone Number ID", type: "text", required: true },
+        { name: "accessToken", label: "Access Token", type: "password", required: true },
+        { name: "businessAccountId", label: "Business Account ID", type: "text", required: true },
     ],
 };
-
-// Icon mapping function
-
 
 const SERVICE_TYPES = ["SMS", "EMAIL", "WHATSAPP"];
 const SERVICE_COLORS: Record<string, string> = {
     SMS: "#10b981",
     EMAIL: "#6366f1",
     WHATSAPP: "#25D366"
+};
+const SERVICE_ICONS: Record<string, React.ReactNode> = {
+    SMS: <MessageSquare size={18} />,
+    EMAIL: <Mail size={18} />,
+    WHATSAPP: <MessageCircle size={18} />
 };
 
 const PROVIDERS_BY_SERVICE: Record<string, string[]> = {
@@ -100,6 +101,7 @@ export default function ProviderConfig() {
     const location = useLocation();
     const { project, environmentName, activeService: initialService } = location.state || {};
     const { showToast, ToastContainer } = useToast();
+
     const [openEnvMenu, setOpenEnvMenu] = useState<string | null>(null);
     const [environments, setEnvironments] = useState<EnvironmentInfo[]>([]);
     const [selectedEnv, setSelectedEnv] = useState<string>(environmentName || "");
@@ -107,9 +109,7 @@ export default function ProviderConfig() {
     const [providers, setProviders] = useState<Provider[]>([]);
     const [expandedProviders, setExpandedProviders] = useState<Record<number, boolean>>({});
     const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
-    const [serviceProviderCounts, setServiceProviderCounts] = useState<Record<string, number>>({
-        SMS: 0, EMAIL: 0, WHATSAPP: 0
-    });
+    const [serviceProviderCounts, setServiceProviderCounts] = useState<Record<string, number>>({ SMS: 0, EMAIL: 0, WHATSAPP: 0 });
 
     const [showAddModal, setShowAddModal] = useState(false);
     const [selectedProvider, setSelectedProvider] = useState("");
@@ -128,20 +128,191 @@ export default function ProviderConfig() {
     const [isCustomEnv, setIsCustomEnv] = useState(false);
     const [customEnvInput, setCustomEnvInput] = useState("");
     const [showEditEnvModal, setShowEditEnvModal] = useState(false);
-
     const [editingEnvName, setEditingEnvName] = useState("");
-
     const [editEnvName, setEditEnvName] = useState("");
-
     const [showDeleteEnvModal, setShowDeleteEnvModal] = useState(false);
-
     const [deletingEnvName, setDeletingEnvName] = useState("");
-    const [blockedDeleteCounts, setBlockedDeleteCounts] =
-        useState({
-            sms: 0,
-            email: 0,
-            whatsapp: 0
-        });
+    const [blockedDeleteCounts, setBlockedDeleteCounts] = useState({ sms: 0, email: 0, whatsapp: 0 });
+    const [searchProvider] = useState("");
+    const [globalSearch, setGlobalSearch] = useState("");
+
+    const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+    const [searchFilter, setSearchFilter] =
+        useState("ALL");
+
+    useEffect(() => {
+
+        const state = location.state;
+
+        if (!state?.action) return;
+
+        // ENVIRONMENT ACTIONS
+
+        if (state.action === "ADD_ENVIRONMENT") {
+
+            setShowAddEnvModal(true);
+
+        }
+
+        if (
+            state.action === "EDIT_ENVIRONMENT"
+        ) {
+
+            setEditingEnvName(
+                state.environmentName
+            );
+
+            setEditEnvName(
+                state.environmentName
+            );
+
+            setShowEditEnvModal(true);
+
+        }
+
+        if (
+            state.action === "CLONE_ENVIRONMENT"
+        ) {
+
+            setCloneTarget(
+                state.environmentName
+            );
+
+            setShowCloneModal(true);
+
+        }
+
+        if (
+            state.action === "DELETE_ENVIRONMENT"
+        ) {
+
+            setDeletingEnvName(
+                state.environmentName
+            );
+
+            setShowDeleteEnvModal(true);
+
+        }
+
+        // PROVIDER ACTIONS
+
+        if (state.action === "ADD_PROVIDER") {
+
+            if (state.environmentName) {
+                setSelectedEnv(
+                    state.environmentName
+                );
+            }
+
+            if (state.service) {
+                setActiveService(
+                    state.service
+                );
+            }
+
+            setEditingProvider(null);
+
+            setSelectedProvider("");
+
+            setProviderFields({});
+
+            setShowAddModal(true);
+
+        }
+
+        if (state.action === "EDIT_PROVIDER") {
+
+            if (state.environmentName) {
+                setSelectedEnv(
+                    state.environmentName
+                );
+            }
+
+            if (state.service) {
+                setActiveService(
+                    state.service
+                );
+            }
+
+            if (state.provider) {
+
+                editProvider(
+                    state.provider
+                );
+
+            }
+
+        }
+
+        if (state.action === "DELETE_PROVIDER") {
+
+            if (state.environmentName) {
+                setSelectedEnv(
+                    state.environmentName
+                );
+            }
+
+            if (state.service) {
+                setActiveService(
+                    state.service
+                );
+            }
+
+            if (state.provider) {
+
+                setShowDeleteModal({
+                    id: state.provider.id,
+                    name: state.provider.name
+                });
+
+            }
+
+        }
+
+    }, [location.state]);
+
+    useEffect(() => {
+
+        const handleClick = (e: MouseEvent) => {
+
+            const target = e.target as HTMLElement;
+
+            if (
+                !target.closest('.global-search-wrapper')
+            ) {
+                setShowSearchDropdown(false);
+            }
+        };
+
+        document.addEventListener(
+            'mousedown',
+            handleClick
+        );
+
+        return () =>
+            document.removeEventListener(
+                'mousedown',
+                handleClick
+            );
+
+    }, []);
+
+    // Add this useEffect in ProviderConfig.tsx
+    useEffect(() => {
+        if (!openEnvMenu) return;
+
+        const handleClickOutside = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            // Don't close if clicking inside the menu
+            if (target.closest('.env-menu-dropdown') || target.closest('.env-menu-trigger')) {
+                return;
+            }
+            setOpenEnvMenu(null);
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [openEnvMenu]);
     useEffect(() => {
         if (!project) {
             showToast("Invalid request. Redirecting...", "error");
@@ -152,29 +323,22 @@ export default function ProviderConfig() {
     }, []);
 
     useEffect(() => {
-        if (selectedEnv) {
-            loadProviders();
-        }
+        if (selectedEnv) loadProviders();
     }, [selectedEnv, activeService]);
 
-    // Auto-scroll to illustrator when no environments exist
     useEffect(() => {
         if (environments.length === 0) {
             setTimeout(() => {
                 const illustrator = document.querySelector('.pc-fullpage-illustrator');
-                if (illustrator) {
-                    illustrator.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
+                if (illustrator) illustrator.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }, 100);
         }
     }, [environments.length]);
 
     const getEnvIcon = (name: string): React.ReactNode => {
         const icons: Record<string, React.ReactNode> = {
-            'Local': <Home size={16} />,
-            'Dev': <Monitor size={16} />,
-            'Staging': <Rocket size={16} />,
-            'Live': <Globe size={16} />
+            'Local': <Home size={16} />, 'Dev': <Monitor size={16} />,
+            'Staging': <Rocket size={16} />, 'Live': <Globe size={16} />
         };
         return icons[name] || <Wrench size={16} />;
     };
@@ -183,21 +347,15 @@ export default function ProviderConfig() {
         const presetEnvs = ['Local', 'Dev', 'Staging', 'Live'];
         const allKeys = Object.keys(localStorage);
         const envSet = new Set<string>();
-
         allKeys.forEach(key => {
             const match = key.match(/^env_(.+)_(sms|email|whatsapp)_providers$/);
             if (match) envSet.add(match[1]);
         });
-
         presetEnvs.forEach(env => {
-            const smsKey = `env_${env}_sms_providers`;
-            const emailKey = `env_${env}_email_providers`;
-            const whatsappKey = `env_${env}_whatsapp_providers`;
-            if (localStorage.getItem(smsKey) || localStorage.getItem(emailKey) || localStorage.getItem(whatsappKey)) {
+            if (localStorage.getItem(`env_${env}_sms_providers`) || localStorage.getItem(`env_${env}_email_providers`) || localStorage.getItem(`env_${env}_whatsapp_providers`)) {
                 envSet.add(env);
             }
         });
-
         const configuredEnvs: EnvironmentInfo[] = [];
         envSet.forEach(envName => {
             const sms = JSON.parse(localStorage.getItem(`env_${envName}_sms_providers`) || '{"providers":[]}');
@@ -206,16 +364,13 @@ export default function ProviderConfig() {
             const total = (sms.providers?.length || 0) + (email.providers?.length || 0) + (whatsapp.providers?.length || 0);
             configuredEnvs.push({ name: envName, icon: getEnvIcon(envName), hasProviders: total > 0, providerCount: total });
         });
-
         configuredEnvs.sort((a, b) => {
-            const aPreset = presetEnvs.indexOf(a.name);
-            const bPreset = presetEnvs.indexOf(b.name);
-            if (aPreset !== -1 && bPreset !== -1) return aPreset - bPreset;
-            if (aPreset !== -1) return -1;
-            if (bPreset !== -1) return 1;
+            const aIdx = presetEnvs.indexOf(a.name), bIdx = presetEnvs.indexOf(b.name);
+            if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+            if (aIdx !== -1) return -1;
+            if (bIdx !== -1) return 1;
             return a.name.localeCompare(b.name);
         });
-
         setEnvironments(configuredEnvs);
         if (configuredEnvs.length > 0 && (!selectedEnv || !configuredEnvs.some(e => e.name === selectedEnv))) {
             setSelectedEnv(configuredEnvs[0].name);
@@ -224,228 +379,240 @@ export default function ProviderConfig() {
 
     const loadProviders = () => {
         if (!selectedEnv) return;
-        const storageKey = `env_${selectedEnv}_${activeService.toLowerCase()}_providers`;
-        const savedData = localStorage.getItem(storageKey);
-        setProviders(savedData ? JSON.parse(savedData).providers || [] : []);
+        const key = `env_${selectedEnv}_${activeService.toLowerCase()}_providers`;
+        const data = localStorage.getItem(key);
+        setProviders(data ? JSON.parse(data).providers || [] : []);
         updateServiceCounts();
-    };
-
-    const executeClone = () => {
-        let targetName = cloneTarget;
-        if (cloneCustomMode && cloneCustomName.trim()) targetName = cloneCustomName.trim();
-        if (!targetName) { showToast("Please select or enter a target environment", "error"); return; }
-
-        ['sms', 'email', 'whatsapp'].forEach(service => {
-            const sourceKey = `env_${selectedEnv}_${service}_providers`;
-            const sourceData = localStorage.getItem(sourceKey);
-            if (sourceData) {
-                const parsed = JSON.parse(sourceData);
-                localStorage.setItem(`env_${targetName}_${service}_providers`, JSON.stringify({
-                    providers: parsed.providers || [],
-                    timestamp: Date.now()
-                }));
-            }
-        });
-
-        loadEnvironments();
-        setSelectedEnv(targetName);
-        loadProviders();
-        showToast(`Environment cloned to "${targetName}" successfully!`, "success");
-        setShowCloneModal(false);
-        setCloneTarget("");
-        setCloneCustomMode(false);
-        setCloneCustomName("");
     };
 
     const updateServiceCounts = () => {
         if (!selectedEnv) return;
         const counts: Record<string, number> = {};
-        SERVICE_TYPES.forEach(service => {
-            const key = `env_${selectedEnv}_${service.toLowerCase()}_providers`;
+        SERVICE_TYPES.forEach(s => {
+            const key = `env_${selectedEnv}_${s.toLowerCase()}_providers`;
             const data = localStorage.getItem(key);
-            counts[service] = data ? JSON.parse(data).providers?.length || 0 : 0;
+            counts[s] = data ? JSON.parse(data).providers?.length || 0 : 0;
         });
         setServiceProviderCounts(counts);
     };
 
-    const saveToLocalStorage = (updatedProviders: Provider[]) => {
-        localStorage.setItem(`env_${selectedEnv}_${activeService.toLowerCase()}_providers`, JSON.stringify({
-            providers: updatedProviders,
-            timestamp: Date.now()
-        }));
+    const saveToLocalStorage = (p: Provider[]) => {
+        localStorage.setItem(`env_${selectedEnv}_${activeService.toLowerCase()}_providers`, JSON.stringify({ providers: p, timestamp: Date.now() }));
     };
 
     const handleAddEnvironment = () => {
-        let envName = newEnvName;
-        if (isCustomEnv && customEnvInput.trim()) envName = customEnvInput.trim();
-        if (!envName) { showToast("Please select or enter an environment name", "error"); return; }
-        if (environments.some(e => e.name.toLowerCase() === envName.toLowerCase())) {
-            showToast("This environment already exists!", "error"); return;
-        }
-
-        ['sms', 'email', 'whatsapp'].forEach(service => {
-            const key = `env_${envName}_${service}_providers`;
-            if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify({ providers: [], timestamp: Date.now() }));
+        let name = newEnvName;
+        if (isCustomEnv && customEnvInput.trim()) name = customEnvInput.trim();
+        if (!name) { showToast("Please enter environment name", "error"); return; }
+        if (environments.some(e => e.name.toLowerCase() === name.toLowerCase())) { showToast("Already exists", "error"); return; }
+        ['sms', 'email', 'whatsapp'].forEach(s => {
+            if (!localStorage.getItem(`env_${name}_${s}_providers`)) localStorage.setItem(`env_${name}_${s}_providers`, JSON.stringify({ providers: [], timestamp: Date.now() }));
         });
-
-        setEnvironments(prev => prev.some(e => e.name === envName) ? prev : [...prev, { name: envName, icon: getEnvIcon(envName), hasProviders: false, providerCount: 0 }]);
-        setSelectedEnv(envName);
-        setProviders([]);
-        setServiceProviderCounts({ SMS: 0, EMAIL: 0, WHATSAPP: 0 });
-        setShowAddEnvModal(false);
-        setNewEnvName(""); setIsCustomEnv(false); setCustomEnvInput("");
-        showToast(`Environment "${envName}" created!`, "success");
+        setEnvironments(prev => [...prev, { name, icon: getEnvIcon(name), hasProviders: false, providerCount: 0 }]);
+        setSelectedEnv(name); setProviders([]); setServiceProviderCounts({ SMS: 0, EMAIL: 0, WHATSAPP: 0 });
+        setShowAddEnvModal(false); setNewEnvName(""); setIsCustomEnv(false); setCustomEnvInput("");
+        showToast(`Environment "${name}" created!`, "success");
     };
 
-    const handleEditEnvironment = () => {
-        if (!editEnvName.trim()) {
-            showToast("Environment name is required", "error");
-            return;
-        }
+    // ... (rest of functions: handleEditEnvironment, handleDeleteEnvironment, saveProvider, editProvider, deleteProvider, executeClone, etc. - keep them exactly as they were)
 
-        if (
-            environments.some(
-                (e) =>
-                    e.name.toLowerCase() ===
-                    editEnvName.toLowerCase() &&
-                    e.name !== editingEnvName
-            )
-        ) {
-            showToast("Environment already exists", "error");
-            return;
-        }
-
-        ['sms', 'email', 'whatsapp'].forEach((service) => {
-            const oldKey = `env_${editingEnvName}_${service}_providers`;
-
-            const newKey = `env_${editEnvName}_${service}_providers`;
-
-            const data = localStorage.getItem(oldKey);
-
-            if (data) {
-                localStorage.setItem(newKey, data);
-                localStorage.removeItem(oldKey);
-            }
+    const executeClone = () => {
+        let target = cloneCustomMode && cloneCustomName.trim() ? cloneCustomName.trim() : cloneTarget;
+        if (!target) { showToast("Select target", "error"); return; }
+        ['sms', 'email', 'whatsapp'].forEach(s => {
+            const src = localStorage.getItem(`env_${selectedEnv}_${s}_providers`);
+            if (src) localStorage.setItem(`env_${target}_${s}_providers`, JSON.stringify({ ...JSON.parse(src), timestamp: Date.now() }));
         });
-
-        loadEnvironments();
-
-        if (selectedEnv === editingEnvName) {
-            setSelectedEnv(editEnvName);
-        }
-
-        setShowEditEnvModal(false);
-
-        showToast("Environment updated successfully", "success");
+        loadEnvironments(); setSelectedEnv(target); loadProviders();
+        showToast("Cloned!", "success"); setShowCloneModal(false);
     };
 
-    const handleDeleteEnvironment = () => {
-        ['sms', 'email', 'whatsapp'].forEach((service) => {
-            localStorage.removeItem(
-                `env_${deletingEnvName}_${service}_providers`
-            );
-        });
-
-        const updatedEnvs = environments.filter(
-            (e) => e.name !== deletingEnvName
-        );
-
-        setEnvironments(updatedEnvs);
-        loadEnvironments();
-        if (selectedEnv === deletingEnvName) {
-            setSelectedEnv(updatedEnvs[0]?.name || "");
-        }
-
-        setShowDeleteEnvModal(false);
-
-        showToast("Environment deleted", "success");
-    };
-
-    const handleProviderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const provider = e.target.value;
-        setSelectedProvider(provider);
-        const fieldsDef = PROVIDER_FIELDS_MAP[provider] || [];
-        const newFields: Record<string, string> = {};
-        fieldsDef.forEach((field: any) => { newFields[field.name] = ""; });
-        setProviderFields(newFields);
-    };
-
-    const handleFieldChange = (fieldName: string, value: string) => {
-        setProviderFields(prev => ({ ...prev, [fieldName]: value }));
-    };
-
-    const togglePasswordVisibility = (fieldName: string) => {
-        setShowPasswords(prev => ({ ...prev, [fieldName]: !prev[fieldName] }));
-    };
-
-    const saveProvider = async () => {
-        if (!selectedProvider) { showToast("Please select a provider", "error"); return; }
-        const fieldsDef = PROVIDER_FIELDS_MAP[selectedProvider];
-        if (fieldsDef) {
-            for (const field of fieldsDef) {
-                if (field.required && !providerFields[field.name]) {
-                    showToast(`${field.label} is required`, "error"); return;
-                }
-            }
-        }
+    const saveProvider = () => {
+        if (!selectedProvider) { showToast("Select provider", "error"); return; }
+        const fields = PROVIDER_FIELDS_MAP[selectedProvider];
+        if (fields) for (const f of fields) if (f.required && !providerFields[f.name]) { showToast(`${f.label} required`, "error"); return; }
         setSaving(true);
         setTimeout(() => {
-            let updatedProviders: Provider[];
+            let updated: Provider[];
             if (editingProvider) {
-                updatedProviders = providers.map(p => p.id === editingProvider.id ? { ...p, name: selectedProvider, fields: { ...providerFields } } : p);
-                showToast(`${selectedProvider.replace(/_/g, ' ')} updated successfully!`, "success");
+                updated = providers.map(p => p.id === editingProvider.id ? { ...p, name: selectedProvider, fields: { ...providerFields } } : p);
             } else {
-                updatedProviders = [...providers, { id: Date.now(), name: selectedProvider, fields: { ...providerFields } }];
-                showToast(`${selectedProvider.replace(/_/g, ' ')} added successfully!`, "success");
+                updated = [...providers, { id: Date.now(), name: selectedProvider, fields: { ...providerFields } }];
             }
-            setProviders(updatedProviders);
-            saveToLocalStorage(updatedProviders);
-            updateServiceCounts();
-            loadEnvironments();
-            setShowAddModal(false);
-            setEditingProvider(null);
-            setSelectedProvider("");
-            setProviderFields({});
-            setShowPasswords({});
-            setSaving(false);
+            setProviders(updated); saveToLocalStorage(updated); updateServiceCounts(); loadEnvironments();
+            setShowAddModal(false); setEditingProvider(null); setSelectedProvider(""); setProviderFields({}); setSaving(false);
+            showToast("Saved!", "success");
         }, 800);
     };
 
-    const editProvider = (provider: Provider) => {
-        setEditingProvider(provider);
-        setSelectedProvider(provider.name);
-        setProviderFields({ ...provider.fields });
-        setShowAddModal(true);
-    };
-
+    const editProvider = (p: Provider) => { setEditingProvider(p); setSelectedProvider(p.name); setProviderFields({ ...p.fields }); setShowAddModal(true); };
     const deleteProvider = () => {
-        if (showDeleteModal) {
-            const updatedProviders = providers.filter(p => p.id !== showDeleteModal.id);
-            setProviders(updatedProviders);
-            saveToLocalStorage(updatedProviders);
-            updateServiceCounts();
-            loadEnvironments();
-            showToast(`${showDeleteModal.name} deleted`, "success");
-            setShowDeleteModal(null);
-        }
+        if (!showDeleteModal) return;
+        const updated = providers.filter(p => p.id !== showDeleteModal.id);
+        setProviders(updated); saveToLocalStorage(updated); updateServiceCounts(); loadEnvironments();
+        setShowDeleteModal(null); showToast("Deleted", "success");
     };
+    const closeAddModal = () => { setShowAddModal(false); setEditingProvider(null); setSelectedProvider(""); setProviderFields({}); setShowCancelConfirm(false); };
+    const handleCancelAdd = () => selectedProvider || Object.values(providerFields).some(v => v) ? setShowCancelConfirm(true) : closeAddModal();
+    const handleEditEnvironment = () => {
+        if (!editEnvName.trim()) return showToast("Name required", "error");
+        if (environments.some(e => e.name.toLowerCase() === editEnvName.toLowerCase() && e.name !== editingEnvName)) return showToast("Exists", "error");
+        ['sms', 'email', 'whatsapp'].forEach(s => {
+            const old = `env_${editingEnvName}_${s}_providers`, nw = `env_${editEnvName}_${s}_providers`;
+            const d = localStorage.getItem(old); if (d) { localStorage.setItem(nw, d); localStorage.removeItem(old); }
+        });
+        loadEnvironments(); if (selectedEnv === editingEnvName) setSelectedEnv(editEnvName);
+        setShowEditEnvModal(false); showToast("Updated", "success");
+    };
+    const handleDeleteEnvironment = () => {
+        ['sms', 'email', 'whatsapp'].forEach(s => localStorage.removeItem(`env_${deletingEnvName}_${s}_providers`));
+        const updated = environments.filter(e => e.name !== deletingEnvName);
+        setEnvironments(updated); if (selectedEnv === deletingEnvName) setSelectedEnv(updated[0]?.name || "");
+        setShowDeleteEnvModal(false); showToast("Deleted", "success");
+    };
+    const handleProviderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setSelectedProvider(e.target.value);
+        const defs = PROVIDER_FIELDS_MAP[e.target.value] || [];
+        const nf: Record<string, string> = {}; defs.forEach(f => nf[f.name] = "");
+        setProviderFields(nf);
+    };
+    const handleFieldChange = (n: string, v: string) => setProviderFields(prev => ({ ...prev, [n]: v }));
+    const togglePasswordVisibility = (n: string) => setShowPasswords(prev => ({ ...prev, [n]: !prev[n] }));
+    const filteredEnvironments = environments.filter(env => {
 
-    const closeAddModal = () => {
-        setShowAddModal(false);
-        setEditingProvider(null);
-        setSelectedProvider("");
-        setProviderFields({});
-        setShowPasswords({});
-        setShowCancelConfirm(false);
-    };
+        const matchesSearch =
+            env.name
+                .toLowerCase()
+                .includes(searchProvider.toLowerCase());
 
-    const handleCancelAdd = () => {
-        if (selectedProvider || Object.values(providerFields).some(val => val)) {
-            setShowCancelConfirm(true);
-        } else {
-            closeAddModal();
-        }
-    };
+        return matchesSearch;
+    });
+
+    const searchResults = (() => {
+
+        if (!globalSearch.trim()) return [];
+
+        const query = globalSearch.toLowerCase();
+
+        const results: any[] = [];
+
+        environments.forEach((env) => {
+
+            // CHECK ENV PROVIDERS
+            const smsData = JSON.parse(
+                localStorage.getItem(
+                    `env_${env.name}_sms_providers`
+                ) || '{"providers":[]}'
+            );
+
+            const emailData = JSON.parse(
+                localStorage.getItem(
+                    `env_${env.name}_email_providers`
+                ) || '{"providers":[]}'
+            );
+
+            const whatsappData = JSON.parse(
+                localStorage.getItem(
+                    `env_${env.name}_whatsapp_providers`
+                ) || '{"providers":[]}'
+            );
+
+            const totalProviders =
+                (smsData.providers?.length || 0) +
+                (emailData.providers?.length || 0) +
+                (whatsappData.providers?.length || 0);
+
+            // ENVIRONMENT RESULT
+            if (
+                env.name.toLowerCase().includes(query)
+            ) {
+
+                if (
+                    searchFilter === "ALL" ||
+                    searchFilter === "ENVIRONMENTS" ||
+                    (
+                        searchFilter === "EMPTY_ENVIRONMENTS" &&
+                        totalProviders === 0
+                    )
+                ) {
+
+                    results.push({
+                        type: "environment",
+                        label: env.name,
+                        environment: env.name
+                    });
+
+                }
+
+            }
+
+            SERVICE_TYPES.forEach((service) => {
+
+                // SERVICE RESULT
+                if (
+                    service
+                        .toLowerCase()
+                        .includes(query)
+                ) {
+
+                    if (
+                        searchFilter === "ALL" ||
+                        searchFilter === "SERVICES"
+                    ) {
+
+                        results.push({
+                            type: "service",
+                            label: service,
+                            environment: env.name,
+                            service
+                        });
+
+                    }
+
+                }
+
+                // PROVIDERS
+                const data = JSON.parse(
+                    localStorage.getItem(
+                        `env_${env.name}_${service.toLowerCase()}_providers`
+                    ) || '{"providers":[]}'
+                );
+
+                data.providers?.forEach((provider: any) => {
+
+                    if (
+                        provider.name
+                            .toLowerCase()
+                            .includes(query)
+                    ) {
+
+                        if (
+                            searchFilter === "ALL" ||
+                            searchFilter === "PROVIDERS" ||
+                            searchFilter === "CONFIGURED_PROVIDERS"
+                        ) {
+
+                            results.push({
+                                type: "provider",
+                                label: provider.name.replace(/_/g, ' '),
+                                environment: env.name,
+                                service,
+                                providerId: provider.id
+                            });
+
+                        }
+
+                    }
+
+                });
+
+            });
+
+        });
+
+        return results;
+
+    })();
 
     if (!project) return <div className="loading">Loading...</div>;
 
@@ -464,112 +631,175 @@ export default function ProviderConfig() {
                     </div>
                 </div>
                 <p className="pc-project-name">
-                    {project.logo && (
-                        <img
-                            src={project.logo}
-                            alt="Project logo"
-                            className="pc-project-logo"
-                        />
-                    )}
-                    <button className="pc-project-link" onClick={() => navigate(`/dashboard/project/${project.id}/view`)}>
-                        {project.name}
-                    </button>
+                    {project.logo && <img src={project.logo} alt="Logo" className="pc-project-logo" />}
+                    <button className="pc-project-link" onClick={() => navigate(`/dashboard/project/${project.id}/view`)}>{project.name}</button>
                 </p>
             </div>
-            {/* FIRST TIME - No Environments Full Page Illustrator */}
+
+            {/* FIRST TIME - No Environments */}
             {environments.length === 0 && (
                 <div className="pc-fullpage-illustrator">
-                    <div className="pc-bg-circles">
-                        <div className="pc-bg-circle circle-1"></div>
-                        <div className="pc-bg-circle circle-2"></div>
-                        <div className="pc-bg-circle circle-3"></div>
-                    </div>
-                    <div className="pc-floating-dots">
-                        <span className="dot dot-1"></span>
-                        <span className="dot dot-2"></span>
-                        <span className="dot dot-3"></span>
-                        <span className="dot dot-4"></span>
-                        <span className="dot dot-5"></span>
-                        <span className="dot dot-6"></span>
-                    </div>
-
-                    {/* Center Card */}
+                    <div className="pc-bg-circles"><div className="pc-bg-circle circle-1" /><div className="pc-bg-circle circle-2" /><div className="pc-bg-circle circle-3" /></div>
+                    <div className="pc-floating-dots"><span className="dot dot-1" /><span className="dot dot-2" /><span className="dot dot-3" /><span className="dot dot-4" /><span className="dot dot-5" /><span className="dot dot-6" /></div>
                     <div className="pc-center-card">
-                        <div className="pc-card-icon">
-                            <Globe size={56} color="#00f2fe" />
-                        </div>
+                        <div className="pc-card-icon"><Globe size={56} color="#00f2fe" /></div>
                         <h2>Configure Your Environment</h2>
                         <p>Get started by creating an environment to manage SMS, Email & WhatsApp providers</p>
-
-                        {/* Steps */}
                         <div className="pc-card-steps">
-                            <div className="pc-card-step">
-                                <span className="pc-step-dot">1</span>
-                                <span>Choose an environment type</span>
-                            </div>
-                            <div className="pc-card-step">
-                                <span className="pc-step-dot">2</span>
-                                <span>Add providers for each service</span>
-                            </div>
-                            <div className="pc-card-step">
-                                <span className="pc-step-dot">3</span>
-                                <span>Start sending notifications</span>
-                            </div>
+                            <div className="pc-card-step"><span className="pc-step-dot">1</span><span>Choose an environment type</span></div>
+                            <div className="pc-card-step"><span className="pc-step-dot">2</span><span>Add providers for each service</span></div>
+                            <div className="pc-card-step"><span className="pc-step-dot">3</span><span>Start sending notifications</span></div>
                         </div>
-
-                        {/* Environment Selection */}
                         <div className="pc-card-select">
                             <div className="pc-env-options">
                                 {['Local', 'Dev', 'Staging', 'Live'].map(env => (
-                                    <div
-                                        key={env}
-                                        className={`pc-env-option ${newEnvName === env && !isCustomEnv ? 'selected' : ''}`}
-                                        onClick={() => { setNewEnvName(env); setIsCustomEnv(false); }}
-                                    >
-                                        <span className="pc-env-option-icon">{getEnvIcon(env)}</span>
-                                        <span>{env}</span>
+                                    <div key={env} className={`pc-env-option ${newEnvName === env && !isCustomEnv ? 'selected' : ''}`}
+                                        onClick={() => { setNewEnvName(env); setIsCustomEnv(false); }}>
+                                        <span className="pc-env-option-icon">{getEnvIcon(env)}</span><span>{env}</span>
                                         {newEnvName === env && !isCustomEnv && <Check size={16} />}
                                     </div>
                                 ))}
-                                <div
-                                    className={`pc-env-option custom ${isCustomEnv ? 'selected' : ''}`}
-                                    onClick={() => { setIsCustomEnv(true); setNewEnvName(""); }}
-                                >
-                                    <span className="pc-env-option-icon"><Wrench size={18} /></span>
-                                    <span>Custom</span>
+                                <div className={`pc-env-option custom ${isCustomEnv ? 'selected' : ''}`} onClick={() => { setIsCustomEnv(true); setNewEnvName(""); }}>
+                                    <span className="pc-env-option-icon"><Wrench size={18} /></span><span>Custom</span>
                                     {isCustomEnv && <Check size={16} />}
                                 </div>
                             </div>
-                            {isCustomEnv && (
-                                <input
-                                    type="text"
-                                    placeholder="Enter environment name"
-                                    value={customEnvInput}
-                                    onChange={(e) => setCustomEnvInput(e.target.value)}
-                                    className="pc-input"
-                                    autoFocus
-                                />
-                            )}
-                            <button
-                                className="pc-create-first-env-btn"
-                                onClick={handleAddEnvironment}
-                                disabled={(!isCustomEnv && !newEnvName) || (isCustomEnv && !customEnvInput.trim())}
-                            >
+                            {isCustomEnv && <input type="text" placeholder="Enter environment name" value={customEnvInput} onChange={e => setCustomEnvInput(e.target.value)} className="pc-input" autoFocus />}
+                            <button className="pc-create-first-env-btn" onClick={handleAddEnvironment}
+                                disabled={(!isCustomEnv && !newEnvName) || (isCustomEnv && !customEnvInput.trim())}>
                                 Create Environment <Rocket size={16} />
                             </button>
                         </div>
                     </div>
                 </div>
             )}
-            {/* Main Content */}
+
+            {/* HAS ENVIRONMENTS */}
             {selectedEnv && (
-
                 <>
-                    {/* Environment Header Row */}
                     <div className="env-header-row">
-                        <h3 className="env-heading">Environments</h3>
 
-                        <div className="env-header-actions">
+                        <h3 className="env-heading">
+                            Environments
+                        </h3>
+
+                        <div className="env-header-right">
+
+                            {/* SEARCH */}
+                            <div className="global-search-wrapper">
+
+                                <input
+                                    type="text"
+                                    placeholder="Search environments, services, providers..."
+                                    value={globalSearch}
+                                    onChange={(e) => {
+                                        setGlobalSearch(e.target.value);
+                                        setShowSearchDropdown(true);
+                                    }}
+                                    onFocus={() =>
+                                        setShowSearchDropdown(true)
+                                    }
+                                    className="global-search-input"
+                                />
+
+                                {showSearchDropdown && (
+                                    <div className="global-search-dropdown">
+
+                                        {searchResults.length === 0 ? (
+
+                                            <div className="search-no-results">
+                                                No results found
+                                            </div>
+
+                                        ) : (
+
+                                            searchResults.map((result, index) => (
+
+                                                <button
+                                                    key={index}
+                                                    className="search-result-item"
+                                                    onClick={() => {
+
+                                                        if (result.environment) {
+                                                            setSelectedEnv(
+                                                                result.environment
+                                                            );
+                                                        }
+
+                                                        if (result.service) {
+                                                            setActiveService(
+                                                                result.service
+                                                            );
+                                                        }
+
+                                                        if (result.providerId) {
+                                                            setExpandedProviders(
+                                                                prev => ({
+                                                                    ...prev,
+                                                                    [result.providerId]: true
+                                                                })
+                                                            );
+                                                        }
+
+                                                        setGlobalSearch("");
+
+                                                        setShowSearchDropdown(false);
+
+                                                    }}
+                                                >
+
+                                                    <div className="search-result-main">
+                                                        {result.label}
+                                                    </div>
+
+                                                    <div className="search-result-meta">
+
+                                                        {result.environment}
+
+                                                        {result.service &&
+                                                            ` • ${result.service}`}
+
+                                                    </div>
+
+                                                </button>
+
+                                            ))
+
+                                        )}
+
+                                    </div>
+                                )}
+
+                            </div>
+
+                            {/* FILTER */}
+                            <select
+                                className="global-search-filter"
+                                value={searchFilter}
+                                onChange={(e) =>
+                                    setSearchFilter(e.target.value)
+                                }
+                            >
+
+                                <option value="ALL">
+                                    All
+                                </option>
+
+                                <option value="ENVIRONMENTS">
+                                    Environments
+                                </option>
+
+                                <option value="SERVICES">
+                                    Services
+                                </option>
+
+                                <option value="PROVIDERS">
+                                    Providers
+                                </option>
+
+                            </select>
+
+                            {/* ADD BUTTON */}
                             <button
                                 className="pc-add-env-btn"
                                 onClick={() => {
@@ -580,117 +810,40 @@ export default function ProviderConfig() {
                                 }}
                             >
                                 <Plus size={14} />
-                                Add Environment
+                                New Environment
                             </button>
+
                         </div>
                     </div>
 
                     {/* Environment Tabs */}
                     <div className="env-tabs-container">
                         <div className="env-tabs">
-                            {environments.map((env) => (
-                                <div
-                                    key={env.name}
-                                    className={`env-tab ${selectedEnv === env.name ? 'active' : ''}`}
-                                    onClick={() => {
-                                        setSelectedEnv(env.name);
-                                        setOpenEnvMenu(null);
-                                    }}
-                                >
+                            {filteredEnvironments.length === 0 && (
+                                <div className="env-empty-search">
+                                    No environments found
+                                </div>
+                            )}
+                            {filteredEnvironments.map(env => (
+                                <div key={env.name} className={`env-tab ${selectedEnv === env.name ? 'active' : ''}`}
+                                    onClick={() => { setSelectedEnv(env.name); setOpenEnvMenu(null); }}>
                                     <span className="env-tab-name">{env.name}</span>
-
-                                    <div
-                                        className="env-tab-menu"
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        <button
-                                            className="env-menu-trigger"
-                                            onClick={() =>
-                                                setOpenEnvMenu(
-                                                    openEnvMenu === env.name ? null : env.name
-                                                )
-                                            }
-                                        >
-                                            ⋯
-                                        </button>
-
+                                    <div className="env-tab-menu" onClick={e => e.stopPropagation()}>
+                                        <button className="env-menu-trigger" onClick={() => setOpenEnvMenu(openEnvMenu === env.name ? null : env.name)}>⋯</button>
                                         {openEnvMenu === env.name && (
                                             <div className="env-menu-dropdown">
-                                                <button
-                                                    onClick={() => {
-                                                        setCloneTarget("");
-                                                        setCloneCustomMode(false);
-                                                        setCloneCustomName("");
-                                                        setShowCloneModal(true);
-                                                        setOpenEnvMenu(null);
-                                                    }}
-                                                >
-                                                    <Copy size={14} />
-                                                </button>
-
-                                                <button
-                                                    onClick={() => {
-                                                        setEditingEnvName(env.name);
-
-                                                        setEditEnvName(env.name);
-
-                                                        setShowEditEnvModal(true);
-
-                                                        setOpenEnvMenu(null);
-                                                    }}
-                                                >
-                                                    <Pencil size={14} />
-                                                </button>
-
-                                                <button
-                                                    onClick={() => {
-
-                                                        const smsData = JSON.parse(
-                                                            localStorage.getItem(
-                                                                `env_${env.name}_sms_providers`
-                                                            ) || '{"providers":[]}'
-                                                        );
-
-                                                        const emailData = JSON.parse(
-                                                            localStorage.getItem(
-                                                                `env_${env.name}_email_providers`
-                                                            ) || '{"providers":[]}'
-                                                        );
-
-                                                        const whatsappData = JSON.parse(
-                                                            localStorage.getItem(
-                                                                `env_${env.name}_whatsapp_providers`
-                                                            ) || '{"providers":[]}'
-                                                        );
-
-                                                        const counts = {
-                                                            sms: smsData.providers?.length || 0,
-                                                            email: emailData.providers?.length || 0,
-                                                            whatsapp: whatsappData.providers?.length || 0
-                                                        };
-
-                                                        const total =
-                                                            counts.sms +
-                                                            counts.email +
-                                                            counts.whatsapp;
-
-                                                        setDeletingEnvName(env.name);
-
-                                                        if (total > 0) {
-
-                                                            setBlockedDeleteCounts(counts);
-
-                                                        } else {
-
-                                                            setShowDeleteEnvModal(true);
-
-                                                        }
-
-                                                        setOpenEnvMenu(null);
-                                                    }}
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
+                                                <button onClick={() => { setCloneTarget(""); setCloneCustomMode(false); setShowCloneModal(true); setOpenEnvMenu(null); }}><Copy size={14} /></button>
+                                                <button onClick={() => { setEditingEnvName(env.name); setEditEnvName(env.name); setShowEditEnvModal(true); setOpenEnvMenu(null); }}><Pencil size={14} /></button>
+                                                <button onClick={() => {
+                                                    const sms = JSON.parse(localStorage.getItem(`env_${env.name}_sms_providers`) || '{"providers":[]}');
+                                                    const email = JSON.parse(localStorage.getItem(`env_${env.name}_email_providers`) || '{"providers":[]}');
+                                                    const wa = JSON.parse(localStorage.getItem(`env_${env.name}_whatsapp_providers`) || '{"providers":[]}');
+                                                    const total = (sms.providers?.length || 0) + (email.providers?.length || 0) + (wa.providers?.length || 0);
+                                                    setDeletingEnvName(env.name);
+                                                    if (total > 0) setBlockedDeleteCounts({ sms: sms.providers?.length || 0, email: email.providers?.length || 0, whatsapp: wa.providers?.length || 0 });
+                                                    else setShowDeleteEnvModal(true);
+                                                    setOpenEnvMenu(null);
+                                                }}><Trash2 size={14} /></button>
                                             </div>
                                         )}
                                     </div>
@@ -699,168 +852,90 @@ export default function ProviderConfig() {
                         </div>
                     </div>
 
-                    <div className="pc-service-env-info">
-                        <span className="pc-service-label">{activeService}</span>
-                        <span className="pc-separator-dash"> - </span>
-                        <span className="pc-env-label">{selectedEnv}</span>
-                    </div>
-                    {/* Main Content */}
-                    <div className="pc-service-provider-section">
+                    {/* Service & Env Info */}
 
-                        {/* SERVICE TILES */}
-                        <div className="pc-service-tiles">
-                            {SERVICE_TYPES.map((service) => (
-                                <div
-                                    key={service}
-                                    className={`pc-service-tile ${activeService === service ? 'active' : ''}`}
-                                    onClick={() => setActiveService(service)}
-                                >
-                                    <div className="pc-service-tile-top">
-                                        <span className="pc-service-name">{service}</span>
-                                        <span className="pc-service-count">{serviceProviderCounts[service] || 0} providers</span>
+
+                    {/* Services Sidebar + Providers Panel */}
+                    <div className="pc-main-content">
+                        {/* Services Sidebar */}
+                        <div className="pc-sidebar-wrapper">
+                            <div className="pc-service-env-info">
+                                <span className="pc-service-label">{activeService}</span>
+                                <span className="pc-separator-dash">-</span>
+                                <span className="pc-env-label">{selectedEnv}</span>
+                            </div>
+                            <div className="pc-sidebar">
+                                {SERVICE_TYPES.map(service => (
+                                    <div key={service}
+                                        className={`pc-sidebar-item ${activeService === service ? 'active' : ''}`}
+                                        onClick={() => setActiveService(service)}
+                                        style={{
+                                            borderLeftColor: activeService === service ? SERVICE_COLORS[service] : 'transparent',
+                                            backgroundColor: activeService === service ? `${SERVICE_COLORS[service]}10` : 'transparent'
+                                        }}>
+                                        <span className="pc-sidebar-icon">{SERVICE_ICONS[service]}</span>
+                                        <div className="pc-sidebar-info">
+                                            <div className="pc-sidebar-name">{service}</div>
+                                            <div className="pc-sidebar-count">{serviceProviderCounts[service] || 0} providers</div>
+                                        </div>
+                                        {activeService === service && <div className="pc-sidebar-active-indicator" style={{ background: SERVICE_COLORS[service] }} />}
                                     </div>
-
-
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
 
-                        {/* CONNECTED PROVIDER FRAME */}
-                        <div className="pc-provider-frame">
-                            <div className="pc-providers-panel">
-
+                        {/* Providers Panel */}
+                        <div className="pc-sidebar-wrapper" style={{ flex: 1 }}>
+                            <h4 className="pc-column-label pc-column-label-providers">Providers</h4>
+                            <div className="pc-providers-panel" style={{ borderTop: `3px solid ${SERVICE_COLORS[activeService]}` }}>
                                 <div className="pc-panel-header">
                                     <div className="pc-panel-title">
+                                        {SERVICE_ICONS[activeService]}
                                         <h3>{activeService} Providers</h3>
-
-
+                                        <span className="pc-panel-count">{serviceProviderCounts[activeService] || 0}</span>
                                     </div>
-
-                                    <button
-                                        className="pc-add-btn"
-                                        style={{
-                                            backgroundColor:
-                                                SERVICE_COLORS[activeService]
-                                        }}
-                                        onClick={() => {
-                                            setEditingProvider(null);
-                                            setSelectedProvider("");
-                                            setProviderFields({});
-                                            setShowAddModal(true);
-                                        }}
-                                    >
-                                        <Plus size={14} />
-                                        Add Provider
+                                    <button className="pc-add-btn" style={{ backgroundColor: SERVICE_COLORS[activeService] }}
+                                        onClick={() => { setEditingProvider(null); setSelectedProvider(""); setProviderFields({}); setShowAddModal(true); }}>
+                                        <Plus size={14} /> Add Provider
                                     </button>
                                 </div>
-
                                 <div className="pc-providers-list">
                                     {providers.length === 0 ? (
                                         <div className="pc-empty-state">
                                             <Server size={44} color="#cbd5e1" />
-
-                                            <h4>
-                                                No {activeService} providers yet
-                                            </h4>
-
-                                            <p>
-                                                Add your first provider to start configuring services
-                                            </p>
+                                            <h4>No {activeService} providers yet</h4>
+                                            <p>Add your first provider to start configuring services</p>
                                         </div>
                                     ) : (
-                                        providers.map((provider) => (
-                                            <div
-                                                key={provider.id}
-                                                className="pc-provider-card"
-                                                style={{
-                                                    borderLeftColor:
-                                                        SERVICE_COLORS[activeService]
-                                                }}
-                                            >
-                                                <div
-                                                    className="pc-provider-card-header"
-                                                    onClick={() =>
-                                                        setExpandedProviders((prev) => ({
-                                                            ...prev,
-                                                            [provider.id]:
-                                                                !prev[provider.id]
-                                                        }))
-                                                    }
-                                                >
+                                        providers.map(provider => (
+                                            <div key={provider.id} className="pc-provider-card" style={{ borderLeftColor: SERVICE_COLORS[activeService] }}>
+                                                <div className="pc-provider-card-header" onClick={() => setExpandedProviders(prev => ({ ...prev, [provider.id]: !prev[provider.id] }))}>
                                                     <div className="pc-provider-title">
+                                                        <Plug size={14} />
                                                         <span>{provider.name.replace(/_/g, ' ')}</span>
-                                                        <span className="pc-configured-badge" style={{
-                                                            background: `${SERVICE_COLORS[activeService]}15`,
-                                                            color: SERVICE_COLORS[activeService]
-                                                        }}>
+                                                        <span className="pc-configured-badge" style={{ background: `${SERVICE_COLORS[activeService]}15`, color: SERVICE_COLORS[activeService] }}>
                                                             <Check size={10} /> Configured
                                                         </span>
-                                                        <span className="pc-notification-count">
-                                                            0 sent
-                                                        </span>
+                                                        <span className="pc-notification-count">0 sent</span>
                                                     </div>
-
-                                                    <div
-                                                        className="pc-provider-actions"
-                                                        onClick={(e) =>
-                                                            e.stopPropagation()
-                                                        }
-                                                    >
-                                                        <button
-                                                            className="pc-edit-btn"
-                                                            onClick={() =>
-                                                                editProvider(provider)
-                                                            }
-                                                        >
-                                                            <Pencil size={14} />
-                                                        </button>
-
-                                                        <button
-                                                            className="pc-delete-btn"
-                                                            onClick={() =>
-                                                                setShowDeleteModal({
-                                                                    id: provider.id,
-                                                                    name: provider.name
-                                                                })
-                                                            }
-                                                        >
-                                                            <Trash2 size={14} />
-                                                        </button>
+                                                    <div className="pc-provider-actions" onClick={e => e.stopPropagation()}>
+                                                        <button className="pc-edit-btn" onClick={() => editProvider(provider)}><Pencil size={14} /></button>
+                                                        <button className="pc-delete-btn" onClick={() => setShowDeleteModal({ id: provider.id, name: provider.name })}><Trash2 size={14} /></button>
                                                     </div>
                                                 </div>
-
                                                 {expandedProviders[provider.id] && (
                                                     <div className="pc-provider-card-body">
-                                                        {Object.entries(
-                                                            provider.fields
-                                                        ).map(([key, value]) => {
-                                                            const fieldConfig =
-                                                                PROVIDER_FIELDS_MAP[
-                                                                    provider.name
-                                                                ]?.find(
-                                                                    (f: any) =>
-                                                                        f.name === key
-                                                                );
-
-                                                            const isPassword =
-                                                                fieldConfig?.type ===
-                                                                "password" ||
-                                                                key.includes("Key") ||
-                                                                key.includes("Token");
-
-                                                            const passwordKey = `${provider.id}_${key}`;
-
+                                                        {Object.entries(provider.fields).map(([key, value]) => {
+                                                            const fc = PROVIDER_FIELDS_MAP[provider.name]?.find((f: any) => f.name === key);
+                                                            const isPwd = fc?.type === "password" || key.includes("Key") || key.includes("Token");
+                                                            const pk = `${provider.id}_${key}`;
                                                             return (
                                                                 <div className="pc-credential-row" key={key}>
-                                                                    <span className="pc-credential-label">{fieldConfig?.label || key}</span>
-                                                                    <span className="pc-credential-value">
-                                                                        {isPassword ? (visiblePasswords[passwordKey] ? value : "••••••••••") : value || "—"}
-                                                                    </span>
-                                                                    {isPassword && value && (
-                                                                        <button className="pc-eye-btn-inline" onClick={() => setVisiblePasswords(prev => ({
-                                                                            ...prev, [passwordKey]: !prev[passwordKey]
-                                                                        }))}>
-                                                                            {visiblePasswords[passwordKey] ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
+                                                                    <span className="pc-credential-label">{fc?.label || key}</span>
+                                                                    <span className="pc-credential-value">{isPwd ? (visiblePasswords[pk] ? value : "••••••••••") : value || "—"}</span>
+                                                                    {isPwd && value && (
+                                                                        <button className="pc-eye-btn-inline" onClick={() => setVisiblePasswords(prev => ({ ...prev, [pk]: !prev[pk] }))}>
+                                                                            {visiblePasswords[pk] ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
                                                                         </button>
                                                                     )}
                                                                 </div>
@@ -927,9 +1002,27 @@ export default function ProviderConfig() {
                 <div className="pc-modal-overlay" onClick={handleCancelAdd}>
                     <div className="pc-modal pc-modal-provider" onClick={e => e.stopPropagation()}>
                         <div className="pc-modal-header">
-                            <h3>{editingProvider ? <><Pencil size={18} /> Edit Provider</> : <><Plus size={18} /> Add Provider</>}</h3>
+                            <div className="pc-modal-header-left">
+                                {/* Service Badge */}
+                                <span className="pc-modal-service-badge" style={{
+                                    backgroundColor: `${SERVICE_COLORS[activeService]}15`,
+                                    color: SERVICE_COLORS[activeService],
+                                    border: `1px solid ${SERVICE_COLORS[activeService]}40`
+                                }}>
+                                    {SERVICE_ICONS[activeService]}
+                                    <span>{activeService}</span>
+                                </span>
+                                <h3>{editingProvider ? 'Edit Provider' : 'Add Provider'}</h3>
+                            </div>
                             <button className="pc-modal-close" onClick={handleCancelAdd}><X size={20} /></button>
                         </div>
+
+                        {/* Environment info bar */}
+                        <div className="pc-modal-env-info">
+                            <Globe size={14} />
+                            <span>Environment: <strong>{selectedEnv}</strong></span>
+                        </div>
+
                         <div className="pc-modal-body">
                             <div className="pc-form-group">
                                 <label>Select Provider *</label>
@@ -947,9 +1040,13 @@ export default function ProviderConfig() {
                                         <div className="pc-form-group" key={field.name}>
                                             <label>{field.label}{field.required && " *"}</label>
                                             <div className="pc-input-wrapper">
-                                                <input type={field.type === "password" && !showPasswords[field.name] ? "password" : "text"}
-                                                    value={providerFields[field.name] || ""} onChange={(e) => handleFieldChange(field.name, e.target.value)}
-                                                    placeholder={`Enter ${field.label}`} className="pc-input" />
+                                                <input
+                                                    type={field.type === "password" && !showPasswords[field.name] ? "password" : "text"}
+                                                    value={providerFields[field.name] || ""}
+                                                    onChange={(e) => handleFieldChange(field.name, e.target.value)}
+                                                    placeholder={`Enter ${field.label}`}
+                                                    className="pc-input"
+                                                />
                                                 {field.type === "password" && (
                                                     <button type="button" className="pc-eye-btn" onClick={() => togglePasswordVisibility(field.name)}>
                                                         {showPasswords[field.name] ? <FaEyeSlash /> : <FaEye />}
@@ -963,7 +1060,12 @@ export default function ProviderConfig() {
                         </div>
                         <div className="pc-modal-footer">
                             <button className="pc-btn-cancel" onClick={handleCancelAdd}>Cancel</button>
-                            <button className="pc-btn-primary" onClick={saveProvider} disabled={saving}>
+                            <button
+                                className="pc-btn-primary"
+                                onClick={saveProvider}
+                                disabled={saving}
+                                style={{ backgroundColor: SERVICE_COLORS[activeService] }}
+                            >
                                 {saving ? 'Saving...' : editingProvider ? 'Update Provider' : 'Add Provider'}
                             </button>
                         </div>

@@ -4,11 +4,17 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
 import "../styles/ProjectView.css";
 import {
   Pencil, FolderOpen,
-  Plus, MessageSquare, Mail, MessageCircle, Plug, Check
+  Plus, MessageSquare, Mail, MessageCircle, Plug, Check,
+  Save,
+  X,
+  ChevronDown,
+  Server,
+  Copy,
+  Trash2, Globe, Rocket, Wrench
 } from 'lucide-react';
 
 interface Project {
-  id: number;
+  id: string;
   name: string;
   description?: string;
   status: "active" | "inactive";
@@ -68,11 +74,7 @@ const PROVIDER_FIELDS_MAP: Record<string, { name: string; label: string; type: s
 };
 
 const SERVICE_TYPES = ["SMS", "EMAIL", "WHATSAPP"];
-const SERVICE_ICONS: Record<string, string> = {
-  SMS: "💬",
-  EMAIL: "✉️",
-  WHATSAPP: "💬"
-};
+
 const SERVICE_COLORS: Record<string, string> = {
   SMS: "#10b981",
   EMAIL: "#6366f1",
@@ -93,6 +95,18 @@ export default function ProjectView() {
   });
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
   const [expandedProviders, setExpandedProviders] = useState<Record<number, boolean>>({});
+  const [openEnvMenu, setOpenEnvMenu] = useState<string | null>(null);
+  const [globalSearch, setGlobalSearch] = useState("");
+  const [newEnvName, setNewEnvName] = useState("");
+  const [isCustomEnv, setIsCustomEnv] = useState(false);
+  const [customEnvInput, setCustomEnvInput] = useState("");
+
+
+  const [showSearchDropdown, setShowSearchDropdown] =
+    useState(false);
+
+  const [searchFilter, setSearchFilter] =
+    useState("ALL");
 
   // Inline editing states
   const [isEditing, setIsEditing] = useState(false);
@@ -104,15 +118,26 @@ export default function ProjectView() {
 
   useEffect(() => {
     const loadProject = () => {
-      const projectData = localStorage.getItem(`project_${projectId}`);
-      const currentProject = localStorage.getItem('currentProject');
+      const allProjects = JSON.parse(
+        localStorage.getItem('allProjects') || '[]'
+      );
 
-      let projectToLoad = null;
+      const currentProject = JSON.parse(
+        localStorage.getItem('currentProject') || 'null'
+      );
 
-      if (projectData) {
-        projectToLoad = JSON.parse(projectData);
-      } else if (currentProject) {
-        projectToLoad = JSON.parse(currentProject);
+      let projectToLoad = allProjects.find(
+        (p: any) =>
+          String(p.id) === String(projectId)
+      );
+
+      if (!projectToLoad && currentProject) {
+        if (
+          String(currentProject.id) ===
+          String(projectId)
+        ) {
+          projectToLoad = currentProject;
+        }
       }
 
       if (projectToLoad) {
@@ -154,37 +179,67 @@ export default function ProjectView() {
   }, [projectId]);
 
   useEffect(() => {
+
+    const handleClick = (e: MouseEvent) => {
+
+      const target = e.target as HTMLElement;
+
+      if (
+        !target.closest('.global-search-wrapper')
+      ) {
+        setShowSearchDropdown(false);
+      }
+    };
+
+    document.addEventListener(
+      'mousedown',
+      handleClick
+    );
+
+    return () =>
+      document.removeEventListener(
+        'mousedown',
+        handleClick
+      );
+
+  }, []);
+
+  useEffect(() => {
+    if (!openEnvMenu) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('.env-menu-dropdown') || target.closest('.env-menu-trigger')) return;
+      setOpenEnvMenu(null);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [openEnvMenu]);
+  useEffect(() => {
     if (selectedEnv) {
       loadProviders();
     }
   }, [selectedEnv, activeService]);
 
+
   const loadEnvironments = () => {
-    const envNames = ['Local', 'Dev', 'Staging', 'Live'];
+    const presetEnvs = ['Local', 'Dev', 'Staging', 'Live'];
     const allKeys = Object.keys(localStorage);
-    const customEnvs = new Set<string>();
+    const envSet = new Set<string>();
 
     allKeys.forEach(key => {
       const match = key.match(/^env_(.+)_(sms|email|whatsapp)_providers$/);
-      if (match && !envNames.includes(match[1])) {
-        const data = JSON.parse(localStorage.getItem(key) || '{"providers":[]}');
-        if (data.providers?.length > 0) {
-          customEnvs.add(match[1]);
-        }
+      if (match) envSet.add(match[1]);
+    });
+
+    presetEnvs.forEach(env => {
+      if (localStorage.getItem(`env_${env}_sms_providers`) ||
+        localStorage.getItem(`env_${env}_email_providers`) ||
+        localStorage.getItem(`env_${env}_whatsapp_providers`)) {
+        envSet.add(env);
       }
     });
 
-    const configuredEnvs = envNames.filter(env => {
-      const smsKey = `env_${env}_sms_providers`;
-      const emailKey = `env_${env}_email_providers`;
-      const whatsappKey = `env_${env}_whatsapp_providers`;
-      const sms = JSON.parse(localStorage.getItem(smsKey) || '{"providers":[]}');
-      const email = JSON.parse(localStorage.getItem(emailKey) || '{"providers":[]}');
-      const whatsapp = JSON.parse(localStorage.getItem(whatsappKey) || '{"providers":[]}');
-      return (sms.providers?.length || 0) + (email.providers?.length || 0) + (whatsapp.providers?.length || 0) > 0;
-    });
-
-    const allEnvs = [...configuredEnvs, ...Array.from(customEnvs)];
+    const allEnvs = Array.from(envSet);
     setEnvironments(allEnvs);
 
     if (allEnvs.length > 0 && !selectedEnv) {
@@ -257,7 +312,10 @@ export default function ProjectView() {
       p.id === project.id ? updatedProject : p
     );
     localStorage.setItem('allProjects', JSON.stringify(updatedAllProjects));
-
+    localStorage.setItem(
+      `project_${projectId}`,
+      JSON.stringify(project)
+    );
     // Dispatch event
     window.dispatchEvent(new CustomEvent('projectUpdated', {
       detail: updatedProject
@@ -277,16 +335,20 @@ export default function ProjectView() {
   };
 
   const handleCreateEnvironment = () => {
+    const envToCreate = isCustomEnv && customEnvInput.trim() ? customEnvInput.trim() : (newEnvName || 'Local');
+    ['sms', 'email', 'whatsapp'].forEach(service => {
+      const key = `env_${envToCreate}_${service}_providers`;
+      if (!localStorage.getItem(key)) {
+        localStorage.setItem(key, JSON.stringify({ providers: [], timestamp: Date.now() }));
+      }
+    });
     localStorage.setItem('currentProject', JSON.stringify(project));
-    navigate("/dashboard/provider-config", { state: { project, environmentName: '' } });
-  };
 
-  const handleNavigateToProviderConfig = () => {
-    if (selectedEnv) {
-      navigate(`/dashboard/provider-config/${selectedEnv}`, {
-        state: { project, environmentName: selectedEnv, activeService }
-      });
-    }
+    // Reload environments so it shows when coming back
+    loadEnvironments();
+    setSelectedEnv(envToCreate);
+
+    navigate("/dashboard/provider-config", { state: { project, environmentName: envToCreate } });
   };
 
   const getEnvIcon = (name: string) => {
@@ -295,6 +357,93 @@ export default function ProjectView() {
     };
     return icons[name] || '';
   };
+
+  const searchResults = (() => {
+
+    if (!globalSearch.trim()) return [];
+
+    const query = globalSearch.toLowerCase();
+
+    const results: any[] = [];
+
+    environments.forEach(env => {
+
+      // ENVIRONMENTS
+      if (
+        env.toLowerCase().includes(query)
+      ) {
+
+        if (
+          searchFilter === "ALL" ||
+          searchFilter === "ENVIRONMENTS"
+        ) {
+          results.push({
+            type: "environment",
+            label: env,
+            environment: env
+          });
+        }
+      }
+
+      SERVICE_TYPES.forEach(service => {
+
+        // SERVICES
+        if (
+          service.toLowerCase().includes(query)
+        ) {
+
+          if (
+            searchFilter === "ALL" ||
+            searchFilter === "SERVICES"
+          ) {
+            results.push({
+              type: "service",
+              label: service,
+              environment: env,
+              service
+            });
+          }
+        }
+
+        // PROVIDERS
+        const data = JSON.parse(
+          localStorage.getItem(
+            `env_${env}_${service.toLowerCase()}_providers`
+          ) || '{"providers":[]}'
+        );
+
+        data.providers?.forEach((provider: any) => {
+
+          if (
+            provider.name
+              .toLowerCase()
+              .includes(query)
+          ) {
+
+            if (
+              searchFilter === "ALL" ||
+              searchFilter === "PROVIDERS"
+            ) {
+              results.push({
+                type: "provider",
+                label: provider.name.replace(/_/g, ' '),
+                environment: env,
+                service,
+                providerId: provider.id
+              });
+            }
+
+          }
+
+        });
+
+      });
+
+    });
+
+    return results;
+
+  })();
 
   if (!project) {
     return <div className="loading">Loading...</div>;
@@ -305,7 +454,7 @@ export default function ProjectView() {
       {/* Top Bar with Heading and Breadcrumbs */}
       <div className="view-top-bar">
         <div className="page-header">
-          <h1>Project Details</h1>
+          <h1>View Project</h1>
         </div>
         <div className="breadcrumbs-row">
           <button className="breadcrumb-link" onClick={() => navigate("/dashboard")}>Dashboard</button>
@@ -327,9 +476,7 @@ export default function ProjectView() {
                   {project.logo ? (
                     <img src={project.logo} alt="Project logo" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '20px' }} />
                   ) : <FolderOpen size={40} color="#818cf8" />}
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/gif,image/webp"
+                  <input type="file" accept="image/jpeg,image/png,image/gif,image/webp"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) {
@@ -341,334 +488,503 @@ export default function ProjectView() {
                         reader.readAsDataURL(file);
                       }
                     }}
-                    style={{ display: 'none' }}
-                  />
-                  <div className="image-overlay-edit">
-                    <span>Click to Change</span>
-                  </div>
+                    style={{ display: 'none' }} />
+                  <div className="image-overlay-edit"><span>Change</span></div>
                 </label>
               </div>
             ) : (
               <div className="project-logo">
                 {project.logo ? (
                   <img src={project.logo} alt="Project logo" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '20px' }} />
-                ) : '📁'}
+                ) : <FolderOpen size={40} color="#818cf8" />}
               </div>
             )}
           </div>
 
           <div className="project-info-section">
             {isEditing ? (
-              // EDIT MODE
               <>
                 <div className="edit-inline-form">
                   <div className="edit-row">
                     <div className="form-group-inline flex-1">
                       <label>Project Name</label>
-                      <input
-                        type="text"
-                        value={editForm.name}
+                      <input type="text" value={editForm.name}
                         onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                        className="inline-input"
-                      />
+                        className="inline-input" />
                     </div>
-                    <div className="form-group-inline" style={{ width: '200px' }}>
+                    <div className="form-group-inline" style={{ width: '160px' }}>
                       <label>Status</label>
-                      <select
-                        value={editForm.status}
-                        onChange={(e) => setEditForm({ ...editForm, status: e.target.value as "active" | "inactive" })}
-                        className="inline-select"
-                      >
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                      </select>
+                      <div className="status-select-wrapper">
+                        <select
+                          value={editForm.status}
+                          onChange={(e) => setEditForm({ ...editForm, status: e.target.value as "active" | "inactive" })}
+                          className="inline-select-dark"
+                        >
+                          <option value="active">Active</option>
+                          <option value="inactive">Inactive</option>
+                        </select>
+                        <ChevronDown size={14} className="select-arrow" />
+                      </div>
                     </div>
                   </div>
                   <div className="form-group-inline">
                     <label>Description</label>
-                    <textarea
-                      value={editForm.description}
+                    <textarea value={editForm.description}
                       onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                      className="inline-textarea"
-                      rows={2}
-                    />
+                      className="inline-textarea" rows={2} />
                   </div>
                 </div>
-
-                <div className="project-meta-grid">
-                  <div className="meta-item">
-                    <span className="meta-icon"></span>
-                    <span className="meta-label">Project ID:</span>
-                    <span className="meta-value">#{project.id}</span>
-                  </div>
-                  <div className="meta-item">
-                    <span className="meta-icon"></span>
-                    <span className="meta-label">Created:</span>
-                    <span className="meta-value">{project.created}</span>
-                  </div>
-                  <div className="meta-item">
-                    <span className="meta-icon"></span>
-                    <span className="meta-label">Created By:</span>
-                    <span className="meta-value">{project.createdBy || "Admin"}</span>
-                  </div>
-                  <div className="meta-item">
-                    <span className="meta-icon"></span>
-                    <span className="meta-label">Last Updated:</span>
-                    <span className="meta-value">{project.updatedAt || project.created}</span>
-                  </div>
+                <div className="edit-actions-inline">
+                  <button className="action-btn cancel" onClick={handleCancelEdit}><X size={16} /> Cancel</button>
+                  <button className="action-btn save" onClick={handleSaveEdit}><Save size={16} /> Save</button>
                 </div>
               </>
             ) : (
-              // VIEW MODE
               <>
                 <div className="project-name-row">
-                  <h2>{project.name}</h2>
-                  <span className={`status-badge ${project.status}`}>
-                    {project.status === "active" ? " Active" : " Inactive"}
-                  </span>
-                </div>
-
-                <div className="project-details-grid">
-                  {/* Left Column */}
-                  <div className="details-left">
-                    <div className="detail-item">
-                      <span className="meta-icon"></span>
-                      <div className="detail-content">
-                        <span className="meta-label">Project ID</span>
-                        <span className="meta-value">#{project.id}</span>
-                      </div>
-                    </div>
-
-                    {/* Description under Project ID */}
-                    <div className="detail-item description-item">
-                      <span className="meta-icon"></span>
-                      <div className="detail-content">
-                        <span className="meta-label">Description</span>
-                        <span className="meta-value desc-text">{project.description || "No description"}</span>
-                      </div>
-                    </div>
-
-                    <div className="detail-item">
-                      <span className="meta-icon"></span>
-                      <div className="detail-content">
-                        <span className="meta-label">Created By</span>
-                        <span className="meta-value">{project.createdBy || "Admin"}</span>
-                      </div>
-                    </div>
+                  <div className="project-name-left">
+                    <h2>{project.name}</h2>
+                    <span className={`status-badge ${project.status}`}>
+                      {project.status === "active" ? "Active" : "Inactive"}
+                    </span>
+                    <button className="edit-icon-inline" onClick={() => setIsEditing(true)} title="Edit project">
+                      <Pencil size={15} />
+                    </button>
                   </div>
 
-                  {/* Right Column */}
-                  <div className="details-right">
-                    <div className="detail-item">
-                      <span className="meta-icon"></span>
-                      <div className="detail-content">
-                        <span className="meta-label">Created At</span>
-                        <span className="meta-value">{project.created}</span>
-                      </div>
-                    </div>
-                    <div className="detail-item">
-                      <span className="meta-icon"></span>
-                      <div className="detail-content">
-                        <span className="meta-label">Updated At</span>
-                        <span className="meta-value">{project.updatedAt || project.created}</span>
-                      </div>
-                    </div>
-                    <div className="detail-item">
-                      <span className="meta-icon"></span>
-                      <div className="detail-content">
-                        <span className="meta-label">Last Updated By</span>
-                        <span className="meta-value">{project.updatedBy || "Admin"}</span>
-                      </div>
-                    </div>
-                  </div>
+                  <span className="project-date-text">Created on: {project.created}</span>
                 </div>
+                <p className="project-id-text">#{project.id}</p>
+                {project.description && <p className="project-desc-text">{project.description}</p>}
               </>
-            )}
-          </div>
-
-          <div className="project-actions">
-            {isEditing ? (
-              <>
-                <button className="action-btn save" onClick={handleSaveEdit}>
-                  Save Changes
-                </button>
-                <button className="action-btn cancel" onClick={handleCancelEdit}>
-                  Cancel
-                </button>
-              </>
-            ) : (
-              <button className="action-btn edit" onClick={() => setIsEditing(true)}>
-                <Pencil size={16} /> Edit Project
-              </button>
             )}
           </div>
         </div>
       </div>
 
       {/* Environment & Provider Section */}
-      <div className="environment-section">
-        <div className="environment-section-header">
-          <div className="environment-section-title">
-            <h3>Environment & Providers</h3>
-          </div>
-
-          {environments.length > 0 && (
-            <div className="env-selector-row">
-              <select
-                className="env-select"
-                value={selectedEnv}
-                onChange={(e) => setSelectedEnv(e.target.value)}
-              >
-                {environments.map(env => (
-                  <option key={env} value={env}>
-                    {getEnvIcon(env)} {env}
-                  </option>
-                ))}
-              </select>
-              <button className="btn-new-env" onClick={handleCreateEnvironment}>
-                <Plus size={16} /> New Environment
-              </button>
-            </div>
-          )}
-        </div>
-
+      <div className="environment-section-new">
         {environments.length === 0 ? (
-          <div className="no-env-state">
-            <FolderOpen size={48} color="#94a3b8" />
-            <h4>No Environments Configured</h4>
-            <p>Create your first environment and start configuring providers for SMS, Email & WhatsApp services.</p>
-            <button className="btn-create-first-env" onClick={handleCreateEnvironment}>
-              <Plus size={16} /> Create First Environment
-            </button>
-          </div>
-        ) : (
-          <div className="embedded-provider-config">
-            <div className="services-sidebar-embedded">
-              {SERVICE_TYPES.map((service) => (
-                <div
-                  key={service}
-                  className={`service-sidebar-item ${activeService === service ? 'active' : ''}`}
-                  onClick={() => setActiveService(service)}
-                  style={{
-                    borderLeftColor: activeService === service ? SERVICE_COLORS[service] : 'transparent',
-                    backgroundColor: activeService === service ? `${SERVICE_COLORS[service]}10` : 'transparent'
-                  }}
-                >
-                  <span className="service-sidebar-icon">
-                    {service === "SMS" && <MessageSquare size={18} />}
-                    {service === "EMAIL" && <Mail size={18} />}
-                    {service === "WHATSAPP" && <MessageCircle size={18} />}
-                  </span>
-                  <div className="service-sidebar-info">
-                    <div>{service}</div>
-                    <div className="service-sidebar-count">
-                      {serviceProviderCounts[service] || 0} provider(s)
+          <div className="pc-fullpage-illustrator" style={{ borderRadius: '16px', marginTop: '0', minHeight: '60vh' }}>
+            <div className="pc-bg-circles"><div className="pc-bg-circle circle-1" /><div className="pc-bg-circle circle-2" /><div className="pc-bg-circle circle-3" /></div>
+            <div className="pc-floating-dots"><span className="dot dot-1" /><span className="dot dot-2" /><span className="dot dot-3" /><span className="dot dot-4" /><span className="dot dot-5" /><span className="dot dot-6" /></div>
+            <div className="pc-center-card">
+              <div className="pc-card-icon"><Globe size={56} color="#00f2fe" /></div>
+              <h2>Configure Your Environment</h2>
+              <p>Get started by creating an environment to manage SMS, Email & WhatsApp providers</p>
+              <div className="pc-card-steps">
+                <div className="pc-card-step"><span className="pc-step-dot">1</span><span>Choose an environment type</span></div>
+                <div className="pc-card-step"><span className="pc-step-dot">2</span><span>Add providers for each service</span></div>
+                <div className="pc-card-step"><span className="pc-step-dot">3</span><span>Start sending notifications</span></div>
+              </div>
+              <div className="pc-card-select">
+                <div className="pc-env-options">
+                  {['Local', 'Dev', 'Staging', 'Live'].map(env => (
+                    <div key={env} className={`pc-env-option ${newEnvName === env && !isCustomEnv ? 'selected' : ''}`}
+                      onClick={() => { setNewEnvName(env); setIsCustomEnv(false); }}>
+                      <span className="pc-env-option-icon">{getEnvIcon(env)}</span><span>{env}</span>
+                      {newEnvName === env && !isCustomEnv && <Check size={16} />}
                     </div>
+                  ))}
+                  <div className={`pc-env-option custom ${isCustomEnv ? 'selected' : ''}`}
+                    onClick={() => { setIsCustomEnv(true); setNewEnvName(""); }}>
+                    <span className="pc-env-option-icon"><Wrench size={18} /></span><span>Custom</span>
+                    {isCustomEnv && <Check size={16} />}
                   </div>
                 </div>
-              ))}
-            </div>
-
-            <div className="providers-panel-embedded">
-              <div className="providers-panel-header">
-                <div className="providers-panel-title">
-                  <span className="panel-service-icon">{SERVICE_ICONS[activeService]}</span>
-                  {activeService} Providers
-                </div>
-                <button
-                  className="btn-add-provider"
-                  style={{ backgroundColor: SERVICE_COLORS[activeService] }}
-                  onClick={handleNavigateToProviderConfig}
-                >
-                  <Plus size={16} /> Add Provider
+                {isCustomEnv && <input type="text" placeholder="Enter environment name" value={customEnvInput} onChange={e => setCustomEnvInput(e.target.value)} className="pc-input" autoFocus />}
+                <button className="pc-create-first-env-btn" onClick={handleCreateEnvironment}
+                  disabled={(!isCustomEnv && !newEnvName) || (isCustomEnv && !customEnvInput.trim())}>
+                  Create Environment <Rocket size={16} />
                 </button>
               </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Environment Header */}
+            <div className="env-header-row">
 
-              <div className="providers-list-embedded">
-                {providers.length === 0 ? (
-                  <div className="empty-state-embedded">
-                    <FolderOpen size={40} color="#cbd5e1" />                    <h4>No {activeService} providers configured</h4>
-                    <p>Add your first provider to get started</p>
-                    <button
-                      className="btn-empty-action"
-                      onClick={handleNavigateToProviderConfig}
-                    >
-                      <Plus size={16} /> Add Provider
-                    </button>
-                  </div>
-                ) : (
-                  providers.map((provider) => (
-                    <div
-                      key={provider.id}
-                      className="provider-card-embedded"
-                      style={{ borderTopColor: SERVICE_COLORS[activeService] }}
-                      onClick={() => setExpandedProviders(prev => ({
-                        ...prev,
-                        [provider.id]: !prev[provider.id]
-                      }))}
-                    >
-                      <div className="provider-card-header-embedded">
-                        <div className="provider-card-title">
-                          <Plug size={16} />
-                          {provider.name.replace('_', ' ')}
-                          <span className="configured-badge" style={{
-                            background: `${SERVICE_COLORS[activeService]}20`,
-                            color: SERVICE_COLORS[activeService]
-                          }}>
-                            <Check size={14} /> Configured
-                          </span>
+              <h3 className="env-heading">
+                Environments
+              </h3>
+
+              <div className="env-header-right">
+
+                {/* SEARCH */}
+                <div className="global-search-wrapper">
+
+                  <input
+                    type="text"
+                    placeholder="Search environments, services, providers..."
+                    value={globalSearch}
+                    onChange={(e) => {
+                      setGlobalSearch(e.target.value);
+                      setShowSearchDropdown(true);
+                    }}
+                    onFocus={() =>
+                      setShowSearchDropdown(true)
+                    }
+                    className="global-search-input"
+                  />
+
+                  {showSearchDropdown && (
+                    <div className="global-search-dropdown">
+
+                      {searchResults.length === 0 ? (
+
+                        <div className="search-no-results">
+                          No results found
                         </div>
-                        <div className="provider-card-actions">
-                          <button className="btn-edit-small" onClick={(e) => { e.stopPropagation(); handleNavigateToProviderConfig(); }}>
+
+                      ) : (
+
+                        searchResults.map((result, index) => (
+
+                          <button
+                            key={index}
+                            className="search-result-item"
+                            onClick={() => {
+
+                              if (result.environment) {
+                                setSelectedEnv(
+                                  result.environment
+                                );
+                              }
+
+                              if (result.service) {
+                                setActiveService(
+                                  result.service
+                                );
+                              }
+
+                              if (result.providerId) {
+                                setExpandedProviders(
+                                  prev => ({
+                                    ...prev,
+                                    [result.providerId]: true
+                                  })
+                                );
+                              }
+
+                              setGlobalSearch("");
+
+                              setShowSearchDropdown(false);
+
+                            }}
+                          >
+
+                            <div className="search-result-main">
+                              {result.label}
+                            </div>
+
+                            <div className="search-result-meta">
+
+                              {result.environment}
+
+                              {result.service &&
+                                ` • ${result.service}`}
+
+                            </div>
+
+                          </button>
+
+                        ))
+
+                      )}
+
+                    </div>
+                  )}
+
+                </div>
+
+                {/* FILTER */}
+                <select
+                  className="global-search-filter"
+                  value={searchFilter}
+                  onChange={(e) =>
+                    setSearchFilter(e.target.value)
+                  }
+                >
+
+                  <option value="ALL">
+                    All
+                  </option>
+
+                  <option value="ENVIRONMENTS">
+                    Environments
+                  </option>
+
+                  <option value="SERVICES">
+                    Services
+                  </option>
+
+                  <option value="PROVIDERS">
+                    Providers
+                  </option>
+
+                </select>
+
+                {/* ADD BUTTON */}
+                <button
+                  className="pc-add-env-btn"
+                  onClick={() => {
+                    navigate("/dashboard/provider-config", {
+                      state: {
+                        project,
+                        action: "ADD_ENVIRONMENT"
+                      }
+                    });
+                  }}
+                >
+                  <Plus size={14} />
+                  New Environment
+                </button>
+
+              </div>
+            </div>
+
+            {/* Environment Tabs */}
+            <div className="env-tabs-container">
+              <div className="env-tabs">
+                {environments.map((env) => (
+                  <div
+                    key={env}
+                    className={`env-tab ${selectedEnv === env ? 'active' : ''}`}
+                    onClick={() => setSelectedEnv(env)}
+                  >
+                    <span className="env-tab-name">{env}</span>
+                    <div className="env-tab-menu" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        className="env-menu-trigger"
+                        onClick={() => setOpenEnvMenu(openEnvMenu === env ? null : env)}
+                      >
+                        ⋯
+                      </button>
+                      {openEnvMenu === env && (
+                        <div className="env-menu-dropdown">
+                          <button
+                            onClick={() => {
+                              navigate("/dashboard/provider-config", {
+                                state: {
+                                  project,
+                                  action: "EDIT_ENVIRONMENT",
+                                  environmentName: env
+                                }
+                              });
+                            }}
+                          >
                             <Pencil size={14} />
                           </button>
-                        </div>
-                      </div>
-
-                      {expandedProviders[provider.id] && (
-                        <div className="provider-card-body" onClick={(e) => e.stopPropagation()}>
-                          <div className="credential-mini">
-                            {Object.entries(provider.fields).map(([key, value]) => {
-                              const fieldConfig = PROVIDER_FIELDS_MAP[provider.name]?.find((f: any) => f.name === key);
-                              const isPassword = fieldConfig?.type === "password" || key.includes("Key") || key.includes("Token");
-                              const passwordKey = `${provider.id}_${key}`;
-
-                              return (
-                                <div className="credential-mini-row" key={key}>
-                                  <span className="credential-mini-label">
-                                    {fieldConfig?.icon || "📝"} {fieldConfig?.label || key}:
-                                  </span>
-                                  <span className="credential-mini-value">
-                                    {isPassword
-                                      ? (visiblePasswords[passwordKey] ? value : "••••••••")
-                                      : (value || "—")}
-                                  </span>
-                                  {isPassword && value && (
-                                    <button
-                                      className="eye-btn-mini"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setVisiblePasswords((prev: Record<string, boolean>) => ({
-                                          ...prev,
-                                          [passwordKey]: !prev[passwordKey]
-                                        }));
-                                      }}
-                                    >
-                                      {visiblePasswords[passwordKey] ? <FaEyeSlash /> : <FaEye />}
-                                    </button>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
+                          <button
+                            onClick={() => {
+                              navigate("/dashboard/provider-config", {
+                                state: {
+                                  project,
+                                  action: "CLONE_ENVIRONMENT",
+                                  environmentName: env
+                                }
+                              });
+                            }}
+                          >
+                            <Copy size={14} />
+                          </button>
+                          <button
+                            className="env-menu-item delete"
+                            onClick={() => {
+                              navigate("/dashboard/provider-config", {
+                                state: {
+                                  project,
+                                  action: "DELETE_ENVIRONMENT",
+                                  environmentName: env
+                                }
+                              });
+                            }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
                         </div>
                       )}
                     </div>
-                  ))
-                )}
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
+
+            {/* Service & Environment Info */}
+
+
+            {/* Services Sidebar + Providers Panel */}
+            <div className="pc-main-content">
+              {/* Services Sidebar */}
+              <div className="pc-sidebar-wrapper">
+                <div className="pc-service-env-info">
+                  <span className="pc-service-label">{activeService}</span>
+                  <span className="pc-separator-dash">-</span>
+                  <span className="pc-env-label">{selectedEnv}</span>
+                </div>
+                <div className="pc-sidebar">
+                  {SERVICE_TYPES.map((service) => (
+                    <div
+                      key={service}
+                      className={`pc-sidebar-item ${activeService === service ? 'active' : ''}`}
+                      onClick={() => setActiveService(service)}
+                      style={{
+                        borderLeftColor: activeService === service ? SERVICE_COLORS[service] : 'transparent',
+                        backgroundColor: activeService === service ? `${SERVICE_COLORS[service]}10` : 'transparent'
+                      }}
+                    >
+                      <span className="pc-sidebar-icon">
+                        {service === "SMS" && <MessageSquare size={18} />}
+                        {service === "EMAIL" && <Mail size={18} />}
+                        {service === "WHATSAPP" && <MessageCircle size={18} />}
+                      </span>
+                      <div className="pc-sidebar-info">
+                        <div className="pc-sidebar-name">{service}</div>
+                        <div className="pc-sidebar-count">{serviceProviderCounts[service] || 0} providers</div>
+                      </div>
+                      {activeService === service && (
+                        <div className="pc-sidebar-active-indicator" style={{ background: SERVICE_COLORS[service] }}></div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Providers Panel */}
+              <div className="pc-sidebar-wrapper" style={{ flex: 1 }}>
+                <h4 className="pc-column-label pc-column-label-providers">Providers</h4>
+                <div className="pc-providers-panel" style={{ borderTop: `3px solid ${SERVICE_COLORS[activeService]}` }}>
+                  <div className="pc-panel-header">
+                    <div className="pc-panel-title">
+                      {activeService === "SMS" && <MessageSquare size={20} />}
+                      {activeService === "EMAIL" && <Mail size={20} />}
+                      {activeService === "WHATSAPP" && <MessageCircle size={20} />}
+                      <h3>{activeService} Providers</h3>
+                      <span className="pc-panel-count">{serviceProviderCounts[activeService] || 0}</span>
+                    </div>
+                    <button
+                      className="pc-add-btn"
+                      style={{ backgroundColor: SERVICE_COLORS[activeService] }}
+                      onClick={() => {
+                        navigate("/dashboard/provider-config", {
+                          state: {
+                            project,
+                            action: "ADD_PROVIDER",
+                            environmentName: selectedEnv,
+                            service: activeService
+                          }
+                        });
+                      }}
+                    >
+                      <Plus size={14} /> Add Provider
+                    </button>
+                  </div>
+
+                  <div className="pc-providers-list">
+                    {providers.length === 0 ? (
+                      <div className="pc-empty-state">
+                        <Server size={44} color="#cbd5e1" />
+                        <h4>No {activeService} providers yet</h4>
+                        <p>Add your first provider to start configuring services</p>
+                      </div>
+                    ) : (
+                      providers.map((provider) => (
+                        <div
+                          key={provider.id}
+                          className="pc-provider-card"
+                          style={{ borderLeftColor: SERVICE_COLORS[activeService] }}
+                        >
+                          <div
+                            className="pc-provider-card-header"
+                            onClick={() => setExpandedProviders(prev => ({
+                              ...prev,
+                              [provider.id]: !prev[provider.id]
+                            }))}
+                          >
+                            <div className="pc-provider-title">
+                              <Plug size={14} />
+                              <span>{provider.name.replace(/_/g, ' ')}</span>
+                              <span className="pc-configured-badge" style={{
+                                background: `${SERVICE_COLORS[activeService]}15`,
+                                color: SERVICE_COLORS[activeService]
+                              }}>
+                                <Check size={10} /> Configured
+                              </span>
+                            </div>
+                            <div className="pc-provider-actions" onClick={(e) => e.stopPropagation()}>
+                              <button className="pc-edit-btn" onClick={() => {
+                                navigate("/dashboard/provider-config", {
+                                  state: {
+                                    project,
+                                    action: "EDIT_PROVIDER",
+                                    environmentName: selectedEnv,
+                                    service: activeService,
+                                    provider
+                                  }
+                                });
+                              }}
+                              >
+                                <Pencil size={14} />
+                              </button>
+                              <button
+                                className="pc-delete-btn"
+                                onClick={() => {
+                                  navigate("/dashboard/provider-config", {
+                                    state: {
+                                      project,
+                                      action: "DELETE_PROVIDER",
+                                      environmentName: selectedEnv,
+                                      service: activeService,
+                                      provider
+                                    }
+                                  });
+                                }}
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </div>
+
+                          {expandedProviders[provider.id] && (
+                            <div className="pc-provider-card-body">
+                              {Object.entries(provider.fields).map(([key, value]) => {
+                                const fieldConfig = PROVIDER_FIELDS_MAP[provider.name]?.find((f: any) => f.name === key);
+                                const isPassword = fieldConfig?.type === "password" || key.includes("Key") || key.includes("Token");
+                                const passwordKey = `${provider.id}_${key}`;
+
+                                return (
+                                  <div className="pc-credential-row" key={key}>
+                                    <span className="pc-credential-label">{fieldConfig?.label || key}</span>
+                                    <span className="pc-credential-value">
+                                      {isPassword
+                                        ? (visiblePasswords[passwordKey] ? value : "••••••••••")
+                                        : (value || "—")}
+                                    </span>
+                                    {isPassword && value && (
+                                      <button
+                                        className="pc-eye-btn-inline"
+                                        onClick={() => setVisiblePasswords(prev => ({
+                                          ...prev,
+                                          [passwordKey]: !prev[passwordKey]
+                                        }))}
+                                      >
+                                        {visiblePasswords[passwordKey] ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
+                                      </button>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>
