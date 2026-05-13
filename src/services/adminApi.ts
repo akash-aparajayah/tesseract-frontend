@@ -2,7 +2,7 @@ import api from "./api";
 
 // get admin API
 export const getAllAdminApi = () => {
-    return api.get("/users/getUsers");
+    return api.get("/users/getAllUsers");
 };
 
 //activate or deactivate admin API

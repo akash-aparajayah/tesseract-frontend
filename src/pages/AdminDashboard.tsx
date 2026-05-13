@@ -1,5 +1,6 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import styles from "../styles/adminPanel.module.css";
+
 import {
   Users,
   UserCheck,
@@ -13,282 +14,659 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+
 import noDataImg from "../assets/No data-cuate.svg";
 import Loader from "@/components/common/Loader";
+
+import { getAllAdminApi } from "../services/adminApi";
+
+/* =========================================================
+   TYPES
+========================================================= */
 
 interface Admin {
   id: number;
   name: string;
   email: string;
   role: "admin" | "super_admin" | "viewer";
-  status: "Active" | "Inactive";
+  status: boolean;
 }
 
-const INITIAL_ADMINS: Admin[] = [
-  { id: 1, name: "testing", email: "testing@aparajayah.com", role: "admin", status: "Active" },
-  { id: 2, name: "akash", email: "akash@aparajayah.com", role: "super_admin", status: "Active" },
-  { id: 3, name: "demo_inactive", email: "demo@aparajayah.com", role: "viewer", status: "Inactive" },
-  { id: 4, name: "srinivasan", email: "srinivasan@aparajayah.com", role: "admin", status: "Active" },
-  { id: 5, name: "priya", email: "priya@aparajayah.com", role: "viewer", status: "Inactive" },
-  { id: 6, name: "vikram", email: "vikram@aparajayah.com", role: "super_admin", status: "Active" },
-  { id: 7, name: "divya", email: "divya@aparajayah.com", role: "admin", status: "Active" },
+/* =========================================================
+   DEFAULT FALLBACK DATA
+   This data will show if API fails or returns empty.
+========================================================= */
+
+const fallbackAdmins: Admin[] = [
+  {
+    id: 1,
+    name: "Super Admin",
+    email: "superadmin@example.com",
+    role: "super_admin",
+    status: true,
+  },
+  {
+    id: 2,
+    name: "Admin User",
+    email: "admin@example.com",
+    role: "admin",
+    status: true,
+  },
+  {
+    id: 3,
+    name: "Viewer User",
+    email: "viewer@example.com",
+    role: "viewer",
+    status: false,
+  },
 ];
 
-const getInitials = (name: string) => name.charAt(0).toUpperCase();
+/* =========================================================
+   API SERVICE LAYER
+========================================================= */
+
+const api = {
+  async getAdmins(): Promise<Admin[]> {
+    try {
+      const response = await getAllAdminApi();
+      console.log("GET ADMINS RESPONSE:", response);
+      if (!response || response.status !== 200) {
+        throw new Error("Failed to fetch admins");
+      }
+
+      const data = await response.data;
+
+      /* =========================================================
+         IF BACKEND RETURNS EMPTY ARRAY
+         RETURN EMPTY ARRAY
+         SO ILLUSTRATION WILL SHOW
+      ========================================================= */
+      if (!data || data.length === 0) {
+        return [];
+      }
+
+      return data;
+    } catch (error) {
+      console.error("GET ADMINS ERROR:", error);
+
+      /* =========================================================
+         IF API FAILS
+         RETURN DEFAULT DATA
+      ========================================================= */
+      return fallbackAdmins;
+    }
+  },
+
+  /* =========================================================
+     CREATE ADMIN
+  ========================================================= */
+  async createAdmin(admin: Omit<Admin, "id">): Promise<Admin> {
+    try {
+      const response = await fetch("/api/admins", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(admin),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create admin");
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("CREATE ADMIN ERROR:", error);
+      throw error;
+    }
+  },
+
+  /* =========================================================
+     TOGGLE STATUS
+  ========================================================= */
+  async toggleStatus(id: number, currentStatus: string): Promise<Admin> {
+    try {
+      const newStatus = currentStatus === "Active" ? "Inactive" : "Active";
+
+      const response = await fetch(await toggleAdminStatusApi(id), {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: newStatus,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to toggle status");
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("TOGGLE STATUS ERROR:", error);
+      throw error;
+    }
+  },
+};
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+const getInitials = (name: string) => {
+  return name.charAt(0).toUpperCase();
+};
+
+/* =========================================================
+   MAIN COMPONENT
+========================================================= */
 
 const AdminPanel: React.FC = () => {
-  const [admins, setAdmins] = useState<Admin[]>(INITIAL_ADMINS);
-   const [loading, setLoading] = useState(true);
+  /* =========================================================
+     STATE
+  ========================================================= */
+
+  const [admins, setAdmins] = useState<Admin[]>([]);
+
+  const [loading, setLoading] = useState(true);
+
+  const [error, setError] = useState<string | null>(null);
+
+  /* =========================================================
+     FILTER STATES
+  ========================================================= */
+
   const [searchTerm, setSearchTerm] = useState("");
-  const [roleFilter, setRoleFilter] = useState<"all" | "admin" | "super_admin" | "viewer">("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | "Active" | "Inactive">("all");
+
+  const [roleFilter, setRoleFilter] = useState<
+    "all" | "admin" | "super_admin" | "viewer"
+  >("all");
+
+  /* =========================================================
+     SECOND FILTER
+     STATUS FILTER
+  ========================================================= */
+
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | true | false
+  >("all");
+
+  /* =========================================================
+     PAGINATION
+  ========================================================= */
+
   const [currentPage, setCurrentPage] = useState(1);
+
   const rowsPerPage = 5;
 
+  /* =========================================================
+     FETCH ADMINS
+  ========================================================= */
+
+  const fetchAdmins = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      setError(null);
+
+      const data = await api.getAdmins();
+
+      setAdmins(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load admins");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  /* =========================================================
+     LOAD DATA ON MOUNT
+  ========================================================= */
+
+  useEffect(() => {
+    fetchAdmins();
+  }, [fetchAdmins]);
+
+  /* =========================================================
+     STATS
+  ========================================================= */
+
   const totalCount = admins.length;
-  const activeCount = admins.filter((a) => a.status === "Active").length;
-  const inactiveCount = totalCount - activeCount;
+
+  const activeCount = admins.filter((a) => a.status === true).length;
+
+  const inactiveCount = admins.filter((a) => a.status === false).length;
+
+  /* =========================================================
+     FILTERING
+  ========================================================= */
 
   const filteredAdmins = useMemo(() => {
     let filtered = [...admins];
+
+    /* SEARCH FILTER */
     if (searchTerm) {
       filtered = filtered.filter(
-        (a) =>
-          a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          a.email.toLowerCase().includes(searchTerm.toLowerCase())
+        (admin) =>
+          admin.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          admin.email.toLowerCase().includes(searchTerm.toLowerCase()),
       );
     }
+
+    /* ROLE FILTER */
     if (roleFilter !== "all") {
-      filtered = filtered.filter((a) => a.role === roleFilter);
+      filtered = filtered.filter((admin) => admin.role === roleFilter);
     }
+
+    /* STATUS FILTER */
     if (statusFilter !== "all") {
-      filtered = filtered.filter((a) => a.status === statusFilter);
+      filtered = filtered.filter((admin) => admin.status === statusFilter);
     }
+
     return filtered;
   }, [admins, searchTerm, roleFilter, statusFilter]);
 
+  /* =========================================================
+     PAGINATION LOGIC
+  ========================================================= */
+
   const totalPages = Math.ceil(filteredAdmins.length / rowsPerPage);
+
   const paginatedAdmins = useMemo(() => {
     const start = (currentPage - 1) * rowsPerPage;
+
     return filteredAdmins.slice(start, start + rowsPerPage);
   }, [filteredAdmins, currentPage]);
 
+  /* =========================================================
+     RESET PAGE ON FILTER CHANGE
+  ========================================================= */
+
   useEffect(() => {
     setCurrentPage(1);
-      setLoading(true);
   }, [searchTerm, roleFilter, statusFilter]);
 
-  const handleToggleStatus = (id: number) => {
-    setAdmins((prev) =>
-      prev.map((admin) =>
-        admin.id === id
-          ? { ...admin, status: admin.status === "Active" ? "Inactive" : "Active" }
-          : admin
-      )
-    );
-  };
+  /* =========================================================
+     TOGGLE STATUS
+  ========================================================= */
 
-  const handleView = (admin: Admin) => {
-    alert(`View Admin\nName: ${admin.name}\nEmail: ${admin.email}\nRole: ${admin.role}\nStatus: ${admin.status}`);
-  };
+  const handleToggleStatus = async (id: number, currentStatus: string) => {
+    try {
+      const updatedAdmin = await api.toggleStatus(id, currentStatus);
 
-  const handleEdit = (admin: Admin) => {
-    alert(`Edit Admin: ${admin.name} (open modal in production)`);
-  };
-
-  const handleDelete = (id: number) => {
-    if (window.confirm("Permanently delete this admin?")) {
-      setAdmins((prev) => prev.filter((a) => a.id !== id));
-      if (currentPage > Math.ceil((filteredAdmins.length - 1) / rowsPerPage) && currentPage > 1) {
-        setCurrentPage(currentPage - 1);
-      }
+      setAdmins((prev) =>
+        prev.map((admin) => (admin.id === id ? updatedAdmin : admin)),
+      );
+    } catch (error) {
+      alert("Failed to update status");
     }
   };
 
+  /* =========================================================
+     VIEW ADMIN
+  ========================================================= */
+
+  const handleView = (admin: Admin) => {
+    alert(
+      `
+Name: ${admin.name}
+Email: ${admin.email}
+Role: ${admin.role}
+Status: ${admin.status}
+`,
+    );
+  };
+
+  /* =========================================================
+     EDIT ADMIN
+  ========================================================= */
+
+  const handleEdit = (admin: Admin) => {
+    alert(`Edit ${admin.name}`);
+  };
+
+  /* =========================================================
+     DELETE ADMIN
+  ========================================================= */
+
+  const handleDelete = async (id: number) => {
+    const confirmDelete = window.confirm("Delete this admin permanently?");
+
+    if (!confirmDelete) return;
+
+    try {
+      await api.deleteAdmin(id);
+
+      setAdmins((prev) => prev.filter((admin) => admin.id !== id));
+    } catch (error) {
+      alert("Failed to delete admin");
+    }
+  };
+
+  /* =========================================================
+     ADD ADMIN
+  ========================================================= */
+
+  const handleAddAdmin = () => {
+    alert("Open Add Admin Modal");
+  };
+
+  /* =========================================================
+     ROLE BADGE STYLES
+  ========================================================= */
+
   const getRoleBadge = (role: string) => {
     switch (role) {
-      case "admin":
-        return styles.roleAdmin;
       case "super_admin":
         return styles.roleSuper;
+
+      case "admin":
+        return styles.roleAdmin;
+
       default:
         return styles.roleUser;
     }
   };
 
+  /* =========================================================
+     ROLE DISPLAY TEXT
+  ========================================================= */
+
   const getRoleDisplay = (role: string) => {
     switch (role) {
-      case "admin":
-        return "Admin";
       case "super_admin":
         return "Super Admin";
+
+      case "admin":
+        return "Admin";
+
       default:
         return "Viewer";
     }
   };
 
+  /* =========================================================
+     PAGE CHANGE
+  ========================================================= */
+
   const changePage = (page: number) => {
-    if (page >= 1 && page <= totalPages) setCurrentPage(page);
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
   };
-    if (loading) {
-    // return <Loader />;
+
+  /* =========================================================
+     LOADING SCREEN
+  ========================================================= */
+
+  if (loading) {
+    return <Loader />;
   }
 
+  /* =========================================================
+     ERROR SCREEN
+  ========================================================= */
+
+  if (error) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.errorState}>
+          <p>{error}</p>
+
+          <button onClick={fetchAdmins}>Retry</button>
+        </div>
+      </div>
+    );
+  }
+
+  /* =========================================================
+     MAIN UI
+  ========================================================= */
 
   return (
     <div className={styles.container}>
+      {/* =========================================================
+         PAGE HEADER
+      ========================================================= */}
+
       <div className={styles.header}>
         <h1>Admin Control Panel</h1>
-        {/* <p>Manage administrators, roles and permissions</p> */}
+        <p>Manage all admin users and permissions</p>
       </div>
+
+      {/* =========================================================
+         STATS CARDS
+      ========================================================= */}
 
       <div className={styles.statsGrid}>
         <div className={`${styles.statCard} ${styles.cardTotal}`}>
           <div className={styles.statLeft}>
-            <div className={styles.statLabel}>Total Admins</div>
+            <div className={styles.statLabel}>Total Users</div>
+
             <div className={styles.statNumber}>{totalCount}</div>
           </div>
+
           <div className={styles.statIcon}>
-            <Users size={24} />
+            <Users size={22} />
           </div>
         </div>
+
         <div className={`${styles.statCard} ${styles.cardActive}`}>
           <div className={styles.statLeft}>
             <div className={styles.statLabel}>Active</div>
+
             <div className={styles.statNumber}>{activeCount}</div>
           </div>
+
           <div className={styles.statIcon}>
-            <UserCheck size={24} />
+            <UserCheck size={22} />
           </div>
         </div>
+
         <div className={`${styles.statCard} ${styles.cardInactive}`}>
           <div className={styles.statLeft}>
             <div className={styles.statLabel}>Inactive</div>
+
             <div className={styles.statNumber}>{inactiveCount}</div>
           </div>
+
           <div className={styles.statIcon}>
-            <UserX size={24} />
+            <UserX size={22} />
           </div>
         </div>
       </div>
 
+      {/* =========================================================
+         TOOLBAR
+      ========================================================= */}
+
       <div className={styles.toolbar}>
+        {/* SEARCH */}
         <div className={styles.searchBox}>
-          <Search className={styles.searchIcon} size={16} />
+          <Search size={16} className={styles.searchIcon} />
+
           <input
             type="text"
-            placeholder="Search by name or email..."
+            placeholder="Search users..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className={styles.searchInput}
           />
         </div>
+
+        {/* FILTERS + BUTTON */}
         <div className={styles.actionsGroup}>
+          {/* ROLE FILTER */}
           <select
+            className={styles.roleSelect}
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value as typeof roleFilter)}
-            className={styles.roleSelect}
           >
             <option value="all">All Roles</option>
-            <option value="admin">Admin</option>
+
             <option value="super_admin">Super Admin</option>
+
+            <option value="admin">Admin</option>
+
             <option value="viewer">Viewer</option>
           </select>
+
+          {/* STATUS FILTER */}
           <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
             className={styles.roleSelect}
+            value={statusFilter}
+            onChange={(e) =>
+              setStatusFilter(e.target.value as typeof statusFilter)
+            }
           >
             <option value="all">All Status</option>
+
             <option value="Active">Active</option>
+
             <option value="Inactive">Inactive</option>
           </select>
-          <button className={styles.addBtn} onClick={() => alert("Add Admin form")}>
-            <UserPlus size={16} /> Add User
+
+          {/* ADD BUTTON */}
+          <button className={styles.addBtn} onClick={handleAddAdmin}>
+            <UserPlus size={16} />
+            Add User
           </button>
         </div>
       </div>
+
+      {/* =========================================================
+         TABLE
+      ========================================================= */}
 
       <div className={styles.tableWrapper}>
         <table className={styles.table}>
           <thead>
             <tr>
               <th className={styles.colNo}>S.NO</th>
+
               <th className={styles.colUser}>User</th>
+
               <th className={styles.colEmail}>Email</th>
+
               <th className={styles.colRole}>Role</th>
+
               <th className={styles.colStatus}>Status</th>
+
               <th className={styles.colActions}>Actions</th>
             </tr>
           </thead>
+
           <tbody>
-            {paginatedAdmins.map((admin, idx) => {
-              const globalIndex = (currentPage - 1) * rowsPerPage + idx + 1;
-              const isActive = admin.status === "Active";
-              const initials = getInitials(admin.name);
-              return (
-                <tr key={admin.id}>
-                  <td className={styles.colNo}>{globalIndex}</td>
-                  <td className={styles.colUser}>
-                    <div className={styles.userCell}>
-                      <div className={styles.userAvatar}>{initials}</div>
-                      <span className={styles.userName}>{admin.name}</span>
-                    </div>
-                  </td>
-                  <td className={styles.colEmail}>
-                    <span className={styles.userEmail}>{admin.email}</span>
-                  </td>
-                  <td className={styles.colRole}>
-                    <span className={`${styles.roleBadge} ${getRoleBadge(admin.role)}`}>
-                      {getRoleDisplay(admin.role)}
-                    </span>
-                  </td>
-                  <td className={styles.colStatus}>
-                    <div className={styles.statusCell}>
-                      <div
-                        className={`${styles.toggle} ${isActive ? styles.active : ""}`}
-                        onClick={() => handleToggleStatus(admin.id)}
-                      >
-                        <div className={styles.knob}></div>
+            {/* =========================================================
+               IF DATA EXISTS
+            ========================================================= */}
+
+            {paginatedAdmins.length > 0 ? (
+              paginatedAdmins.map((admin, index) => {
+                const isActive = admin.status === "Active";
+
+                const serialNumber =
+                  (currentPage - 1) * rowsPerPage + index + 1;
+
+                return (
+                  <tr key={admin.id}>
+                    <td className={styles.colNo}>{serialNumber}</td>
+
+                    <td className={styles.colUser}>
+                      <div className={styles.userCell}>
+                        <div className={styles.userAvatar}>
+                          {getInitials(admin.name)}
+                        </div>
+
+                        <span className={styles.userName}>{admin.name}</span>
                       </div>
+                    </td>
+
+                    <td className={styles.colEmail}>
+                      <span className={styles.userEmail}>{admin.email}</span>
+                    </td>
+
+                    <td className={styles.colRole}>
                       <span
-                        className={`${styles.statusText} ${
-                          isActive ? styles.statusActive : styles.statusInactive
-                        }`}
+                        className={`${styles.roleBadge} ${getRoleBadge(
+                          admin.role,
+                        )}`}
                       >
-                        {admin.status}
+                        {getRoleDisplay(admin.role)}
                       </span>
-                    </div>
-                  </td>
-                  <td className={styles.colActions}>
-                    <div className={styles.actionMenu}>
-                      <button className={styles.dotsBtn}>
-                        <Settings size={16} />
-                      </button>
-                      <div className={styles.dropdown}>
-                        <button onClick={() => handleView(admin)}>
-                          <Eye size={14} /> View
-                        </button>
-                        <button onClick={() => handleEdit(admin)}>
-                          <Pencil size={14} /> Edit
-                        </button>
-                        <button
-                          className={styles.deleteBtn}
-                          onClick={() => handleDelete(admin.id)}
+                    </td>
+
+                    <td className={styles.colStatus}>
+                      <div className={styles.statusCell}>
+                        <div
+                          className={`${styles.toggle} ${
+                            isActive ? styles.active : ""
+                          }`}
+                          onClick={() =>
+                            handleToggleStatus(admin.id, admin.status)
+                          }
                         >
-                          <Trash2 size={14} /> Delete
-                        </button>
+                          <div className={styles.knob} />
+                        </div>
+
+                        <span
+                          className={`${styles.statusText} ${
+                            isActive
+                              ? styles.statusActive
+                              : styles.statusInactive
+                          }`}
+                        >
+                          {admin.status}
+                        </span>
                       </div>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-            {paginatedAdmins.length === 0 && (
+                    </td>
+
+                    <td className={styles.colActions}>
+                      <div className={styles.actionMenu}>
+                        <button className={styles.dotsBtn}>
+                          <Settings size={16} />
+                        </button>
+
+                        <div className={styles.dropdown}>
+                          <button onClick={() => handleView(admin)}>
+                            <Eye size={14} />
+                            View
+                          </button>
+
+                          <button onClick={() => handleEdit(admin)}>
+                            <Pencil size={14} />
+                            Edit
+                          </button>
+
+                          <button
+                            className={styles.deleteBtn}
+                            onClick={() => handleDelete(admin.id)}
+                          >
+                            <Trash2 size={14} />
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
+              /* =========================================================
+                 NO DATA ILLUSTRATION
+                 THIS SHOWS IF API RETURNS EMPTY ARRAY
+              ========================================================= */
+
               <tr>
                 <td colSpan={6} className={styles.noData}>
-                   <img src={noDataImg} alt="No data" className={styles.noDataImg} />
-                    <div>No User found</div>
+                  <img
+                    src={noDataImg}
+                    alt="No Data"
+                    className={styles.noDataImg}
+                  />
+
+                  <p>No users found</p>
                 </td>
               </tr>
             )}
@@ -296,15 +674,21 @@ const AdminPanel: React.FC = () => {
         </table>
       </div>
 
+      {/* =========================================================
+         PAGINATION
+      ========================================================= */}
+
       {totalPages > 1 && (
         <div className={styles.pagination}>
           <button
             className={styles.pageBtn}
-            onClick={() => changePage(currentPage - 1)}
             disabled={currentPage === 1}
+            onClick={() => changePage(currentPage - 1)}
           >
-            <ChevronLeft size={14} /> Prev
+            <ChevronLeft size={14} />
+            Prev
           </button>
+
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
             <button
               key={page}
@@ -316,13 +700,16 @@ const AdminPanel: React.FC = () => {
               {page}
             </button>
           ))}
+
           <button
             className={styles.pageBtn}
-            onClick={() => changePage(currentPage + 1)}
             disabled={currentPage === totalPages}
+            onClick={() => changePage(currentPage + 1)}
           >
-            Next <ChevronRight size={14} />
+            Next
+            <ChevronRight size={14} />
           </button>
+
           <span className={styles.pageInfo}>
             Page {currentPage} of {totalPages}
           </span>
