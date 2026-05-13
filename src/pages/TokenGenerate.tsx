@@ -40,6 +40,8 @@ export default function TokenGenerate() {
         "form" | "token" | null
     >(null);
 
+    const [tokenInstance, setTokenInstance] = useState("");
+
     useEffect(() => {
         const presetEnvs = ['Local', 'Dev', 'Staging', 'Live'];
         const allKeys = Object.keys(localStorage);
@@ -86,6 +88,7 @@ export default function TokenGenerate() {
         setCustomDate("");
         setIsRegenerating(false);
         setCurrentToken(null);
+        setTokenInstance("");
         setShowFormModal(true);
     };
 
@@ -98,11 +101,12 @@ export default function TokenGenerate() {
         setCustomDays("");
         setCustomDate("");
         setIsRegenerating(true);
+        setTokenInstance(token?.instance || "");
         setShowFormModal(true);
     };
 
     const handleGenerate = () => {
-        if (!tokenName.trim() || !selectedEnv || !project) return;
+        if (!tokenName.trim() || !selectedEnv || !project || !tokenInstance) return;
 
         const token: ApiToken = {
             id: Date.now().toString(),
@@ -110,6 +114,7 @@ export default function TokenGenerate() {
             token: generateToken(),
             projectId: project.id,
             environmentName: selectedEnv,
+            instance: tokenInstance,
             created: new Date().toISOString().split('T')[0],
             expires: getExpiryDate(expiration, customDays),
             expiresInDays: getExpiryDays(expiration, customDays),
@@ -151,7 +156,24 @@ export default function TokenGenerate() {
         action: () => void,
         type: "form" | "token"
     ) => {
-        setLeaveAction(() => action);
+
+        // FORM MODAL GO BACK
+        if (type === "form") {
+            setLeaveAction(() => () => {
+                setShowFormModal(false);
+                setShowLeaveModal(false);
+            });
+        }
+
+        // TOKEN REVEAL MODAL
+        if (type === "token") {
+            setLeaveAction(() => () => {
+                setGeneratedToken(null);
+                setCopied(false);
+                setShowLeaveModal(false);
+            });
+        }
+
         setLeaveModalType(type);
         setShowLeaveModal(true);
     };
@@ -177,15 +199,25 @@ export default function TokenGenerate() {
                 <div className="token-top-left">
                     <h1 className="page-main-title">API Tokens</h1>
 
-                    <p className="token-project-name">
+                    <p
+                        className="token-project-name clickable-project-name"
+                        onClick={() => {
+                            navigate(`/dashboard/project/${project?.id}/view`, {
+                                state: { project }
+                            });
+                        }}
+                    >
                         Project: <strong>{project?.name}</strong>
                     </p>
                 </div>
 
+                {/* Breadcrumb */}
                 <div className="token-breadcrumb">
                     <span
                         className="breadcrumb-link"
                         onClick={() => navigate("/dashboard")}
+                        role="button"
+                        tabIndex={0}
                     >
                         Dashboard
                     </span>
@@ -194,22 +226,15 @@ export default function TokenGenerate() {
 
                     <span
                         className="breadcrumb-link"
-                        onClick={() => navigate("/projects")}
-                    >
-                        Projects
-                    </span>
-
-                    <span className="breadcrumb-separator">›</span>
-
-                    <span
-                        className="breadcrumb-link"
-                        onClick={() =>
-                            navigate(`/projects/${project?.id}`, {
+                        onClick={() => {
+                            navigate(`/dashboard/project/${project?.id}/view`, {
                                 state: { project }
-                            })
-                        }
+                            });
+                        }}
+                        role="button"
+                        tabIndex={0}
                     >
-                        {project?.name}
+                        Project View
                     </span>
 
                     <span className="breadcrumb-separator">›</span>
@@ -230,7 +255,7 @@ export default function TokenGenerate() {
                     {/* Search Bar */}
                     {environments.length > 0 && (
                         <div className="token-search-bar">
-                            <Search size={16} />
+                            <Search size={16} className="search-icon" />
                             <input
                                 type="text"
                                 placeholder="Search environments..."
@@ -261,43 +286,79 @@ export default function TokenGenerate() {
 
                                         {token ? (
                                             <>
-                                                <div className="token-card-info">
-                                                    <div className="token-card-row">
-                                                        <Key size={14} />
-                                                        <span>{token.name}</span>
+                                                <div className="token-card-content-row">
+                                                    <div className="token-card-body">
+                                                        <div className="token-card-info">
+
+
+                                                            {token.instance && (
+                                                                <div className="token-card-row">
+                                                                    <Globe size={14} />
+                                                                    <span className={`token-instance-badge ${token.instance === 'Live' ? 'live' : 'sandbox'}`}>
+                                                                        {token.instance}
+                                                                    </span>
+                                                                </div>
+                                                            )}
+
+                                                            <div className="token-card-row">
+                                                                <Key size={14} />
+                                                                <span>{token.name}</span>
+                                                            </div>
+
+                                                            <div className="token-card-row">
+                                                                <Calendar size={14} />
+                                                                <span>Created {formatDate(token.created)}</span>
+                                                            </div>
+
+                                                            {/* Expiration row with buttons at the end */}
+                                                            <div className="token-card-row token-expiry-row">
+                                                                <div className="token-expiry-left">
+                                                                    <Clock size={14} />
+                                                                    <span
+                                                                        className={
+                                                                            token.expiresInDays &&
+                                                                                token.expiresInDays <= 7
+                                                                                ? 'expiring-soon'
+                                                                                : ''
+                                                                        }
+                                                                    >
+                                                                        {calculateExpiryLabel(
+                                                                            token.expires,
+                                                                            token.expiresInDays
+                                                                        )}
+                                                                    </span>
+                                                                </div>
+
+                                                                {/* Spacer to push buttons to the right */}
+                                                                <div className="token-expiry-spacer"></div>
+
+                                                                {/* Action buttons at the end of expiration row */}
+                                                                <div className="token-card-actions-side">
+                                                                    <button
+                                                                        className="token-action-btn delete"
+                                                                        onClick={() => {
+                                                                            setSelectedEnv(env);
+                                                                            setCurrentToken(token);
+                                                                            setShowDeleteModal(true);
+                                                                        }}
+                                                                    >
+                                                                        <Trash2 size={14} /> Delete
+                                                                    </button>
+
+                                                                    <button
+                                                                        className="token-action-btn regenerate"
+                                                                        onClick={() => {
+                                                                            setSelectedEnv(env);
+                                                                            setCurrentToken(token);
+                                                                            setShowRegenModal(true);
+                                                                        }}
+                                                                    >
+                                                                        <RefreshCw size={14} /> Regenerate
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    <div className="token-card-row">
-                                                        <Calendar size={14} />
-                                                        <span>Created {formatDate(token.created)}</span>
-                                                    </div>
-                                                    <div className="token-card-row">
-                                                        <Clock size={14} />
-                                                        <span className={token.expiresInDays && token.expiresInDays <= 7 ? 'expiring-soon' : ''}>
-                                                            {calculateExpiryLabel(token.expires, token.expiresInDays)}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <div className="token-card-actions-full">
-                                                    <button
-                                                        className="token-action-btn delete"
-                                                        onClick={() => {
-                                                            setSelectedEnv(env);
-                                                            setCurrentToken(token);
-                                                            setShowDeleteModal(true);
-                                                        }}
-                                                    >
-                                                        <Trash2 size={14} /> Delete
-                                                    </button>
-                                                    <button
-                                                        className="token-action-btn regenerate"
-                                                        onClick={() => {
-                                                            setSelectedEnv(env);
-                                                            setCurrentToken(token);
-                                                            setShowRegenModal(true);
-                                                        }}
-                                                    >
-                                                        <RefreshCw size={14} /> Regenerate
-                                                    </button>
                                                 </div>
                                             </>
                                         ) : (
@@ -334,6 +395,19 @@ export default function TokenGenerate() {
                                         Regenerating will revoke: <strong>{currentToken.name}</strong>
                                     </div>
                                 )}
+                            </div>
+
+                            <div className="form-group">
+                                <label>Select Instance *</label>
+                                <select
+                                    value={tokenInstance}
+                                    onChange={(e) => setTokenInstance(e.target.value)}
+                                    className="token-input"
+                                >
+                                    <option value="">-- Choose instance --</option>
+                                    <option value="Sandbox">Sandbox</option>
+                                    <option value="Live">Live</option>
+                                </select>
                             </div>
 
                             <div className="form-group">
@@ -402,7 +476,7 @@ export default function TokenGenerate() {
                                 className="btn-cancel"
                                 onClick={() =>
                                     handleLeaveConfirmation(
-                                        () => navigate(-1),
+                                        () => { },
                                         "form"
                                     )
                                 }
@@ -412,7 +486,7 @@ export default function TokenGenerate() {
                             <button
                                 className="btn-submit"
                                 onClick={handleGenerate}
-                                disabled={!tokenName.trim() || (expiration === "custom" && !customDays)}
+                                disabled={!tokenName.trim() || !tokenInstance || (expiration === "custom" && !customDays)}
                             >
                                 <Key size={16} /> {isRegenerating ? 'Regenerate Token' : 'Generate Token'}
                             </button>
@@ -455,16 +529,13 @@ export default function TokenGenerate() {
                             className="btn-submit"
                             onClick={() =>
                                 handleLeaveConfirmation(
-                                    () => {
-                                        setGeneratedToken(null);
-                                        setCopied(false);
-                                        navigate(-1);
-                                    },
+                                    () => { },
                                     "token"
                                 )
                             }
-                        ></button>
-                        <Check size={16} /> I’ve Saved the Token, Go Back
+                        >
+                            <Check size={16} /> I’ve Saved the Token, Go Back
+                        </button>
 
                     </div>
                 </div>
