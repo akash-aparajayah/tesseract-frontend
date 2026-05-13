@@ -1,16 +1,20 @@
 import React, { useState, useMemo, useEffect } from "react";
 import styles from "../styles/adminPanel.module.css";
 import {
-  FaUsers,
-  FaUserCheck,
-  FaUserSlash,
-  FaSearch,
-  FaUserPlus,
-  FaCog,               // ← changed from FaEllipsisV
-  
-  FaChevronLeft,
-  FaChevronRight,
-} from "react-icons/fa";
+  Users,
+  UserCheck,
+  UserX,
+  Search,
+  UserPlus,
+  Settings,
+  Pencil,
+  Eye,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import noDataImg from "../assets/No data-cuate.svg";
+import Loader from "@/components/common/Loader";
 
 interface Admin {
   id: number;
@@ -34,8 +38,10 @@ const getInitials = (name: string) => name.charAt(0).toUpperCase();
 
 const AdminPanel: React.FC = () => {
   const [admins, setAdmins] = useState<Admin[]>(INITIAL_ADMINS);
+   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState<"all" | "admin" | "super_admin" | "viewer">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "Active" | "Inactive">("all");
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5;
 
@@ -55,8 +61,11 @@ const AdminPanel: React.FC = () => {
     if (roleFilter !== "all") {
       filtered = filtered.filter((a) => a.role === roleFilter);
     }
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((a) => a.status === statusFilter);
+    }
     return filtered;
-  }, [admins, searchTerm, roleFilter]);
+  }, [admins, searchTerm, roleFilter, statusFilter]);
 
   const totalPages = Math.ceil(filteredAdmins.length / rowsPerPage);
   const paginatedAdmins = useMemo(() => {
@@ -66,7 +75,8 @@ const AdminPanel: React.FC = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, roleFilter]);
+      setLoading(true);
+  }, [searchTerm, roleFilter, statusFilter]);
 
   const handleToggleStatus = (id: number) => {
     setAdmins((prev) =>
@@ -97,29 +107,39 @@ const AdminPanel: React.FC = () => {
 
   const getRoleBadge = (role: string) => {
     switch (role) {
-      case "admin": return styles.roleAdmin;
-      case "super_admin": return styles.roleSuper;
-      default: return styles.roleViewer;
+      case "admin":
+        return styles.roleAdmin;
+      case "super_admin":
+        return styles.roleSuper;
+      default:
+        return styles.roleUser;
     }
   };
 
   const getRoleDisplay = (role: string) => {
     switch (role) {
-      case "admin": return "Admin";
-      case "super_admin": return "Super Admin";
-      default: return "Viewer";
+      case "admin":
+        return "Admin";
+      case "super_admin":
+        return "Super Admin";
+      default:
+        return "Viewer";
     }
   };
 
   const changePage = (page: number) => {
     if (page >= 1 && page <= totalPages) setCurrentPage(page);
   };
+    if (loading) {
+    // return <Loader />;
+  }
+
 
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <h1>Admin Control Panel</h1>
-        <p>Manage administrators, roles and permissions</p>
+        {/* <p>Manage administrators, roles and permissions</p> */}
       </div>
 
       <div className={styles.statsGrid}>
@@ -128,27 +148,33 @@ const AdminPanel: React.FC = () => {
             <div className={styles.statLabel}>Total Admins</div>
             <div className={styles.statNumber}>{totalCount}</div>
           </div>
-          <div className={styles.statIcon}><FaUsers /></div>
+          <div className={styles.statIcon}>
+            <Users size={24} />
+          </div>
         </div>
         <div className={`${styles.statCard} ${styles.cardActive}`}>
           <div className={styles.statLeft}>
             <div className={styles.statLabel}>Active</div>
             <div className={styles.statNumber}>{activeCount}</div>
           </div>
-          <div className={styles.statIcon}><FaUserCheck /></div>
+          <div className={styles.statIcon}>
+            <UserCheck size={24} />
+          </div>
         </div>
         <div className={`${styles.statCard} ${styles.cardInactive}`}>
           <div className={styles.statLeft}>
             <div className={styles.statLabel}>Inactive</div>
             <div className={styles.statNumber}>{inactiveCount}</div>
           </div>
-          <div className={styles.statIcon}><FaUserSlash /></div>
+          <div className={styles.statIcon}>
+            <UserX size={24} />
+          </div>
         </div>
       </div>
 
       <div className={styles.toolbar}>
         <div className={styles.searchBox}>
-          <FaSearch className={styles.searchIcon} />
+          <Search className={styles.searchIcon} size={16} />
           <input
             type="text"
             placeholder="Search by name or email..."
@@ -168,8 +194,17 @@ const AdminPanel: React.FC = () => {
             <option value="super_admin">Super Admin</option>
             <option value="viewer">Viewer</option>
           </select>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+            className={styles.roleSelect}
+          >
+            <option value="all">All Status</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
           <button className={styles.addBtn} onClick={() => alert("Add Admin form")}>
-            <FaUserPlus /> Add Admin
+            <UserPlus size={16} /> Add User
           </button>
         </div>
       </div>
@@ -178,12 +213,12 @@ const AdminPanel: React.FC = () => {
         <table className={styles.table}>
           <thead>
             <tr>
-              <th className={styles.colNo}>NO</th>
-              <th className={styles.colUser}>USER</th>
-              <th className={styles.colEmail}>EMAIL</th>
-              <th className={styles.colRole}>ROLE</th>
-              <th className={styles.colStatus}>STATUS</th>
-              <th className={styles.colActions}>ACTIONS</th>
+              <th className={styles.colNo}>S.NO</th>
+              <th className={styles.colUser}>User</th>
+              <th className={styles.colEmail}>Email</th>
+              <th className={styles.colRole}>Role</th>
+              <th className={styles.colStatus}>Status</th>
+              <th className={styles.colActions}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -216,7 +251,11 @@ const AdminPanel: React.FC = () => {
                       >
                         <div className={styles.knob}></div>
                       </div>
-                      <span className={`${styles.statusText} ${isActive ? styles.statusActive : styles.statusInactive}`}>
+                      <span
+                        className={`${styles.statusText} ${
+                          isActive ? styles.statusActive : styles.statusInactive
+                        }`}
+                      >
                         {admin.status}
                       </span>
                     </div>
@@ -224,13 +263,21 @@ const AdminPanel: React.FC = () => {
                   <td className={styles.colActions}>
                     <div className={styles.actionMenu}>
                       <button className={styles.dotsBtn}>
-                        <FaCog />   {/* ← changed from FaEllipsisV */}
+                        <Settings size={16} />
                       </button>
                       <div className={styles.dropdown}>
-                        <button onClick={() => handleView(admin)}>View</button>
-                        <button onClick={() => handleEdit(admin)}>Edit</button>
-                        {/* Environments option removed */}
-                        <button className={styles.deleteBtn} onClick={() => handleDelete(admin.id)}>Delete</button>
+                        <button onClick={() => handleView(admin)}>
+                          <Eye size={14} /> View
+                        </button>
+                        <button onClick={() => handleEdit(admin)}>
+                          <Pencil size={14} /> Edit
+                        </button>
+                        <button
+                          className={styles.deleteBtn}
+                          onClick={() => handleDelete(admin.id)}
+                        >
+                          <Trash2 size={14} /> Delete
+                        </button>
                       </div>
                     </div>
                   </td>
@@ -239,7 +286,10 @@ const AdminPanel: React.FC = () => {
             })}
             {paginatedAdmins.length === 0 && (
               <tr>
-                <td colSpan={6} className={styles.noData}>No admins found</td>
+                <td colSpan={6} className={styles.noData}>
+                   <img src={noDataImg} alt="No data" className={styles.noDataImg} />
+                    <div>No User found</div>
+                </td>
               </tr>
             )}
           </tbody>
@@ -248,22 +298,34 @@ const AdminPanel: React.FC = () => {
 
       {totalPages > 1 && (
         <div className={styles.pagination}>
-          <button className={styles.pageBtn} onClick={() => changePage(currentPage - 1)} disabled={currentPage === 1}>
-            <FaChevronLeft /> Prev
+          <button
+            className={styles.pageBtn}
+            onClick={() => changePage(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft size={14} /> Prev
           </button>
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
             <button
               key={page}
-              className={`${styles.pageBtn} ${currentPage === page ? styles.activePage : ""}`}
+              className={`${styles.pageBtn} ${
+                currentPage === page ? styles.activePage : ""
+              }`}
               onClick={() => changePage(page)}
             >
               {page}
             </button>
           ))}
-          <button className={styles.pageBtn} onClick={() => changePage(currentPage + 1)} disabled={currentPage === totalPages}>
-            Next <FaChevronRight />
+          <button
+            className={styles.pageBtn}
+            onClick={() => changePage(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            Next <ChevronRight size={14} />
           </button>
-          <span className={styles.pageInfo}>Page {currentPage} of {totalPages}</span>
+          <span className={styles.pageInfo}>
+            Page {currentPage} of {totalPages}
+          </span>
         </div>
       )}
     </div>
