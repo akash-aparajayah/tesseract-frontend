@@ -7,22 +7,42 @@ export default function Layout() {
   const navigation = useNavigation();
 
   return (
-    <>
+    <div
+      style={{
+        height: "100vh",
+        overflow: "hidden",
+      }}
+    >
+      {/* Top Bar */}
       <TopBar />
+
+      {/* Sidebar */}
       <Sidebar />
 
+      {/* Main Content */}
       <main
         style={{
-          marginLeft: "250px",   // same as sidebar width
-          marginTop: "70px",     // same as topbar height
+          marginLeft: "250px",
+          marginTop: "55px",
+
           padding: "24px",
+
           backgroundColor: "#f9fafb",
-          minHeight: "calc(100vh - 70px)",
+
+          height: "calc(100vh - 55px)",
+
+          overflowY: "auto",
+          overflowX: "hidden",
+
+          boxSizing: "border-box",
         }}
       >
+        {/* Route Loader */}
         {navigation.state === "loading" && <PageLoader />}
+
+        {/* Page Content */}
         <Outlet />
       </main>
-    </>
+    </div>
   );
 }

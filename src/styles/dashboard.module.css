@@ -1,6 +1,3 @@
-/* =============================================
-   GLOBAL VARIABLES & RESET (keep as is)
-   ============================================= */
 :root {
   --primary-dark: #1e3a5f;
   --primary: #4f8ef7;
@@ -18,28 +15,18 @@
   --radius-sm: 20px;
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Plus Jakarta Sans', sans-serif;
-  background: var(--gray-bg);
-  color: var(--text-dark);
-}
-
-/* 🔥 FIX: removed double padding – rely on Layout's main padding */
 .dashboard {
   max-width: 1400px;
+  width: 100%;
   margin: 0 auto;
-  padding: 0;                 /* was 24px – causes double spacing */
+  padding: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
 }
 
-/* =============================================
-   HERO SECTION
-   ============================================= */
+/* Hero */
 .hero {
   background: linear-gradient(120deg, #0f1f38 0%, var(--primary-dark) 45%, #2a5090 100%);
   border-radius: var(--radius);
@@ -54,8 +41,6 @@ body {
   position: relative;
   overflow: hidden;
 }
-
-/* ... rest of hero styles stay same ... */
 .hero::before {
   content: '';
   position: absolute;
@@ -67,33 +52,28 @@ body {
   border-radius: 50%;
   pointer-events: none;
 }
-
-.hero-content {
+.heroContent {
   position: relative;
   z-index: 2;
   animation: slideInRight 0.5s ease-out forwards;
 }
-
 @keyframes slideInRight {
   0% { opacity: 0; transform: translateX(30px); }
   100% { opacity: 1; transform: translateX(0); }
 }
-
-.hero-time {
+.heroTime {
   font-size: 40px;
   font-weight: 800;
   letter-spacing: -1px;
   font-family: 'Syne', monospace;
   line-height: 1;
 }
-
-.hero-date {
+.heroDate {
   font-size: 14px;
   margin-top: 8px;
   opacity: 0.7;
 }
-
-.hero-company {
+.heroCompany {
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(12px);
   border-radius: var(--radius-sm);
@@ -105,18 +85,15 @@ body {
   animation: heroCompanyEntrance 0.5s ease-out forwards;
   transition: transform 0.25s ease, border-color 0.2s;
 }
-
-.hero-company:hover {
+.heroCompany:hover {
   transform: translateY(-2px);
   border-color: rgba(79, 142, 247, 0.6);
 }
-
 @keyframes heroCompanyEntrance {
   0% { opacity: 0; transform: translateX(20px); }
   100% { opacity: 1; transform: translateX(0); }
 }
-
-.company-logo {
+.companyLogo {
   width: 44px;
   height: 44px;
   background: linear-gradient(135deg, var(--primary), var(--success));
@@ -127,29 +104,24 @@ body {
   font-weight: 800;
   font-size: 18px;
 }
-
-.company-name {
+.companyName {
   font-weight: 700;
   font-size: 14px;
 }
-
-.company-quote {
+.companyQuote {
   font-size: 11px;
   opacity: 0.7;
   font-style: italic;
 }
 
-/* =============================================
-   STATS CARDS – increased gap
-   ============================================= */
-.stats-grid {
+/* Stats Cards */
+.statsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 24px;           /* was 20px – more breathing room */
+  gap: 24px;
   margin-bottom: 32px;
 }
-
-.stat-card {
+.statCard {
   background: var(--card-bg);
   border-radius: var(--radius);
   padding: 20px;
@@ -160,14 +132,12 @@ body {
   border: 1px solid var(--border);
   transition: all 0.2s;
 }
-
-.stat-card:hover {
+.statCard:hover {
   transform: translateY(-3px);
   box-shadow: var(--shadow-md);
   border-color: #cbdbe0;
 }
-
-.stat-icon {
+.statIcon {
   width: 56px;
   height: 56px;
   border-radius: var(--radius-sm);
@@ -176,46 +146,38 @@ body {
   justify-content: center;
   font-size: 28px;
 }
-
-.stat-info {
+.statInfo {
   flex: 1;
 }
-
-.stat-label {
+.statLabel {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 1px;
   color: var(--text-muted);
   margin-bottom: 4px;
 }
-
-.stat-value {
+.statValue {
   font-size: 36px;
   font-weight: 800;
   line-height: 1;
   margin-bottom: 4px;
 }
 
-/* =============================================
-   TWO COLUMN LAYOUT – increased gap
-   ============================================= */
-.two-columns {
+/* Two Columns */
+.twoColumns {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 28px;           /* was 24px – better separation */
+  gap: 28px;
   align-items: stretch;
 }
-
-.left-col, .right-col {
+.leftCol, .rightCol {
   display: flex;
   flex-direction: column;
 }
 
-/* =============================================
-   CARD BASE STYLES – consistent padding inside
-   ============================================= */
-.aadhar-card,
-.pie-card {
+/* Card Base */
+.aadharCard,
+.pieCard {
   background: white;
   border-radius: 20px;
   border: 1px solid #d4dcec;
@@ -227,40 +189,28 @@ body {
   flex-direction: column;
   position: relative;
 }
-
-/* ... keep all existing animations (cardReveal, shine, etc.) ... */
-.left-col .aadhar-card,
-.right-col .pie-card {
+.leftCol .aadharCard,
+.rightCol .pieCard {
   animation: cardReveal 0.7s cubic-bezier(0.21, 1.11, 0.36, 1) forwards;
   opacity: 0;
 }
-
 @keyframes cardReveal {
   0% { opacity: 0; transform: translateY(40px) scale(0.96); }
   60% { transform: translateY(-6px) scale(1.01); }
   100% { opacity: 1; transform: translateY(0) scale(1); }
 }
-
-.left-col .aadhar-card { animation-delay: 0.05s; }
-.right-col .pie-card { animation-delay: 0.1s; }
-
-.left-col .aadhar-card {
-  transform-style: preserve-3d;
-  perspective: 800px;
-}
-.left-col .aadhar-card:hover {
+.leftCol .aadharCard { animation-delay: 0.05s; }
+.rightCol .pieCard { animation-delay: 0.1s; }
+.leftCol .aadharCard:hover {
   transform: translateY(-8px) rotateX(2deg) rotateY(1deg) scale(1.01);
   box-shadow: 0 30px 40px -20px rgba(0, 0, 0, 0.25);
 }
-
-.right-col .pie-card:hover {
+.rightCol .pieCard:hover {
   transform: translateY(-6px) scale(1.01);
   box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.15);
 }
-
-/* Shine effect */
-.aadhar-card::after,
-.pie-card::after {
+.aadharCard::after,
+.pieCard::after {
   content: '';
   position: absolute;
   top: -50%;
@@ -273,8 +223,8 @@ body {
   transition: opacity 0.4s;
   pointer-events: none;
 }
-.aadhar-card:hover::after,
-.pie-card:hover::after {
+.aadharCard:hover::after,
+.pieCard:hover::after {
   opacity: 1;
   animation: shineFlash 0.6s ease-out;
 }
@@ -283,10 +233,8 @@ body {
   100% { transform: translateX(100%) rotate(25deg); }
 }
 
-/* =============================================
-   PROFILE CARD INTERNAL (left)
-   ============================================= */
-.aadhar-header {
+/* Profile Card */
+.aadharHeader {
   background: linear-gradient(90deg, #1e3a5f 0%, #2a5090 100%);
   padding: 12px 20px;
   display: flex;
@@ -294,8 +242,7 @@ body {
   align-items: baseline;
   color: white;
 }
-
-.aadhar-logo {
+.aadharLogo {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -303,30 +250,26 @@ body {
   font-size: 14px;
   letter-spacing: 1px;
 }
-
-.aadhar-title {
+.aadharTitle {
   font-size: 11px;
   font-weight: 600;
   opacity: 0.8;
   letter-spacing: 1px;
 }
-
-.aadhar-body-row {
+.aadharBodyRow {
   display: flex;
   gap: 24px;
-  padding: 24px;        /* was 20px – more internal spacing */
+  padding: 24px;
   flex-wrap: wrap;
   border-bottom: 1px dashed #e2e8f0;
   flex: 1;
 }
-
-.aadhar-avatar-row {
+.aadharAvatarRow {
   text-align: center;
   width: 100px;
   flex-shrink: 0;
 }
-
-.avatar-photo-row {
+.avatarPhotoRow {
   width: 80px;
   height: 80px;
   background: #f0f3fa;
@@ -339,47 +282,40 @@ body {
   margin-bottom: 6px;
   animation: avatarPulse 0.8s ease-out 0.2s both;
 }
-
 @keyframes avatarPulse {
   0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(79, 142, 247, 0.4); }
   50% { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(79, 142, 247, 0.1); }
   100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(79, 142, 247, 0); }
 }
-
-.avatar-label-row {
+.avatarLabelRow {
   font-size: 10px;
   color: #5b6e8c;
   text-transform: uppercase;
   font-weight: 500;
 }
-
-.profile-details-grid {
+.profileDetailsGrid {
   flex: 1;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 20px;            /* was 16px – more breathing room */
+  gap: 20px;
 }
-
-.detail-item {
+.detailItem {
   border-bottom: 1px dotted #eef2f8;
-  padding-bottom: 8px;  /* was 6px */
+  padding-bottom: 8px;
   opacity: 0;
   animation: slideGlowIn 0.4s ease forwards;
 }
-
-.detail-item:nth-child(1) { animation-delay: 0.1s; }
-.detail-item:nth-child(2) { animation-delay: 0.2s; }
-.detail-item:nth-child(3) { animation-delay: 0.3s; }
-.detail-item:nth-child(4) { animation-delay: 0.4s; }
-.detail-item:nth-child(5) { animation-delay: 0.5s; }
-
+.detailItem:nth-child(1) { animation-delay: 0.1s; }
+.detailItem:nth-child(2) { animation-delay: 0.2s; }
+.detailItem:nth-child(3) { animation-delay: 0.3s; }
+.detailItem:nth-child(4) { animation-delay: 0.4s; }
+.detailItem:nth-child(5) { animation-delay: 0.5s; }
 @keyframes slideGlowIn {
   0% { opacity: 0; transform: translateX(-12px); filter: blur(2px); }
   70% { transform: translateX(2px); }
   100% { opacity: 1; transform: translateX(0); filter: blur(0); }
 }
-
-.detail-item label {
+.detailItem label {
   display: block;
   font-size: 10px;
   text-transform: uppercase;
@@ -388,8 +324,7 @@ body {
   letter-spacing: 0.5px;
   margin-bottom: 6px;
 }
-
-.detail-item p {
+.detailItem p {
   font-size: 14px;
   font-weight: 500;
   color: #1a1a2e;
@@ -398,32 +333,26 @@ body {
   opacity: 0;
   transform-origin: left;
 }
-
 @keyframes valuePop {
   0% { opacity: 0; transform: scale(0.95); }
   80% { opacity: 1; transform: scale(1.02); }
   100% { opacity: 1; transform: scale(1); }
 }
-
-.status-active {
+.statusActive {
   color: #00c896;
   font-weight: 600;
   animation: gentleGlow 2s infinite;
 }
-
 @keyframes gentleGlow {
   0% { text-shadow: 0 0 0px rgba(0, 200, 150, 0); }
   50% { text-shadow: 0 0 3px rgba(0, 200, 150, 0.5); }
   100% { text-shadow: 0 0 0px rgba(0, 200, 150, 0); }
 }
-
-.status-inactive { color: #f75f5f; }
-
-.detail-full-width {
+.statusInactive { color: #f75f5f; }
+.detailFullWidth {
   grid-column: span 2;
 }
-
-.aadhar-footer {
+.aadharFooter {
   padding: 14px 20px;
   background: #fafcff;
   display: flex;
@@ -433,65 +362,40 @@ body {
   gap: 12px;
   border-top: 1px solid #eef2f8;
 }
-
-.aadhar-footer .aadhar-id,
-.aadhar-footer .aadhar-signature {
-  animation: footerFadeUp 0.5s ease-out forwards;
-  opacity: 0;
-  animation-delay: 0.4s;
-}
-
-@keyframes footerFadeUp {
-  0% { opacity: 0; transform: translateY(8px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-
-.aadhar-id, .aadhar-signature {
+.aadharId, .aadharSignature {
   font-size: 10px;
   color: #5b6e8c;
 }
-
-.aadhar-signature {
+.aadharSignature {
   font-style: italic;
   border-top: 1px solid #cbd5e1;
   padding-top: 4px;
 }
 
-/* =============================================
-   SYSTEM HEALTH CARD (right) – improved interior spacing
-   ============================================= */
-.pie-card .aadhar-header {
+/* System Health Card */
+.pieCard .aadharHeader {
   background: linear-gradient(90deg, #1e3a5f 0%, #2a5090 100%);
-  padding: 12px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  color: white;
 }
-
-.pie-card-body-row {
+.pieCardBodyRow {
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;          /* was 20px */
-  padding: 24px;      /* was 20px */
+  gap: 24px;
+  padding: 24px;
   flex-wrap: wrap;
   flex: 1;
 }
-
-.donut-chart-wrapper {
+.donutChartWrapper {
   flex-shrink: 0;
 }
-
-.donut-legend-row {
+.donutLegendRow {
   display: flex;
   flex-direction: column;
-  gap: 14px;          /* was 12px */
+  gap: 14px;
   min-width: 100px;
 }
-
-.legend-item-row {
+.legendItemRow {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -500,59 +404,50 @@ body {
   opacity: 0;
   animation: legendFade 0.3s ease forwards;
 }
-
-.legend-item-row:nth-child(1) { animation-delay: 0.15s; }
-.legend-item-row:nth-child(2) { animation-delay: 0.2s; }
-.legend-item-row:nth-child(3) { animation-delay: 0.25s; }
-
+.legendItemRow:nth-child(1) { animation-delay: 0.15s; }
+.legendItemRow:nth-child(2) { animation-delay: 0.2s; }
+.legendItemRow:nth-child(3) { animation-delay: 0.25s; }
 @keyframes legendFade {
   from { opacity: 0; transform: translateX(-8px); }
   to { opacity: 1; transform: translateX(0); }
 }
-
-.legend-dot-row {
+.legendDotRow {
   width: 10px;
   height: 10px;
   border-radius: 3px;
   flex-shrink: 0;
 }
-
-.service-cards-row-right {
+.serviceCardsRowRight {
   display: flex;
   flex-direction: column;
-  gap: 16px;          /* was 12px */
+  gap: 16px;
   min-width: 130px;
 }
-
-.service-card-mini {
+.serviceCardMini {
   display: flex;
   align-items: center;
-  gap: 12px;          /* was 10px */
+  gap: 12px;
   background: #f8fafc;
-  padding: 10px 14px; /* was 8px 12px */
+  padding: 10px 14px;
   border-radius: 14px;
   border: 1px solid #eef2f8;
   transition: all 0.2s;
   opacity: 0;
   animation: servicePopIn 0.4s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
 }
-
-.service-card-mini:first-child { animation-delay: 0.2s; }
-.service-card-mini:last-child { animation-delay: 0.3s; }
-
+.serviceCardMini:first-child { animation-delay: 0.2s; }
+.serviceCardMini:last-child { animation-delay: 0.3s; }
 @keyframes servicePopIn {
   0% { opacity: 0; transform: scale(0.9); }
   80% { opacity: 1; transform: scale(1.02); }
   100% { opacity: 1; transform: scale(1); }
 }
-
-.service-card-mini:hover {
+.serviceCardMini:hover {
   transform: translateY(-3px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
   border-color: #cbd5e1;
 }
-
-.service-card-icon-mini {
+.serviceCardIconMini {
   font-size: 24px;
   width: 40px;
   height: 40px;
@@ -562,137 +457,122 @@ body {
   align-items: center;
   justify-content: center;
 }
-
-.service-card-label-mini {
+.serviceCardLabelMini {
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
   color: #6c7a91;
   letter-spacing: 0.5px;
 }
-
-.service-card-status-mini {
+.serviceCardStatusMini {
   font-size: 13px;
   font-weight: 600;
   display: flex;
   align-items: center;
   gap: 6px;
 }
-
-.service-status-dot-mini {
+.serviceStatusDotMini {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   transition: background-color 0.2s ease;
   animation: statusPulse 0.6s ease-out;
 }
-
 @keyframes statusPulse {
   0% { box-shadow: 0 0 0 0 rgba(0, 200, 150, 0.4); transform: scale(1); }
   50% { box-shadow: 0 0 0 6px rgba(0, 200, 150, 0); transform: scale(1.1); }
   100% { box-shadow: 0 0 0 0 rgba(0, 200, 150, 0); transform: scale(1); }
 }
-
-/* Donut text animations */
-.donut-chart-wrapper text:first-of-type {
+@keyframes donutFill {
+  0% { stroke-dasharray: 0 1000; }
+  100% { stroke-dasharray: inherit; }
+}
+.donutChartWrapper text:first-of-type {
   animation: uptimePulse 0.8s ease-out 0.3s both;
 }
-
 @keyframes uptimePulse {
   0% { opacity: 0; transform: scale(0.5); }
   70% { opacity: 1; transform: scale(1.1); }
   100% { opacity: 1; transform: scale(1); }
 }
-
-.donut-chart-wrapper text:last-of-type {
+.donutChartWrapper text:last-of-type {
   animation: fadeUpSlow 0.5s ease-out 0.5s both;
   opacity: 0;
 }
-
 @keyframes fadeUpSlow {
   0% { opacity: 0; transform: translateY(4px); }
   100% { opacity: 1; transform: translateY(0); }
 }
 
-/* =============================================
-   HEADER WORD ANIMATIONS (both cards)
-   ============================================= */
-.aadhar-logo span:last-child,
-.aadhar-title {
+/* Header animations */
+.aadharLogo span:last-child,
+.aadharTitle {
   display: inline-block;
   animation: textGlowSlide 0.8s ease-out forwards;
   opacity: 0;
 }
-
 @keyframes textGlowSlide {
   0% { opacity: 0; transform: translateY(-10px); text-shadow: 0 0 0 rgba(79, 142, 247, 0); }
   50% { text-shadow: 0 0 6px rgba(79, 142, 247, 0.5); }
   100% { opacity: 1; transform: translateY(0); text-shadow: 0 0 0 rgba(79, 142, 247, 0); }
 }
-
-.aadhar-logo span:last-child { animation-delay: 0.05s; }
-.aadhar-title { animation-delay: 0.15s; }
-
-.aadhar-logo span:first-child {
+.aadharLogo span:last-child { animation-delay: 0.05s; }
+.aadharTitle { animation-delay: 0.15s; }
+.aadharLogo span:first-child {
   display: inline-block;
   animation: iconWave 0.5s ease 0.3s both;
 }
-
 @keyframes iconWave {
   0% { transform: scale(1); }
   50% { transform: scale(1.2) rotate(5deg); }
   100% { transform: scale(1); }
 }
 
-/* =============================================
-   RESPONSIVE – adjust gaps on smaller screens
-   ============================================= */
+/* Responsive */
 @media (max-width: 1000px) {
-  .two-columns {
+  .twoColumns {
     grid-template-columns: 1fr;
     gap: 24px;
   }
-  .hero-time {
+  .heroTime {
     font-size: 36px;
   }
 }
-
 @media (max-width: 800px) {
-  .pie-card-body-row {
+  .pieCardBodyRow {
     flex-direction: column;
     align-items: stretch;
   }
-  .donut-legend-row {
+  .donutLegendRow {
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: center;
   }
-  .service-cards-row-right {
+  .serviceCardsRowRight {
     flex-direction: row;
     justify-content: center;
   }
-  .stats-grid {
+  .statsGrid {
     gap: 20px;
   }
 }
-
 @media (max-width: 640px) {
-  .stats-grid {
+  .statsGrid {
     grid-template-columns: 1fr;
   }
   .hero {
     flex-direction: column;
     text-align: center;
   }
-  .aadhar-body-row {
+  .aadharBodyRow {
     flex-direction: column;
     align-items: center;
     text-align: center;
   }
-  .profile-details-grid {
+  .profileDetailsGrid {
     grid-template-columns: 1fr;
   }
-  .detail-full-width {
+  .detailFullWidth {
     grid-column: span 1;
   }
 }

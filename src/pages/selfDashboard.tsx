@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import "../styles/dashboard.css";
+import styles from "../styles/dashboard.module.css";
 import { useToast } from "../hooks/useToast";
 import { getUserApi, healthCheckApi } from "../services/authApi";
 import Loader from "@/components/common/Loader";
@@ -10,33 +10,29 @@ type ServiceStatus = {
   redis: string;
 };
 
-const TesseractDashboard: React.FC = () => {
+const Dashboard: React.FC = () => {
   const { showToast, ToastContainer } = useToast();
-
   const [currentTime, setCurrentTime] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState({
     id: 1,
-    name: "Loading...",
-    role: "System Administrator",
-    email: "loading@aparajayah.com",
+    name: "",
+    role: "",
+    email: "",
     lastLogin: "",
     status: "Active",
   });
-
   const [stats, setStats] = useState([
     { label: "Admins", value: 0, icon: "👥", color: "#4f8ef7", bg: "#e8f0ff" },
     { label: "Services", value: 0, icon: "⚙️", color: "#00c896", bg: "#e0faf3" },
     { label: "Projects", value: 0, icon: "📁", color: "#f5a623", bg: "#fff4e0" },
   ]);
-
   const [distribution, setDistribution] = useState([
     { name: "Services", value: 0, color: "#00c896", percent: 0 },
     { name: "Projects", value: 0, color: "#f5a623", percent: 0 },
     { name: "Admins", value: 0, color: "#4f8ef7", percent: 0 },
   ]);
-
-  const [uptime, setUptime] = useState<string>("0");
+  const [uptime, setUptime] = useState("0");
   const [services, setServices] = useState<ServiceStatus>({
     api: "unknown",
     database: "unknown",
@@ -74,7 +70,7 @@ const TesseractDashboard: React.FC = () => {
           { name: "Admins", value: profileData.data.statsData.totalAdmins, color: "#4f8ef7", percent: (profileData.data.statsData.totalAdmins / total) * 100 },
         ]);
 
-        setUptime(healthData?.data?. uptimeFormatted ?? "0");
+        setUptime(healthData?.data?.uptimeFormatted ?? "0");
         if (healthData?.data?.services) {
           setServices({
             api: healthData.data.services.api || "unknown",
@@ -144,100 +140,99 @@ const TesseractDashboard: React.FC = () => {
   return (
     <>
       <ToastContainer />
-      <div className="dashboard">
-    
+      <div className={styles.dashboard}>
         {/* Hero Section */}
-        <div className="hero">
-          <div className="hero-content">
-            <div className="hero-time">{formatTime(currentTime)}</div>
-            <div className="hero-date">{formatDate(currentTime)}</div>
+        <div className={styles.hero}>
+          <div className={styles.heroContent}>
+            <div className={styles.heroTime}>{formatTime(currentTime)}</div>
+            <div className={styles.heroDate}>{formatDate(currentTime)}</div>
           </div>
-          <div className="hero-company">
-            <div className="company-logo">AT</div>
+          <div className={styles.heroCompany}>
+            <div className={styles.companyLogo}>AT</div>
             <div>
-              <div className="company-name">Aparajayah Technologies Pvt Ltd</div>
-              <div className="company-quote">"Consistency beats talent every time."</div>
+              <div className={styles.companyName}>Aparajayah Technologies Pvt Ltd</div>
+              <div className={styles.companyQuote}>"Consistency beats talent every time."</div>
             </div>
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="stats-grid">
+        <div className={styles.statsGrid}>
           {stats.map((stat, idx) => (
-            <div className="stat-card" key={idx}>
-              <div className="stat-icon" style={{ background: stat.bg, color: stat.color }}>
+            <div className={styles.statCard} key={idx}>
+              <div className={styles.statIcon} style={{ background: stat.bg, color: stat.color }}>
                 {stat.icon}
               </div>
-              <div className="stat-info">
-                <p className="stat-label">{stat.label}</p>
-                <h3 className="stat-value">{stat.value}</h3>
+              <div className={styles.statInfo}>
+                <p className={styles.statLabel}>{stat.label}</p>
+                <h3 className={styles.statValue}>{stat.value}</h3>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Two Columns - both row-aligned */}
-        <div className="two-columns">
-          {/* LEFT COLUMN - Profile Card (row-aligned) */}
-          <div className="left-col">
-            <div className="card aadhar-card animated-aadhar">
-              <div className="aadhar-header">
-                <div className="aadhar-logo">
+        {/* Two Columns */}
+        <div className={styles.twoColumns}>
+          {/* Left Column - Profile Card */}
+          <div className={styles.leftCol}>
+            <div className={`${styles.aadharCard} ${styles.animatedAadhar}`}>
+              <div className={styles.aadharHeader}>
+                <div className={styles.aadharLogo}>
                   <span>🔷</span>
                   <span>USER PROFILE</span>
                 </div>
-                <div className="aadhar-title">IDENTITY</div>
+                <div className={styles.aadharTitle}>IDENTITY</div>
               </div>
-              <div className="aadhar-body-row">
-                <div className="aadhar-avatar-row">
-                  <div className="avatar-photo-row">👤</div>
-                  <div className="avatar-label-row">Photo</div>
+              <div className={styles.aadharBodyRow}>
+                <div className={styles.aadharAvatarRow}>
+                  <div className={styles.avatarPhotoRow}>👤</div>
+                  <div className={styles.avatarLabelRow}>Photo</div>
                 </div>
-                <div className="profile-details-grid">
-                  <div className="detail-item">
+                <div className={styles.profileDetailsGrid}>
+                  <div className={styles.detailItem}>
                     <label>Name</label>
                     <p>{profile.name}</p>
                   </div>
-                  <div className="detail-item">
+                  <div className={styles.detailItem}>
                     <label>Role / Type</label>
                     <p>{profile.role}</p>
                   </div>
-                  <div className="detail-item">
+                  <div className={styles.detailItem}>
                     <label>Status</label>
-                    <p className={profile.status === "Active" ? "status-active" : "status-inactive"}>
+                    <p className={profile.status === "Active" ? styles.statusActive : styles.statusInactive}>
                       {profile.status === "Active" ? "● Active" : profile.status}
                     </p>
                   </div>
-                  <div className="detail-item">
+                  <div className={styles.detailItem}>
                     <label>Last Login</label>
                     <p>{profile.lastLogin || formatTime(currentTime)}</p>
                   </div>
-                  <div className="detail-item detail-full-width">
+                  <div className={`${styles.detailItem} ${styles.detailFullWidth}`}>
                     <label>Email Address</label>
                     <p>{profile.email}</p>
                   </div>
                 </div>
               </div>
-              <div className="aadhar-footer">
-                <div className="aadhar-id">Admin ID: ADI-{profile.id}</div>
-                <div className="aadhar-signature">Authorised Signature</div>
+              <div className={styles.aadharFooter}>
+                <div className={styles.aadharId}>Admin ID: ADI-{profile.id}</div>
+                <div className={styles.aadharSignature}>Authorised Signature</div>
               </div>
             </div>
           </div>
 
-          {/* RIGHT COLUMN - System Health Card (row-aligned) */}
-          <div className="right-col">
-            <div className="card aadhar-card pie-card animated-aadhar">
-              <div className="aadhar-header">
-                <div className="aadhar-logo">
+          {/* Right Column - System Health Card */}
+          <div className={styles.rightCol}>
+            <div className={`${styles.aadharCard} ${styles.pieCard} ${styles.animatedAadhar}`}>
+              <div className={styles.aadharHeader}>
+                <div className={styles.aadharLogo}>
                   <span>📊</span>
                   <span>SYSTEM HEALTH</span>
                 </div>
-                <div className="aadhar-title">RESOURCE METRICS</div>
+                <div className={styles.aadharTitle}>RESOURCE METRICS</div>
               </div>
-              <div className="pie-card-body-row">
+              <div className={styles.pieCardBodyRow}>
                 {/* Donut Chart */}
-                <div className="donut-chart-wrapper">
+                <div className={styles.donutChartWrapper}>
                   <svg width="140" height="140" viewBox="0 0 140 140">
                     <circle cx="70" cy="70" r="54" fill="none" stroke="#eef1f8" strokeWidth="20" />
                     {donutSegments.map((seg, idx) => (
@@ -252,8 +247,9 @@ const TesseractDashboard: React.FC = () => {
                         strokeDasharray={`${seg.dashArray} ${circumference}`}
                         strokeDashoffset={seg.dashOffset}
                         transform="rotate(-90 70 70)"
-                        className="animated-donut-segment"
-                        style={{ animationDelay: `${idx * 0.15}s` }}
+                        style={{
+                          animation: `donutFill 0.8s ease-out ${idx * 0.15}s forwards`,
+                        }}
                       />
                     ))}
                     <text x="70" y="64" textAnchor="middle" fontSize="20" fontWeight="800" fill="#1a1a2e">
@@ -266,43 +262,43 @@ const TesseractDashboard: React.FC = () => {
                 </div>
 
                 {/* Legend */}
-                <div className="donut-legend-row">
+                <div className={styles.donutLegendRow}>
                   {distribution.map((item, idx) => (
-                    <div key={idx} className="legend-item-row">
-                      <span className="legend-dot-row" style={{ background: item.color }}></span>
+                    <div key={idx} className={styles.legendItemRow}>
+                      <span className={styles.legendDotRow} style={{ background: item.color }}></span>
                       <span>{item.name}</span>
                       <strong>{item.value}</strong>
                     </div>
                   ))}
                 </div>
 
-                {/* Service Cards (Database & Redis) */}
-                <div className="service-cards-row-right">
-                  <div className="service-card-mini">
-                    <div className="service-card-icon-mini">🗄️</div>
+                {/* Service Cards */}
+                <div className={styles.serviceCardsRowRight}>
+                  <div className={styles.serviceCardMini}>
+                    <div className={styles.serviceCardIconMini}>🗄️</div>
                     <div>
-                      <div className="service-card-label-mini">DATABASE</div>
-                      <div className="service-card-status-mini">
-                        <span className="service-status-dot-mini" style={{ backgroundColor: getServiceStatus(services.database).color }}></span>
+                      <div className={styles.serviceCardLabelMini}>DATABASE</div>
+                      <div className={styles.serviceCardStatusMini}>
+                        <span className={styles.serviceStatusDotMini} style={{ backgroundColor: getServiceStatus(services.database).color }}></span>
                         <span>{getServiceStatus(services.database).text}</span>
                       </div>
                     </div>
                   </div>
-                  <div className="service-card-mini">
-                    <div className="service-card-icon-mini">📦</div>
+                  <div className={styles.serviceCardMini}>
+                    <div className={styles.serviceCardIconMini}>📦</div>
                     <div>
-                      <div className="service-card-label-mini">REDIS</div>
-                      <div className="service-card-status-mini">
-                        <span className="service-status-dot-mini" style={{ backgroundColor: getServiceStatus(services.redis).color }}></span>
+                      <div className={styles.serviceCardLabelMini}>REDIS</div>
+                      <div className={styles.serviceCardStatusMini}>
+                        <span className={styles.serviceStatusDotMini} style={{ backgroundColor: getServiceStatus(services.redis).color }}></span>
                         <span>{getServiceStatus(services.redis).text}</span>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-              <div className="aadhar-footer">
-                <div className="aadhar-id">Last updated: {formatTime(currentTime)}</div>
-                <div className="aadhar-signature">Live Metrics</div>
+              <div className={styles.aadharFooter}>
+                <div className={styles.aadharId}>Last updated: {formatTime(currentTime)}</div>
+                <div className={styles.aadharSignature}>Live Metrics</div>
               </div>
             </div>
           </div>
@@ -312,4 +308,4 @@ const TesseractDashboard: React.FC = () => {
   );
 };
 
-export default TesseractDashboard;
+export default Dashboard;
