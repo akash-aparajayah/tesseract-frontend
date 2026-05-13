@@ -6,7 +6,8 @@ import "../styles/EnvironmentManagement.css";
 import {
     Copy, Plus, Globe, Lock, Monitor, Server,
     Pencil, Trash2, X, Check, Home, Rocket, Wrench, AlertTriangle,
-    MessageSquare, Mail, MessageCircle, Plug
+    MessageSquare, Mail, MessageCircle, Plug,
+    Search
 } from 'lucide-react';
 
 const PROVIDER_FIELDS_MAP: Record<string, { name: string; label: string; type: string; required?: boolean }[]> = {
@@ -625,6 +626,8 @@ export default function ProviderConfig() {
                 <div className="pc-header-top">
                     <h1>Environment Management</h1>
                     <div className="pc-breadcrumbs">
+                        <button className="breadcrumb-link" onClick={() => navigate("/dashboard")}>Dashboard</button>
+                        <span className="breadcrumb-separator">›</span>
                         <button onClick={() => navigate("/dashboard/project")}>Projects</button>
                         <span>›</span>
                         <span className="current">Environment Management</span>
@@ -687,7 +690,7 @@ export default function ProviderConfig() {
 
                             {/* SEARCH */}
                             <div className="global-search-wrapper">
-
+                                <Search size={14} className="global-search-icon" />
                                 <input
                                     type="text"
                                     placeholder="Search environments, services, providers..."

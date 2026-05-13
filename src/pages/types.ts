@@ -10,4 +10,5 @@ export interface ProviderField {
     type: string;
     required?: boolean;
     icon?: string;
+    image_url?: string;
 }

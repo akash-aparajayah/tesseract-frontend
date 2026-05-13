@@ -12,6 +12,7 @@ import ProjectEditForm from "@/pages/ProjectEditForm";
 import ProjectBasicEdit from "@/pages/ProjectBasicEdit";
 // import EnvironmentManagement from "@/pages/EnvironmentManagement";
 import ProviderConfig from "@/pages/ProviderConfig";
+import TokenGenerate from "@/pages/TokenGenerate";
 
 const router = createBrowserRouter([
   {
@@ -67,6 +68,10 @@ const router = createBrowserRouter([
       //   element: <EnvironmentManagement />,
       // },
       // Environment routes
+      {
+        path: "token-generate",
+        element: <TokenGenerate />,
+      },
       {
         path: "provider-config",
         element: <ProviderConfig />,

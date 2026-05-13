@@ -141,9 +141,11 @@ const AdminPanel: React.FC = () => {
             <h1>Admin Control Panel</h1>
             <p>Manage administrators, roles and system access</p>
           </div>
+		  <div>
           <button className="btn-add-admin" onClick={() => setShowModal(true)}>
             + Add Admin
           </button>
+		  </div>
         </div>
 
         {/* Stats Row */}

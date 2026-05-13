@@ -1,11 +1,10 @@
 /* ===== FULL PAGE ANIMATED BACKGROUND ===== */
 .full-page-bg {
-  min-height: 100vh;
+
   display: flex;
   align-items: flex-start;
   /* Changed from center to flex-start */
-  justify-content: center;
-  padding: 2rem;
+
   background: #f8fafc;
 }
 
@@ -55,8 +54,9 @@
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
   padding: 1.5rem 2rem;
   width: 100%;
-  max-width: 800px;
+  max-width: 915px;
   animation: fadeInUp 0.5s ease;
+  margin: auto;
 }
 
 @keyframes fadeInUp {
@@ -74,7 +74,7 @@
 /* ===== HEADER ===== */
 .form-header {
   text-align: center;
-  margin-bottom: 1.25rem;
+  margin-bottom: 0.25rem;
 }
 
 .form-header h2 {
@@ -328,4 +328,13 @@
 .btn-submit .loader {
   width: 20px;
   border-width: 2px;
+}
+
+.page-main-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #0f172a;
+  text-align: left;
+  margin: 0 0 24px 0;
+  letter-spacing: -0.5px;
 }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "../hooks/useToast";
-import "../styles/ProjectEdit.css";
+import "../styles/ProjectCreation.css";
 
 export default function ProjectBasicEdit() {
     const navigate = useNavigate();
@@ -9,15 +9,18 @@ export default function ProjectBasicEdit() {
     const { showToast, ToastContainer } = useToast();
     const project = location.state?.project;
     const fileInputRef = useRef<HTMLInputElement>(null);
+
     const [formData, setFormData] = useState({
         project_name: "",
         project_description: "",
         status: "active",
-        services: [] as string[],
         logo: "" as string,
     });
+
     const [imagePreview, setImagePreview] = useState<string>("");
+    const [showImageUpload, setShowImageUpload] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [touched, setTouched] = useState({ project_name: false, project_description: false });
 
     useEffect(() => {
         if (!project) {
@@ -29,14 +32,54 @@ export default function ProjectBasicEdit() {
             project_name: project.name || "",
             project_description: project.description || "",
             status: project.status || "active",
-            services: project.services ? project.services.map((s: string) => s.toUpperCase()) : [],
-            logo: project.logo || "", // ADD THIS
+            logo: project.logo || "",
         });
-        setImagePreview(project.logo || ""); // ADD THIS
+        setImagePreview(project.logo || "");
+        if (project.logo) setShowImageUpload(true);
     }, [project, navigate, showToast]);
+
+    const toggleImageUpload = () => setShowImageUpload((prev) => !prev);
+
+    const handleBlur = (field: "project_name" | "project_description") => {
+        setTouched((prev) => ({ ...prev, [field]: true }));
+    };
+
+    const isFieldInvalid = (field: "project_name" | "project_description") => {
+        return touched[field] && !formData[field].trim();
+    };
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (!file.type.match(/image\/(jpeg|png|gif|webp)/)) {
+                showToast("Please upload a valid image (JPEG, PNG, GIF, or WebP)", "error");
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                showToast("Image size should be less than 5MB", "error");
+                return;
+            }
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64String = reader.result as string;
+                setImagePreview(base64String);
+                setFormData({ ...formData, logo: base64String });
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleRemoveImage = () => {
+        setImagePreview("");
+        setFormData((prev) => ({ ...prev, logo: "" }));
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setTouched({ project_name: true, project_description: true });
 
         if (!formData.project_name.trim()) {
             showToast("Project name is required", "error");
@@ -50,29 +93,28 @@ export default function ProjectBasicEdit() {
             name: formData.project_name.trim(),
             description: formData.project_description.trim(),
             status: formData.status,
-            services: formData.services,
-            logo: formData.logo || project.logo, // Keep existing logo if not changed
+            logo: formData.logo, // Use formData.logo directly (could be empty string "")
             updatedAt: new Date().toISOString().split('T')[0],
             updatedBy: "Current User",
         };
 
         try {
-            // Store with project-specific key
+            // Save to all storage locations
             localStorage.setItem(`project_${project.id}`, JSON.stringify(updatedProject));
             localStorage.setItem('currentProject', JSON.stringify(updatedProject));
 
-            window.dispatchEvent(new CustomEvent('projectUpdated', {
-                detail: updatedProject
-            }));
+            // Update allProjects - THIS WAS THE MISSING PART
+            const allProjects = JSON.parse(localStorage.getItem('allProjects') || '[]');
+            const updatedAllProjects = allProjects.map((p: any) =>
+                String(p.id) === String(project.id) ? updatedProject : p
+            );
+            localStorage.setItem('allProjects', JSON.stringify(updatedAllProjects));
 
-            await new Promise(resolve => setTimeout(resolve, 500));
-            showToast("Project updated successfully! ✨", "success");
+            // Dispatch event for all pages to update
+            window.dispatchEvent(new CustomEvent('projectUpdated', { detail: updatedProject }));
 
-            setTimeout(() => {
-                navigate(`/dashboard/project`, {
-                    state: { project: updatedProject }
-                });
-            }, 1000);
+            showToast("Project updated successfully!", "success");
+            setTimeout(() => navigate("/dashboard/project"), 500);
         } catch (error) {
             showToast(error instanceof Error ? error.message : "Error updating project", "error");
         } finally {
@@ -81,210 +123,118 @@ export default function ProjectBasicEdit() {
     };
 
     if (!project) return <div className="loading">Loading...</div>;
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            if (!file.type.match(/image\/(jpeg|png|gif|webp)/)) {
-                showToast("Please upload a valid image (JPEG, PNG, GIF, or WebP)", "error");
-                return;
-            }
 
-            if (file.size > 5 * 1024 * 1024) {
-                showToast("Image size should be less than 5MB", "error");
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const base64String = reader.result as string;
-                setImagePreview(base64String);
-                setFormData({ ...formData, logo: base64String });
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    const handleRemoveImage = () => {
-        setImagePreview("");
-        setFormData({ ...formData, logo: "" });
-        if (fileInputRef.current) {
-            fileInputRef.current.value = "";
-        }
-    };
     return (
-        <div className="project-edit-page">
-            <ToastContainer />
+        <div className="create-project-container">
+            <h1 className="page-main-title">Edit Project</h1>
+            <div className="full-page-bg">
 
-            {/* Breadcrumbs */}
-            <div className="breadcrumbs-row">
-                <button className="breadcrumb-link" onClick={() => navigate("/dashboard")}>Dashboard</button>
-                <span className="breadcrumb-separator">›</span>
-                <button className="breadcrumb-link" onClick={() => navigate("/dashboard/project")}>Projects</button>
-                <span className="breadcrumb-separator">›</span>
-                <button
-                    className="breadcrumb-link"
-                    onClick={() => navigate(`/dashboard/project`)}
-                >
-                    {project.name}
-                </button>
-                <span className="breadcrumb-separator">›</span>
-                <span className="breadcrumb-current">Edit</span>
-            </div>
-
-            {/* Page Header */}
-            <div className="edit-page-header">
-                <h1>
-
-                    Edit Project
-                </h1>
-                <p>Update project details and configuration</p>
-            </div>
-
-            {/* Edit Form Card */}
-            <form onSubmit={handleSubmit}>
-                <div className="edit-form-card">
-                    {/* Card Header */}
-                    <div className="edit-form-card-header">
-                        <div className="edit-form-card-header-content">
-                            <div className="project-avatar">
-                                {project.logo || '📁'}
-                            </div>
-                            <div className="card-header-info">
-                                <h3>{project.name}</h3>
-                                <p>Project ID: #{project.id} • Created: {project.created}</p>
-                            </div>
-                        </div>
+                <div className="form-card">
+                    <h2 className="form-header">Edit Project</h2>
+                    <div className="form-header">
+                        <p>Update project details below</p>
+                        <div className="header-underline"></div>
                     </div>
 
-                    {/* Form Body */}
-                    <div className="edit-form-body">
-                        {/* Basic Information Section */}
-                        <div className="form-section">
-                            <div className="section-title">
-                                <span className="section-icon">📋</span>
-                                Basic Information
-                            </div>
-
-                            <div className="form-group">
-                                <label>
-                                    Project Name <span className="required">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    className="input-field"
-                                    value={formData.project_name}
-                                    onChange={(e) => setFormData({ ...formData, project_name: e.target.value })}
-                                    placeholder="Enter project name"
-                                    required
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label>Description</label>
-                                <textarea
-                                    className="textarea-field"
-                                    rows={4}
-                                    value={formData.project_description}
-                                    onChange={(e) => setFormData({ ...formData, project_description: e.target.value })}
-                                    placeholder="Describe your project's purpose and goals..."
-                                />
-                                <div className="char-count">
-                                    {formData.project_description.length}/500 characters
-                                </div>
-                            </div>
+                    <form onSubmit={handleSubmit}>
+                        <div className="form-group">
+                            <label>Project Name <span className="required-star">*</span></label>
+                            <input
+                                type="text"
+                                placeholder="e.g., Marketing Website Redesign"
+                                value={formData.project_name}
+                                onChange={(e) => setFormData({ ...formData, project_name: e.target.value })}
+                                onBlur={() => handleBlur("project_name")}
+                                className={isFieldInvalid("project_name") ? "input-error" : ""}
+                            />
+                            {isFieldInvalid("project_name") && <span className="error-msg">Project name is required</span>}
                         </div>
 
-                        {/* Image & Status Row */}
-                        <div className="image-status-row">
-                            <div className="form-group">
-                                <label>Project Logo</label>
-                                <div className="image-upload-container">
+                        <div className="form-group">
+                            <label>Description</label>
+                            <textarea
+                                placeholder="Tell us about your project..."
+                                rows={3}
+                                value={formData.project_description}
+                                onChange={(e) => setFormData({ ...formData, project_description: e.target.value })}
+                                onBlur={() => handleBlur("project_description")}
+                                className={isFieldInvalid("project_description") ? "input-error" : ""}
+                            />
+                            {isFieldInvalid("project_description") && <span className="error-msg">Description is required</span>}
+                        </div>
+
+                        <div className="form-group">
+                            <label>Status</label>
+                            <select
+                                value={formData.status}
+                                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                                style={{
+                                    padding: '10px 14px',
+                                    border: '2px solid #e2e8f0',
+                                    borderRadius: '10px',
+                                    fontSize: '14px',
+                                    color: '#1e293b',
+                                    fontFamily: 'inherit',
+                                    background: 'white',
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+
+                        <div className="image-toggle">
+                            <button type="button" onClick={toggleImageUpload} className="toggle-btn">
+                                {showImageUpload ? "✕ Hide Project Image" : "+ Add Project Image (Optional)"}
+                            </button>
+                        </div>
+
+                        {showImageUpload && (
+                            <div className="image-upload-wrapper">
+                                <div className="image-uploader">
                                     <div
-                                        className="image-preview-area"
+                                        className="drop-zone"
                                         onClick={() => fileInputRef.current?.click()}
                                     >
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept="image/jpeg,image/png,image/webp,image/gif"
+                                            onChange={handleImageChange}
+                                            style={{ display: "none" }}
+                                        />
                                         {imagePreview ? (
-                                            <>
-                                                <img src={imagePreview} alt="Project logo preview" className="image-preview" />
-                                                <div className="image-overlay">
-                                                    <span>Change Image</span>
-                                                </div>
-                                            </>
+                                            <img src={imagePreview} alt="Preview" className="preview-image" />
                                         ) : (
-                                            <div className="image-placeholder">
-                                                <span className="upload-icon">📷</span>
-                                                <span className="upload-text">Click to upload logo</span>
-                                                <span className="upload-hint">PNG, JPG, GIF or WebP (max 5MB)</span>
-                                            </div>
+                                            <>
+                                                <div className="upload-icon">🖼️</div>
+                                                <p>Drag & drop or click to select</p>
+                                                <small>Max 5MB · jpeg, png, webp, gif</small>
+                                            </>
                                         )}
                                     </div>
-                                    <input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        accept="image/jpeg,image/png,image/gif,image/webp"
-                                        onChange={handleImageChange}
-                                        style={{ display: 'none' }}
-                                    />
                                     {imagePreview && (
-                                        <button
-                                            type="button"
-                                            className="btn-remove-image"
-                                            onClick={handleRemoveImage}
-                                        >
-                                            🗑️ Remove
+                                        <button className="remove-image-btn" onClick={handleRemoveImage}>
+                                            ✕ Remove Image
                                         </button>
                                     )}
                                 </div>
                             </div>
+                        )}
 
-                            <div className="form-group">
-                                <label>Project Status</label>
-                                <select
-                                    className="input-field"
-                                    value={formData.status}
-                                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                >
-                                    <option value="active">🟢 Active</option>
-                                    <option value="inactive">🔴 Inactive</option>
-                                </select>
-                            </div>
-                        </div>
-
-
-                    </div>
-
-                    {/* Form Footer */}
-                    <div className="edit-form-footer">
-                        <div className="footer-left">
-                            * Required fields
-                        </div>
-                        <div className="footer-actions">
-                            <button
-                                type="button"
-                                className="btn-outline"
-                                onClick={() => navigate("/dashboard/project")}
-                            >
+                        <div className="form-actions">
+                            <button type="button" className="btn-cancel" onClick={() => navigate("/dashboard/project")}>
                                 Cancel
                             </button>
-                            <button
-                                type="submit"
-                                className="btn-primary"
-                                disabled={isSubmitting}
-                            >
-                                {isSubmitting ? (
-                                    <>
-                                        Saving...
-                                    </>
-                                ) : (
-                                    <>
-                                        Save Changes
-                                    </>
-                                )}
+                            <button type="submit" className="btn-submit" disabled={isSubmitting}>
+                                {isSubmitting ? "Saving..." : "Save Changes"}
                             </button>
                         </div>
-                    </div>
+                    </form>
+                    <ToastContainer />
                 </div>
-            </form>
+            </div>
         </div>
     );
 }

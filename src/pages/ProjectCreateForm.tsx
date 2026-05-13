@@ -245,67 +245,71 @@ export default function ProjectCreateForm() {
 
   return (
     <>
-      <div className="full-page-bg">
-        <div className="form-card">
-          <div className="form-header">
-            <h2>✨ Create New Project</h2>
-            <p>Fill in the details below</p>
-            <div className="header-underline"></div>
-          </div>
+      <div className="create-project-container">
+        <h1 className="page-main-title">Create Project</h1>
+        <div className="full-page-bg">
 
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label>Project Name <span className="required-star">*</span></label>
-              <input
-                type="text"
-                placeholder="e.g., Marketing Website Redesign"
-                value={formData.project_name}
-                onChange={(e) => setFormData({ ...formData, project_name: e.target.value })}
-                onBlur={() => handleBlur("project_name")}
-                className={isFieldInvalid("project_name") ? "input-error" : ""}
-              />
-              {isFieldInvalid("project_name") && <span className="error-msg">Project name is required</span>}
+          <div className="form-card">
+            <h3 className="form-header">Create Project</h3>
+            <div className="form-header">
+              <p>Fill in the details below</p>
+              <div className="header-underline"></div>
             </div>
 
-            <div className="form-group">
-              <label>Description <span className="required-star">*</span></label>
-              <textarea
-                placeholder="Tell us about your project..."
-                rows={3}
-                value={formData.project_description}
-                onChange={(e) => setFormData({ ...formData, project_description: e.target.value })}
-                onBlur={() => handleBlur("project_description")}
-                className={isFieldInvalid("project_description") ? "input-error" : ""}
-              />
-              {isFieldInvalid("project_description") && <span className="error-msg">Description is required</span>}
-            </div>
-
-            <div className="image-toggle">
-              <button type="button" onClick={toggleImageUpload} className="toggle-btn">
-                {showImageUpload ? "✕ Hide Project Image" : "+ Add Project Image (Optional)"}
-              </button>
-            </div>
-
-            {showImageUpload && (
-              <div className="image-upload-wrapper">
-                <ImageUploader
-                  onImageSelect={handleImageSelect}
-                  onImageRemove={handleImageRemove}
-                  maxSizeMB={3}
+            <form onSubmit={handleSubmit}>
+              <div className="form-group">
+                <label>Project Name <span className="required-star">*</span></label>
+                <input
+                  type="text"
+                  placeholder="e.g., Marketing Website Redesign"
+                  value={formData.project_name}
+                  onChange={(e) => setFormData({ ...formData, project_name: e.target.value })}
+                  onBlur={() => handleBlur("project_name")}
+                  className={isFieldInvalid("project_name") ? "input-error" : ""}
                 />
+                {isFieldInvalid("project_name") && <span className="error-msg">Project name is required</span>}
               </div>
-            )}
 
-            <div className="form-actions">
-              <button type="button" className="btn-cancel" onClick={() => navigate("/dashboard/project")}>
-                Cancel
-              </button>
-              <button type="submit" className="btn-submit" disabled={isSubmitting}>
-                {isSubmitting ? "Creating..." : "Create Project"}
-              </button>
-            </div>
-          </form>
-          <ToastContainer />
+              <div className="form-group">
+                <label>Description <span className="required-star">*</span></label>
+                <textarea
+                  placeholder="Tell us about your project..."
+                  rows={3}
+                  value={formData.project_description}
+                  onChange={(e) => setFormData({ ...formData, project_description: e.target.value })}
+                  onBlur={() => handleBlur("project_description")}
+                  className={isFieldInvalid("project_description") ? "input-error" : ""}
+                />
+                {isFieldInvalid("project_description") && <span className="error-msg">Description is required</span>}
+              </div>
+
+              <div className="image-toggle">
+                <button type="button" onClick={toggleImageUpload} className="toggle-btn">
+                  {showImageUpload ? "✕ Hide Project Image" : "+ Add Project Image (Optional)"}
+                </button>
+              </div>
+
+              {showImageUpload && (
+                <div className="image-upload-wrapper">
+                  <ImageUploader
+                    onImageSelect={handleImageSelect}
+                    onImageRemove={handleImageRemove}
+                    maxSizeMB={3}
+                  />
+                </div>
+              )}
+
+              <div className="form-actions">
+                <button type="button" className="btn-cancel" onClick={() => navigate("/dashboard/project")}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn-submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Creating..." : "Create Project"}
+                </button>
+              </div>
+            </form>
+            <ToastContainer />
+          </div>
         </div>
       </div>
     </>

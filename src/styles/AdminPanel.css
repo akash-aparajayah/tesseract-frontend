@@ -42,7 +42,11 @@ body {
     transform: translateY(0);
   }
 }
-
+.admin-header{
+	display: flex;
+	margin-bottom: 20px;
+	justify-content: space-between;
+}
 .content-header {
   display: flex;
   justify-content: space-between;
@@ -272,14 +276,15 @@ body {
 }
 
 .admin-avatar {
-  width: 40px;
-  height: 40px;
   background: linear-gradient(135deg, #e8f0ff, #c7d8ff);
   border-radius: 12px;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
+  padding: 8px 15px;
+  font-weight: bold;
+  text-transform: capitalize;
 }
 
 .role-badge {

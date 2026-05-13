@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/ProjectDashboard.css";
-import { Eye, Pencil, Globe, Trash2, Plus, MoreVertical, Search, FileText } from 'lucide-react';
+import { Eye, Pencil, Globe, Trash2, Plus, Settings, Search, FileText } from 'lucide-react';
 
 interface Project {
   id: number;
@@ -200,7 +200,7 @@ export default function ProjectDashboard() {
       <div className="dashboard-header">
         <div>
           <h1>Project Management</h1>
-          <p className="subtitle">Manage and monitor all your projects</p>
+          {/* <p className="subtitle">Manage and monitor all your projects</p> */}
         </div>
 
       </div>
@@ -303,7 +303,7 @@ export default function ProjectDashboard() {
                   <td>
                     <div className="actions-dropdown">
                       <button className="three-dots">
-                        <MoreVertical size={18} />
+                        <Settings size={18} />
                       </button>
                       <div className="dropdown-menu">
                         <div className="dropdown-item" onClick={() => handleView(project)}>
@@ -312,7 +312,7 @@ export default function ProjectDashboard() {
                         <div className="dropdown-item" onClick={() => navigate(`/dashboard/project-edit-basic/${project.id}`, { state: { project } })}>
                           <Pencil size={14} /> Edit
                         </div>
-                        <div className="dropdown-item" onClick={() => {
+                        {/* <div className="dropdown-item" onClick={() => {
                           localStorage.setItem('currentProject', JSON.stringify(project));
 
 
@@ -326,7 +326,7 @@ export default function ProjectDashboard() {
                           );
                         }}>
                           <Globe size={14} /> Environments
-                        </div>
+                        </div> */}
                         <div className="dropdown-item delete" onClick={() => setShowDeleteConfirm(project.id)}>
                           <Trash2 size={14} /> Delete
                         </div>
