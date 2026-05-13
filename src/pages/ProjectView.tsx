@@ -5,10 +5,9 @@ import "../styles/ProjectView.css";
 import {
   Pencil, FolderOpen, Plus, MessageSquare, Mail, MessageCircle, Plug, Check,
   Save, X, ChevronDown, Server, Copy, Trash2, Globe, Rocket, Wrench,
-  Search, Lock, AlertTriangle, Home, Monitor, Key, Calendar, Clock
+  Search, Lock, AlertTriangle, Home, Monitor, Key,
 } from 'lucide-react';
-import { getToken, calculateExpiryLabel, formatDate } from '../utils/tokenUtils';
-import { ApiToken } from '../types/token';
+import { getToken } from '../utils/tokenUtils';
 
 interface Project {
   id: string;
@@ -27,39 +26,122 @@ interface Provider {
   id: number;
   name: string;
   fields: Record<string, string>;
+  usageCount?: number;
 }
 
 const PROVIDER_FIELDS_MAP: Record<string, { name: string; label: string; type: string; required?: boolean }[]> = {
+  // SMS Providers
   MSG91: [
+    { name: "instance", label: "Select Instance", type: "select", required: true },
     { name: "apiKey", label: "API Key", type: "password", required: true },
     { name: "endpoint", label: "Endpoint URL", type: "text", required: false },
     { name: "senderId", label: "Sender ID", type: "text", required: true },
     { name: "templateId", label: "Template ID (DLT)", type: "text", required: true },
   ],
   Twilio: [
+    { name: "instance", label: "Select Instance", type: "select", required: true },
     { name: "accountSid", label: "Account SID", type: "text", required: true },
     { name: "authToken", label: "Auth Token", type: "password", required: true },
     { name: "phoneNumber", label: "Phone Number", type: "text", required: true },
   ],
+  Gupshup: [
+    { name: "instance", label: "Select Instance", type: "select", required: true },
+    { name: "apiKey", label: "API Key", type: "password", required: true },
+    { name: "appName", label: "App Name", type: "text", required: true },
+    { name: "sourceNumber", label: "Source Number", type: "text", required: true },
+  ],
+  Vonage: [
+    { name: "instance", label: "Select Instance", type: "select", required: true },
+    { name: "apiKey", label: "API Key", type: "text", required: true },
+    { name: "apiSecret", label: "API Secret", type: "password", required: true },
+    { name: "fromNumber", label: "From Number", type: "text", required: true },
+  ],
+  Kaleyra: [
+    { name: "instance", label: "Select Instance", type: "select", required: true },
+    { name: "apiKey", label: "API Key", type: "password", required: true },
+    { name: "sid", label: "SID", type: "text", required: true },
+    { name: "senderId", label: "Sender ID", type: "text", required: true },
+  ],
+  Textlocal: [
+    { name: "instance", label: "Select Instance", type: "select", required: true },
+    { name: "apiKey", label: "API Key", type: "password", required: true },
+    { name: "senderId", label: "Sender ID", type: "text", required: true },
+  ],
+  TrueDialog: [
+    { name: "instance", label: "Select Instance", type: "select", required: true },
+    { name: "apiKey", label: "API Key", type: "password", required: true },
+    { name: "accountId", label: "Account ID", type: "text", required: true },
+    { name: "fromNumber", label: "From Number", type: "text", required: true },
+  ],
+
+  // Email Providers
   SendGrid: [
+    { name: "instance", label: "Select Instance", type: "select", required: true },
     { name: "apiKey", label: "API Key", type: "password", required: true },
     { name: "fromEmail", label: "From Email", type: "email", required: true },
     { name: "fromName", label: "From Name", type: "text", required: false },
   ],
+  AWS_SES: [
+    { name: "instance", label: "Select Instance", type: "select", required: true },
+    { name: "accessKeyId", label: "Access Key ID", type: "text", required: true },
+    { name: "secretAccessKey", label: "Secret Access Key", type: "password", required: true },
+    { name: "region", label: "Region", type: "text", required: true },
+    { name: "fromEmail", label: "From Email", type: "email", required: true },
+    { name: "fromName", label: "From Name", type: "text", required: false },
+  ],
   Mailgun: [
+    { name: "instance", label: "Select Instance", type: "select", required: true },
     { name: "apiKey", label: "API Key", type: "password", required: true },
     { name: "domain", label: "Domain", type: "text", required: true },
     { name: "fromEmail", label: "From Email", type: "email", required: true },
   ],
+  SMTP: [
+    { name: "instance", label: "Select Instance", type: "select", required: true },
+    { name: "host", label: "SMTP Host", type: "text", required: true },
+    { name: "port", label: "SMTP Port", type: "text", required: true },
+    { name: "username", label: "Username", type: "text", required: true },
+    { name: "password", label: "Password", type: "password", required: true },
+    { name: "fromEmail", label: "From Email", type: "email", required: true },
+    { name: "fromName", label: "From Name", type: "text", required: false },
+    { name: "encryption", label: "Encryption", type: "text", required: false },
+  ],
+  Postmark: [
+    { name: "instance", label: "Select Instance", type: "select", required: true },
+    { name: "serverToken", label: "Server Token", type: "password", required: true },
+    { name: "fromEmail", label: "From Email", type: "email", required: true },
+    { name: "fromName", label: "From Name", type: "text", required: false },
+  ],
+
+  // WhatsApp Providers
   WhatsApp_Twilio: [
+    { name: "instance", label: "Select Instance", type: "select", required: true },
     { name: "accountSid", label: "Account SID", type: "text", required: true },
     { name: "authToken", label: "Auth Token", type: "password", required: true },
     { name: "phoneNumber", label: "WhatsApp Number", type: "text", required: true },
   ],
+  WhatsApp_Gupshup: [
+    { name: "instance", label: "Select Instance", type: "select", required: true },
+    { name: "apiKey", label: "API Key", type: "password", required: true },
+    { name: "appName", label: "App Name", type: "text", required: true },
+    { name: "phoneNumber", label: "WhatsApp Number", type: "text", required: true },
+  ],
   Meta_Cloud: [
+    { name: "instance", label: "Select Instance", type: "select", required: true },
     { name: "phoneNumberId", label: "Phone Number ID", type: "text", required: true },
     { name: "accessToken", label: "Access Token", type: "password", required: true },
     { name: "businessAccountId", label: "Business Account ID", type: "text", required: true },
+  ],
+  WhatsApp_Kaleyra: [
+    { name: "instance", label: "Select Instance", type: "select", required: true },
+    { name: "apiKey", label: "API Key", type: "password", required: true },
+    { name: "sid", label: "SID", type: "text", required: true },
+    { name: "phoneNumber", label: "WhatsApp Number", type: "text", required: true },
+  ],
+  WhatsApp_Vonage: [
+    { name: "instance", label: "Select Instance", type: "select", required: true },
+    { name: "apiKey", label: "API Key", type: "text", required: true },
+    { name: "apiSecret", label: "API Secret", type: "password", required: true },
+    { name: "phoneNumber", label: "WhatsApp Number", type: "text", required: true },
   ],
 };
 
@@ -99,7 +181,6 @@ export default function ProjectView() {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ name: "", description: "", status: "active" as "active" | "inactive" });
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [projectToken, setProjectToken] = useState<ApiToken | null>(null);
 
   // Provider modal states
   const [showAddProviderModal, setShowAddProviderModal] = useState(false);
@@ -124,6 +205,10 @@ export default function ProjectView() {
   const [cloneTarget, setCloneTarget] = useState("");
   const [cloneCustomMode, setCloneCustomMode] = useState(false);
   const [cloneCustomName, setCloneCustomName] = useState("");
+
+  const [instanceFilter, setInstanceFilter] = useState<string>("Live");
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [toastMessage, setToastMessage] = useState("");
 
   useEffect(() => {
     const loadProject = () => {
@@ -158,13 +243,6 @@ export default function ProjectView() {
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
-
-  useEffect(() => {
-    if (project && selectedEnv) {
-      const token = getToken(project.id, selectedEnv);
-      setProjectToken(token);
-    }
-  }, [project, selectedEnv]);
 
   useEffect(() => {
     if (!dropdownOpen) return;
@@ -209,6 +287,52 @@ export default function ProjectView() {
     if (allEnvs.length > 0 && !selectedEnv) setSelectedEnv(allEnvs[0]);
   };
 
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    const provider = filteredProviders[index];
+    const realIndex = providers.findIndex(p => p.id === provider.id);
+    setDragIndex(realIndex);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    if (dragIndex === null) return;
+
+    const dropProvider = filteredProviders[dropIndex];
+    const realDropIndex = providers.findIndex(p => p.id === dropProvider.id);
+
+    if (dragIndex === realDropIndex) {
+      setDragIndex(null);
+      return;
+    }
+
+    const newProviders = [...providers];
+    const draggedItem = newProviders[dragIndex];
+    newProviders.splice(dragIndex, 1);
+    newProviders.splice(realDropIndex, 0, draggedItem);
+
+    setProviders(newProviders);
+    setDragIndex(null);
+    saveToLocalStorage(newProviders);
+
+    setToastMessage("Order changed successfully");
+    setTimeout(() => setToastMessage(""), 2000);
+  };
+
+  const handleDragEnd = () => {
+    setDragIndex(null);
+  };
+
+  const filteredProviders = providers.filter(provider => {
+    return provider.fields.instance === instanceFilter;
+  });
+
   const loadProviders = () => {
     if (!selectedEnv) return;
     const key = `env_${selectedEnv}_${activeService.toLowerCase()}_providers`;
@@ -217,13 +341,21 @@ export default function ProjectView() {
     updateAllServiceCounts();
   };
 
+  useEffect(() => {
+    if (selectedEnv) {
+      updateAllServiceCounts();
+    }
+  }, [selectedEnv, activeService, instanceFilter]);
+
   const updateAllServiceCounts = () => {
     if (!selectedEnv) return;
     const counts: Record<string, number> = {};
     SERVICE_TYPES.forEach(service => {
       const key = `env_${selectedEnv}_${service.toLowerCase()}_providers`;
       const data = localStorage.getItem(key);
-      counts[service] = data ? JSON.parse(data).providers?.length || 0 : 0;
+      const providers = data ? JSON.parse(data).providers || [] : [];
+      // Count by current instance filter
+      counts[service] = providers.filter((p: Provider) => p.fields.instance === instanceFilter).length;
     });
     setServiceProviderCounts(counts);
   };
@@ -320,7 +452,12 @@ export default function ProjectView() {
     }, 500);
   };
 
-  const editProvider = (p: Provider) => { setEditingProvider(p); setSelectedProvider(p.name); setProviderFields({ ...p.fields }); setShowAddProviderModal(true); };
+  const editProvider = (p: Provider) => {
+    setEditingProvider(p);
+    setSelectedProvider(p.name);
+    setProviderFields({ ...p.fields });
+    setShowAddProviderModal(true);
+  };
 
   const deleteProvider = () => {
     if (!showDeleteProviderModal) return;
@@ -332,7 +469,14 @@ export default function ProjectView() {
   const handleProviderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedProvider(e.target.value);
     const defs = PROVIDER_FIELDS_MAP[e.target.value] || [];
-    const nf: Record<string, string> = {}; defs.forEach(f => nf[f.name] = "");
+    const nf: Record<string, string> = {};
+    defs.forEach(f => {
+      // For select type fields, don't set a default value (leave as undefined)
+      // so the placeholder "-- Choose instance --" shows
+      if (f.type !== "select") {
+        nf[f.name] = "";
+      }
+    });
     setProviderFields(nf);
   };
 
@@ -368,6 +512,7 @@ export default function ProjectView() {
     });
     return results;
   })();
+
 
   if (!project) return <div className="loading">Loading...</div>;
 
@@ -451,35 +596,15 @@ export default function ProjectView() {
 
                 {/* Token Section */}
                 <div className="token-section-inline">
-                  <div className="token-divider"></div>
-                  <div className="token-section-header">
-                    <Key size={16} />
 
+                  <div className="token-info-row">
+                    <button
+                      className="token-manage-btn"
+                      onClick={() => navigate(`/dashboard/token-generate`, { state: { project } })}
+                    >
+                      <Key size={16} /> Manage Token
+                    </button>
                   </div>
-                  {projectToken ? (
-                    <div className="token-info-row">
-
-                      <button
-                        className="token-manage-btn"
-                        onClick={() => navigate(`/dashboard/token-generate`, { state: { project } })}
-                      >
-                        Manage Token
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="token-generate-row">
-                      <div className="token-generate-col">
-                        <p className="token-generate-text">Generate a token for API access.</p>
-                        <button
-                          className="token-generate-btn"
-                          onClick={() => navigate(`/dashboard/token-generate`, { state: { project } })}
-                          disabled={!selectedEnv}
-                        >
-                          <Key size={14} /> Generate Token
-                        </button>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </>
             )}
@@ -655,50 +780,114 @@ export default function ProjectView() {
                   <div className="pc-panel-header">
                     <div className="pc-panel-title">
                       {SERVICE_ICONS[activeService]}<h3>{activeService} Providers</h3>
-                      <span className="pc-panel-count">{serviceProviderCounts[activeService] || 0}</span>
+                      <span className="pc-panel-count">{providers.length}</span>
                     </div>
                     <button className="pc-add-btn" style={{ backgroundColor: SERVICE_COLORS[activeService] }}
                       onClick={() => { setEditingProvider(null); setSelectedProvider(""); setProviderFields({}); setShowAddProviderModal(true); }}>
                       <Plus size={14} /> Add Provider
                     </button>
                   </div>
+
+                  {/* Instance Tabs - BELOW the header */}
+                  <div className="pc-instance-tabs">
+                    <button
+                      className={`pc-instance-tab ${instanceFilter === 'Live' ? 'active live' : ''}`}
+                      onClick={() => setInstanceFilter('Live')}
+                    >
+                      <Rocket size={14} />
+                      Live
+                      <span className="pc-instance-tab-count">
+                        {providers.filter(p => p.fields.instance === 'Live').length}
+                      </span>
+                    </button>
+                    <button
+                      className={`pc-instance-tab ${instanceFilter === 'Sandbox' ? 'active sandbox' : ''}`}
+                      onClick={() => setInstanceFilter('Sandbox')}
+                    >
+                      <Wrench size={14} />
+                      Sandbox
+                      <span className="pc-instance-tab-count">
+                        {providers.filter(p => p.fields.instance === 'Sandbox').length}
+                      </span>
+                    </button>
+                  </div>
+
+
                   <div className="pc-providers-list">
-                    {providers.length === 0 ? (
-                      <div className="pc-empty-state"><Server size={44} color="#cbd5e1" /><h4>No {activeService} providers yet</h4><p>Add your first provider to start configuring services</p></div>
+                    {filteredProviders.length === 0 ? (
+                      <div className="pc-empty-state">
+                        <Server size={44} color="#cbd5e1" />
+                        <h4>No {instanceFilter} {activeService} providers yet</h4>
+                        <p>Add your first {instanceFilter.toLowerCase()} provider to start configuring services</p>
+                      </div>
                     ) : (
-                      providers.map((provider) => (
-                        <div key={provider.id} className="pc-provider-card" style={{ borderLeftColor: SERVICE_COLORS[activeService] }}>
+                      filteredProviders.map((provider, index) => (
+                        <div
+                          key={provider.id}
+                          className={`pc-provider-card ${dragIndex === index ? 'dragging' : ''}`}
+                          style={{ borderLeftColor: SERVICE_COLORS[activeService] }}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, index)}
+                          onDragOver={handleDragOver}
+                          onDrop={(e) => handleDrop(e, index)}
+                          onDragEnd={handleDragEnd}
+                        >
                           <div className="pc-provider-card-header" onClick={() => setExpandedProviders(prev => ({ ...prev, [provider.id]: !prev[provider.id] }))}>
                             <div className="pc-provider-title">
                               <Plug size={14} /><span>{provider.name.replace(/_/g, ' ')}</span>
+                              {/* Primary badge on first card */}
+                              {index === 0 && (
+                                <span className="pc-primary-badge">
+                                  <Rocket size={10} /> Primary
+                                </span>
+                              )}
                               <span className="pc-configured-badge" style={{ background: `${SERVICE_COLORS[activeService]}15`, color: SERVICE_COLORS[activeService] }}><Check size={10} /> Configured</span>
+                              <span className="pc-usage-badge" title={`${provider.usageCount || 0} ${activeService.toLowerCase()} sent`}>
+                                <span className="pc-usage-count">{provider.usageCount || 0}</span>
+                                <span className="pc-usage-label">sent</span>
+                              </span>
                             </div>
                             <div className="pc-provider-actions" onClick={(e) => e.stopPropagation()}>
                               <button className="pc-edit-btn" onClick={() => editProvider(provider)}><Pencil size={14} /></button>
                               <button className="pc-delete-btn" onClick={() => setShowDeleteProviderModal({ id: provider.id, name: provider.name })}><Trash2 size={14} /></button>
                             </div>
                           </div>
-                          {expandedProviders[provider.id] && (
-                            <div className="pc-provider-card-body">
-                              {Object.entries(provider.fields).map(([key, value]) => {
-                                const fc = PROVIDER_FIELDS_MAP[provider.name]?.find((f: any) => f.name === key);
-                                const isPwd = fc?.type === "password" || key.includes("Key") || key.includes("Token");
-                                const pk = `${provider.id}_${key}`;
-                                return (
-                                  <div className="pc-credential-row" key={key}>
-                                    <span className="pc-credential-label">{fc?.label || key}</span>
-                                    <span className="pc-credential-value">{isPwd ? (visiblePasswords[pk] ? value : "••••••••••") : value || "—"}</span>
-                                    {isPwd && value && <button className="pc-eye-btn-inline" onClick={() => setVisiblePasswords(prev => ({ ...prev, [pk]: !prev[pk] }))}>{visiblePasswords[pk] ? <FaEyeSlash size={14} /> : <FaEye size={14} />}</button>}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
+                          {
+                            expandedProviders[provider.id] && (
+                              <div className="pc-provider-card-body">
+                                {Object.entries(provider.fields)
+                                  .sort(([a], [b]) => a === 'instance' ? -1 : b === 'instance' ? 1 : 0)
+                                  .map(([key, value]) => {
+                                    const fc = PROVIDER_FIELDS_MAP[provider.name]?.find((f: any) => f.name === key);
+                                    const isPwd = fc?.type === "password" || key.includes("Key") || key.includes("Token");
+                                    const isInstance = fc?.type === "select";
+                                    const pk = `${provider.id}_${key}`;
+                                    return (
+                                      <div className="pc-credential-row" key={key}>
+                                        <span className="pc-credential-label">{isInstance ? "Instance" : fc?.label || key}</span>
+                                        {isInstance ? (
+                                          <span className={`pc-instance-badge ${value === 'Live' ? 'live' : 'sandbox'}`}>
+                                            {value === 'Live' ? <Rocket size={12} /> : <Wrench size={12} />}
+                                            {value || "—"}
+                                          </span>
+                                        ) : (
+                                          <>
+                                            <span className="pc-credential-value">{isPwd ? (visiblePasswords[pk] ? value : "••••••••••") : value || "—"}</span>
+                                            {isPwd && value && <button className="pc-eye-btn-inline" onClick={() => setVisiblePasswords(prev => ({ ...prev, [pk]: !prev[pk] }))}>{visiblePasswords[pk] ? <FaEyeSlash size={14} /> : <FaEye size={14} />}</button>}
+                                          </>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                              </div>
+                            )
+                          }
                         </div>
                       ))
                     )}
                   </div>
                 </div>
+
               </div>
             </div>
           </>
@@ -708,172 +897,256 @@ export default function ProjectView() {
       {/* ===== ALL MODALS ===== */}
 
       {/* Add Environment Modal */}
-      {showAddEnvModal && (
-        <div className="pc-modal-overlay" onClick={() => setShowAddEnvModal(false)}>
-          <div className="pc-modal" onClick={e => e.stopPropagation()}>
-            <div className="pc-modal-header"><h3><Plus size={18} /> Add Environment</h3><button className="pc-modal-close" onClick={() => setShowAddEnvModal(false)}><X size={20} /></button></div>
-            <div className="pc-modal-body">
-              <p className="pc-modal-desc">Select an environment or create a custom one</p>
-              <div className="pc-env-options">
-                {['Local', 'Dev', 'Staging', 'Live'].filter(env => !environments.includes(env)).map(env => (
-                  <div key={env} className={`pc-env-option ${newEnvName === env && !isCustomEnv ? 'selected' : ''}`} onClick={() => { setNewEnvName(env); setIsCustomEnv(false); }}>
-                    <span className="pc-env-option-icon">{getEnvIcon(env)}</span><span>{env}</span>
-                    {newEnvName === env && !isCustomEnv && <Check size={18} />}
+      {
+        showAddEnvModal && (
+          <div className="pc-modal-overlay" onClick={() => setShowAddEnvModal(false)}>
+            <div className="pc-modal" onClick={e => e.stopPropagation()}>
+              <div className="pc-modal-header"><h3><Plus size={18} /> Add Environment</h3><button className="pc-modal-close" onClick={() => setShowAddEnvModal(false)}><X size={20} /></button></div>
+              <div className="pc-modal-body">
+                <p className="pc-modal-desc">Select an environment or create a custom one</p>
+                <div className="pc-env-options">
+                  {['Local', 'Dev', 'Staging', 'Live'].filter(env => !environments.includes(env)).map(env => (
+                    <div key={env} className={`pc-env-option ${newEnvName === env && !isCustomEnv ? 'selected' : ''}`} onClick={() => { setNewEnvName(env); setIsCustomEnv(false); }}>
+                      <span className="pc-env-option-icon">{getEnvIcon(env)}</span><span>{env}</span>
+                      {newEnvName === env && !isCustomEnv && <Check size={18} />}
+                    </div>
+                  ))}
+                  <div className={`pc-env-option custom ${isCustomEnv ? 'selected' : ''}`} onClick={() => { setIsCustomEnv(true); setNewEnvName(""); }}>
+                    <span className="pc-env-option-icon"><Wrench size={18} /></span><span>Custom Environment</span>
+                    {isCustomEnv && <Check size={18} />}
                   </div>
-                ))}
-                <div className={`pc-env-option custom ${isCustomEnv ? 'selected' : ''}`} onClick={() => { setIsCustomEnv(true); setNewEnvName(""); }}>
-                  <span className="pc-env-option-icon"><Wrench size={18} /></span><span>Custom Environment</span>
-                  {isCustomEnv && <Check size={18} />}
                 </div>
+                {isCustomEnv && <div className="pc-form-group"><label>Environment Name *</label><input type="text" placeholder="e.g., Production" value={customEnvInput} onChange={(e) => setCustomEnvInput(e.target.value)} className="pc-input" autoFocus /></div>}
               </div>
-              {isCustomEnv && <div className="pc-form-group"><label>Environment Name *</label><input type="text" placeholder="e.g., Production" value={customEnvInput} onChange={(e) => setCustomEnvInput(e.target.value)} className="pc-input" autoFocus /></div>}
-            </div>
-            <div className="pc-modal-footer">
-              <button className="pc-btn-cancel" onClick={() => { setShowAddEnvModal(false); setNewEnvName(""); setIsCustomEnv(false); setCustomEnvInput(""); }}>Cancel</button>
-              <button className="pc-btn-primary" onClick={handleAddEnvironment} disabled={(!isCustomEnv && !newEnvName) || (isCustomEnv && !customEnvInput.trim())}>Save Environment</button>
+              <div className="pc-modal-footer">
+                <button className="pc-btn-cancel" onClick={() => { setShowAddEnvModal(false); setNewEnvName(""); setIsCustomEnv(false); setCustomEnvInput(""); }}>Cancel</button>
+                <button className="pc-btn-primary" onClick={handleAddEnvironment} disabled={(!isCustomEnv && !newEnvName) || (isCustomEnv && !customEnvInput.trim())}>Save Environment</button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Edit Environment Modal */}
-      {showEditEnvModal && (
-        <div className="pc-modal-overlay" onClick={() => setShowEditEnvModal(false)}>
-          <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}>
-            <div className="pc-modal-header"><h3>Edit Environment</h3><button className="pc-modal-close" onClick={() => setShowEditEnvModal(false)}><X size={18} /></button></div>
-            <div className="pc-modal-body"><div className="pc-form-group"><label>Environment Name</label><input type="text" className="pc-input" value={editEnvName} onChange={(e) => setEditEnvName(e.target.value)} /></div></div>
-            <div className="pc-modal-footer">
-              <button className="pc-btn-cancel" onClick={() => setShowEditEnvModal(false)}>Cancel</button>
-              <button className="pc-btn-primary" onClick={handleEditEnvironment}>Save Changes</button>
+      {
+        showEditEnvModal && (
+          <div className="pc-modal-overlay" onClick={() => setShowEditEnvModal(false)}>
+            <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}>
+              <div className="pc-modal-header"><h3>Edit Environment</h3><button className="pc-modal-close" onClick={() => setShowEditEnvModal(false)}><X size={18} /></button></div>
+              <div className="pc-modal-body"><div className="pc-form-group"><label>Environment Name</label><input type="text" className="pc-input" value={editEnvName} onChange={(e) => setEditEnvName(e.target.value)} /></div></div>
+              <div className="pc-modal-footer">
+                <button className="pc-btn-cancel" onClick={() => setShowEditEnvModal(false)}>Cancel</button>
+                <button className="pc-btn-primary" onClick={handleEditEnvironment}>Save Changes</button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Delete Environment Modal */}
-      {showDeleteEnvModal && (
-        <div className="pc-modal-overlay" onClick={() => setShowDeleteEnvModal(false)}>
-          <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}>
-            <div className="pc-modal-header"><h3>Delete Environment</h3><button className="pc-modal-close" onClick={() => setShowDeleteEnvModal(false)}><X size={18} /></button></div>
-            <div className="pc-modal-body"><p>Are you sure you want to delete <strong>{deletingEnvName}</strong> environment?</p><div className="warning-text">This action cannot be undone.</div></div>
-            <div className="pc-modal-footer">
-              <button className="pc-btn-cancel" onClick={() => setShowDeleteEnvModal(false)}>Cancel</button>
-              <button className="pc-btn-danger" onClick={handleDeleteEnvironment}>Delete</button>
+      {
+        showDeleteEnvModal && (
+          <div className="pc-modal-overlay" onClick={() => setShowDeleteEnvModal(false)}>
+            <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}>
+              <div className="pc-modal-header"><h3>Delete Environment</h3><button className="pc-modal-close" onClick={() => setShowDeleteEnvModal(false)}><X size={18} /></button></div>
+              <div className="pc-modal-body"><p>Are you sure you want to delete <strong>{deletingEnvName}</strong> environment?</p><div className="warning-text">This action cannot be undone.</div></div>
+              <div className="pc-modal-footer">
+                <button className="pc-btn-cancel" onClick={() => setShowDeleteEnvModal(false)}>Cancel</button>
+                <button className="pc-btn-danger" onClick={handleDeleteEnvironment}>Delete</button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Cannot Delete Modal */}
-      {deletingEnvName && (blockedDeleteCounts.sms > 0 || blockedDeleteCounts.email > 0 || blockedDeleteCounts.whatsapp > 0) && (
-        <div className="pc-modal-overlay" onClick={() => { setDeletingEnvName(""); setBlockedDeleteCounts({ sms: 0, email: 0, whatsapp: 0 }); }}>
-          <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}>
-            <div className="pc-modal-header"><h3><AlertTriangle size={18} /> Cannot Delete</h3><button className="pc-modal-close" onClick={() => { setDeletingEnvName(""); setBlockedDeleteCounts({ sms: 0, email: 0, whatsapp: 0 }); }}><X size={18} /></button></div>
-            <div className="pc-modal-body">
-              <p>Environment <strong>"{deletingEnvName}"</strong> cannot be deleted because providers are still configured.</p>
-              <div className="provider-summary">
-                {blockedDeleteCounts.sms > 0 && <div className="summary-item">SMS: {blockedDeleteCounts.sms}</div>}
-                {blockedDeleteCounts.email > 0 && <div className="summary-item">Email: {blockedDeleteCounts.email}</div>}
-                {blockedDeleteCounts.whatsapp > 0 && <div className="summary-item">WhatsApp: {blockedDeleteCounts.whatsapp}</div>}
+      {
+        deletingEnvName && (blockedDeleteCounts.sms > 0 || blockedDeleteCounts.email > 0 || blockedDeleteCounts.whatsapp > 0) && (
+          <div className="pc-modal-overlay" onClick={() => { setDeletingEnvName(""); setBlockedDeleteCounts({ sms: 0, email: 0, whatsapp: 0 }); }}>
+            <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}>
+              <div className="pc-modal-header"><h3><AlertTriangle size={18} /> Cannot Delete</h3><button className="pc-modal-close" onClick={() => { setDeletingEnvName(""); setBlockedDeleteCounts({ sms: 0, email: 0, whatsapp: 0 }); }}><X size={18} /></button></div>
+              <div className="pc-modal-body">
+                <p>Environment <strong>"{deletingEnvName}"</strong> cannot be deleted because providers are still configured.</p>
+                <div className="provider-summary">
+                  {blockedDeleteCounts.sms > 0 && <div className="summary-item">SMS: {blockedDeleteCounts.sms}</div>}
+                  {blockedDeleteCounts.email > 0 && <div className="summary-item">Email: {blockedDeleteCounts.email}</div>}
+                  {blockedDeleteCounts.whatsapp > 0 && <div className="summary-item">WhatsApp: {blockedDeleteCounts.whatsapp}</div>}
+                </div>
+                <p className="warning-text">Remove all providers before deleting this environment.</p>
               </div>
-              <p className="warning-text">Remove all providers before deleting this environment.</p>
+              <div className="pc-modal-footer"><button className="pc-btn-cancel" onClick={() => { setDeletingEnvName(""); setBlockedDeleteCounts({ sms: 0, email: 0, whatsapp: 0 }); }}>Close</button></div>
             </div>
-            <div className="pc-modal-footer"><button className="pc-btn-cancel" onClick={() => { setDeletingEnvName(""); setBlockedDeleteCounts({ sms: 0, email: 0, whatsapp: 0 }); }}>Close</button></div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Clone Modal */}
-      {showCloneModal && (
-        <div className="pc-modal-overlay" onClick={() => setShowCloneModal(false)}>
-          <div className="pc-modal" onClick={e => e.stopPropagation()}>
-            <div className="pc-modal-header"><h3><Copy size={18} /> Clone Environment</h3><button className="pc-modal-close" onClick={() => setShowCloneModal(false)}><X size={20} /></button></div>
-            <div className="pc-modal-body">
-              <div className="clone-source-info"><label>Source Environment</label><div className="clone-source-name">{getEnvIcon(selectedEnv)} {selectedEnv}</div></div>
-              <div className="pc-form-group"><label>Select Target Environment</label>
-                <div className="pc-env-options">
-                  {['Local', 'Dev', 'Staging', 'Live'].filter(env => env !== selectedEnv && !environments.includes(env)).map(env => (
-                    <div key={env} className={`pc-env-option ${cloneTarget === env && !cloneCustomMode ? 'selected' : ''}`} onClick={() => { setCloneTarget(env); setCloneCustomMode(false); }}>
-                      <span className="pc-env-option-icon">{getEnvIcon(env)}</span><span>{env}</span>
-                      {cloneTarget === env && !cloneCustomMode && <Check size={18} />}
+      {
+        showCloneModal && (
+          <div className="pc-modal-overlay" onClick={() => setShowCloneModal(false)}>
+            <div className="pc-modal" onClick={e => e.stopPropagation()}>
+              <div className="pc-modal-header"><h3><Copy size={18} /> Clone Environment</h3><button className="pc-modal-close" onClick={() => setShowCloneModal(false)}><X size={20} /></button></div>
+              <div className="pc-modal-body">
+                <div className="clone-source-info"><label>Source Environment</label><div className="clone-source-name">{getEnvIcon(selectedEnv)} {selectedEnv}</div></div>
+                <div className="pc-form-group"><label>Select Target Environment</label>
+                  <div className="pc-env-options">
+                    {['Local', 'Dev', 'Staging', 'Live'].filter(env => env !== selectedEnv && !environments.includes(env)).map(env => (
+                      <div key={env} className={`pc-env-option ${cloneTarget === env && !cloneCustomMode ? 'selected' : ''}`} onClick={() => { setCloneTarget(env); setCloneCustomMode(false); }}>
+                        <span className="pc-env-option-icon">{getEnvIcon(env)}</span><span>{env}</span>
+                        {cloneTarget === env && !cloneCustomMode && <Check size={18} />}
+                      </div>
+                    ))}
+                    <div className={`pc-env-option custom ${cloneCustomMode ? 'selected' : ''}`} onClick={() => { setCloneCustomMode(true); setCloneTarget(""); }}>
+                      <span className="pc-env-option-icon"><Wrench size={18} /></span><span>Custom Environment</span>
+                      {cloneCustomMode && <Check size={18} />}
                     </div>
-                  ))}
-                  <div className={`pc-env-option custom ${cloneCustomMode ? 'selected' : ''}`} onClick={() => { setCloneCustomMode(true); setCloneTarget(""); }}>
-                    <span className="pc-env-option-icon"><Wrench size={18} /></span><span>Custom Environment</span>
-                    {cloneCustomMode && <Check size={18} />}
                   </div>
                 </div>
+                {cloneCustomMode && <div className="pc-form-group"><label>Custom Environment Name *</label><input type="text" placeholder="Enter environment name" value={cloneCustomName} onChange={(e) => setCloneCustomName(e.target.value)} className="pc-input" autoFocus /></div>}
               </div>
-              {cloneCustomMode && <div className="pc-form-group"><label>Custom Environment Name *</label><input type="text" placeholder="Enter environment name" value={cloneCustomName} onChange={(e) => setCloneCustomName(e.target.value)} className="pc-input" autoFocus /></div>}
-            </div>
-            <div className="pc-modal-footer">
-              <button className="pc-btn-cancel" onClick={() => setShowCloneModal(false)}>Cancel</button>
-              <button className="pc-btn-primary" onClick={executeClone} disabled={(!cloneCustomMode && !cloneTarget) || (cloneCustomMode && !cloneCustomName.trim())}>Clone Environment</button>
+              <div className="pc-modal-footer">
+                <button className="pc-btn-cancel" onClick={() => setShowCloneModal(false)}>Cancel</button>
+                <button className="pc-btn-primary" onClick={executeClone} disabled={(!cloneCustomMode && !cloneTarget) || (cloneCustomMode && !cloneCustomName.trim())}>Clone Environment</button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Add/Edit Provider Modal */}
-      {showAddProviderModal && (
-        <div className="pc-modal-overlay" onClick={() => { setShowAddProviderModal(false); setEditingProvider(null); }}>
-          <div className="pc-modal pc-modal-provider" onClick={e => e.stopPropagation()}>
-            <div className="pc-modal-header">
-              <div className="pc-modal-header-left">
-                <span className="pc-modal-service-badge" style={{ backgroundColor: `${SERVICE_COLORS[activeService]}15`, color: SERVICE_COLORS[activeService], border: `1px solid ${SERVICE_COLORS[activeService]}40` }}>
-                  {SERVICE_ICONS[activeService]}<span>{activeService}</span>
-                </span>
-                <h3>{editingProvider ? 'Edit Provider' : 'Add Provider'}</h3>
-              </div>
-              <button className="pc-modal-close" onClick={() => { setShowAddProviderModal(false); setEditingProvider(null); }}><X size={20} /></button>
-            </div>
-            <div className="pc-modal-env-info"><Globe size={14} /><span>Environment: <strong>{selectedEnv}</strong></span></div>
-            <div className="pc-modal-body">
-              <div className="pc-form-group">
-                <label>Select Provider *</label>
-                <select value={selectedProvider} onChange={handleProviderChange} className="pc-select">
-                  <option value="">-- Choose provider --</option>
-                  {PROVIDERS_BY_SERVICE[activeService]?.filter(p => editingProvider?.name === p || !providers.some(prov => prov.name === p)).map(p => <option key={p} value={p}>{p.replace(/_/g, ' ')}</option>)}
-                </select>
-              </div>
-              {selectedProvider && PROVIDER_FIELDS_MAP[selectedProvider] && (
-                <div className="pc-credentials-section">
-                  <h4><Lock size={14} /> Credentials</h4>
-                  {PROVIDER_FIELDS_MAP[selectedProvider].map((field: any) => (
-                    <div className="pc-form-group" key={field.name}>
-                      <label>{field.label}{field.required && " *"}</label>
-                      <div className="pc-input-wrapper">
-                        <input type={field.type === "password" && !showPasswords[field.name] ? "password" : "text"} value={providerFields[field.name] || ""} onChange={(e) => handleFieldChange(field.name, e.target.value)} placeholder={`Enter ${field.label}`} className="pc-input" />
-                        {field.type === "password" && <button type="button" className="pc-eye-btn" onClick={() => togglePasswordVisibility(field.name)}>{showPasswords[field.name] ? <FaEyeSlash /> : <FaEye />}</button>}
-                      </div>
-                    </div>
-                  ))}
+      {
+        showAddProviderModal && (
+          <div className="pc-modal-overlay" onClick={() => { setShowAddProviderModal(false); setEditingProvider(null); }}>
+            <div className="pc-modal pc-modal-provider" onClick={e => e.stopPropagation()}>
+              <div className="pc-modal-header">
+                <div className="pc-modal-header-left">
+                  <span className="pc-modal-service-badge" style={{ backgroundColor: `${SERVICE_COLORS[activeService]}15`, color: SERVICE_COLORS[activeService], border: `1px solid ${SERVICE_COLORS[activeService]}40` }}>
+                    {SERVICE_ICONS[activeService]}<span>{activeService}</span>
+                  </span>
+                  <h3>{editingProvider ? 'Edit Provider' : 'Add Provider'}</h3>
                 </div>
-              )}
-            </div>
-            <div className="pc-modal-footer">
-              <button className="pc-btn-cancel" onClick={() => { setShowAddProviderModal(false); setEditingProvider(null); }}>Cancel</button>
-              <button className="pc-btn-primary" onClick={saveProvider} disabled={saving} style={{ backgroundColor: SERVICE_COLORS[activeService] }}>
-                {saving ? 'Saving...' : editingProvider ? 'Update Provider' : 'Add Provider'}
-              </button>
+                <button className="pc-modal-close" onClick={() => { setShowAddProviderModal(false); setEditingProvider(null); }}><X size={20} /></button>
+              </div>
+              <div className="pc-modal-env-info"><Globe size={14} /><span>Environment: <strong>{selectedEnv}</strong></span></div>
+              <div className="pc-modal-body">
+                <div className="pc-form-group">
+                  <label>Select Provider *</label>
+                  <select value={selectedProvider} onChange={handleProviderChange} className="pc-select">
+                    <option value="">-- Choose provider --</option>
+                    {PROVIDERS_BY_SERVICE[activeService]?.filter(p => {
+                      // Always show if editing this provider
+                      if (editingProvider?.name === p) return true;
+                      // Check if provider exists in ANY instance (Live OR Sandbox)
+                      const providerExistsInLive = providers.some(prov => prov.name === p && prov.fields.instance === 'Live');
+                      const providerExistsInSandbox = providers.some(prov => prov.name === p && prov.fields.instance === 'Sandbox');
+                      // Hide only if it exists in BOTH instances
+                      const existsInBoth = providerExistsInLive && providerExistsInSandbox;
+                      return !existsInBoth;
+                    }).map(p => <option key={p} value={p}>{p.replace(/_/g, ' ')}</option>)}
+                  </select>
+                </div>
+                {selectedProvider && PROVIDER_FIELDS_MAP[selectedProvider] && (
+                  <>
+                    {/* Instance field outside credentials */}
+                    {PROVIDER_FIELDS_MAP[selectedProvider]
+                      .filter((f: any) => f.type === "select")
+                      .map((field: any) => (
+                        <div className="pc-form-group" key={field.name}>
+                          <label>{field.label}{field.required && " *"}</label>
+                          <select
+                            value={providerFields[field.name] || ""}
+                            onChange={(e) => handleFieldChange(field.name, e.target.value)}
+                            className="pc-select"
+                          >
+                            <option value="">-- Choose instance --</option>
+                            {(() => {
+                              const liveExists = providers.some(p => p.name === selectedProvider && p.fields.instance === 'Live');
+                              const sandboxExists = providers.some(p => p.name === selectedProvider && p.fields.instance === 'Sandbox');
+
+                              // When editing, show both
+                              if (editingProvider) {
+                                return (
+                                  <>
+                                    <option value="Sandbox">Sandbox</option>
+                                    <option value="Live">Live</option>
+                                  </>
+                                );
+                              }
+
+                              // When adding new, hide instances that already have this provider
+                              return (
+                                <>
+                                  {!sandboxExists && <option value="Sandbox">Sandbox</option>}
+                                  {!liveExists && <option value="Live">Live</option>}
+                                </>
+                              );
+                            })()}
+                          </select>
+                        </div>
+                      ))}
+                    <div className="pc-credentials-section">
+                      <h4><Lock size={14} /> Credentials</h4>
+                      {PROVIDER_FIELDS_MAP[selectedProvider]
+                        .filter((f: any) => f.type !== "select")
+                        .map((field: any) => (
+                          <div className="pc-form-group" key={field.name}>
+                            <label>{field.label}{field.required && " *"}</label>
+                            <div className="pc-input-wrapper">
+                              <input
+                                type={field.type === "password" && !showPasswords[field.name] ? "password" : "text"}
+                                value={providerFields[field.name] || ""}
+                                onChange={(e) => handleFieldChange(field.name, e.target.value)}
+                                placeholder={`Enter ${field.label}`}
+                                className="pc-input"
+                              />
+                              {field.type === "password" &&
+                                <button type="button" className="pc-eye-btn" onClick={() => togglePasswordVisibility(field.name)}>
+                                  {showPasswords[field.name] ? <FaEyeSlash /> : <FaEye />}
+                                </button>
+                              }
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </>
+                )}
+              </div>
+              <div className="pc-modal-footer">
+                <button className="pc-btn-cancel" onClick={() => { setShowAddProviderModal(false); setEditingProvider(null); }}>Cancel</button>
+                <button className="pc-btn-primary" onClick={saveProvider} disabled={saving} style={{ backgroundColor: SERVICE_COLORS[activeService] }}>
+                  {saving ? 'Saving...' : editingProvider ? 'Update Provider' : 'Add Provider'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Delete Provider Modal */}
-      {showDeleteProviderModal && (
-        <div className="pc-modal-overlay" onClick={() => setShowDeleteProviderModal(null)}>
-          <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}>
-            <div className="pc-modal-header"><h3><Trash2 size={18} /> Delete Provider</h3><button className="pc-modal-close" onClick={() => setShowDeleteProviderModal(null)}><X size={20} /></button></div>
-            <div className="pc-modal-body"><p>Are you sure you want to delete <strong>{showDeleteProviderModal.name.replace(/_/g, ' ')}</strong>?</p><p className="pc-warning-text">This action cannot be undone.</p></div>
-            <div className="pc-modal-footer">
-              <button className="pc-btn-cancel" onClick={() => setShowDeleteProviderModal(null)}>Cancel</button>
-              <button className="pc-btn-danger" onClick={deleteProvider}>Delete</button>
+      {
+        showDeleteProviderModal && (
+          <div className="pc-modal-overlay" onClick={() => setShowDeleteProviderModal(null)}>
+            <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}>
+              <div className="pc-modal-header"><h3><Trash2 size={18} /> Delete Provider</h3><button className="pc-modal-close" onClick={() => setShowDeleteProviderModal(null)}><X size={20} /></button></div>
+              <div className="pc-modal-body"><p>Are you sure you want to delete <strong>{showDeleteProviderModal.name.replace(/_/g, ' ')}</strong>?</p><p className="pc-warning-text">This action cannot be undone.</p></div>
+              <div className="pc-modal-footer">
+                <button className="pc-btn-cancel" onClick={() => setShowDeleteProviderModal(null)}>Cancel</button>
+                <button className="pc-btn-danger" onClick={deleteProvider}>Delete</button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+
+      {/* Toast Notification */}
+      {
+        toastMessage && (
+          <div className="pc-toast">
+            <Check size={16} />
+            {toastMessage}
+          </div>
+        )
+      }
+    </div >
   );
 }
