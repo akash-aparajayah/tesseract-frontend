@@ -13,6 +13,7 @@ import ProjectBasicEdit from "@/pages/ProjectBasicEdit";
 // import EnvironmentManagement from "@/pages/EnvironmentManagement";
 import ProviderConfig from "@/pages/ProviderConfig";
 import TokenGenerate from "@/pages/TokenGenerate";
+import UserDetailView from "@/pages/UserDetailView";
 
 const router = createBrowserRouter([
   {
@@ -79,6 +80,10 @@ const router = createBrowserRouter([
       {
         path: "provider-config/:environmentName",
         element: <ProviderConfig />,
+      },
+      {
+        path: "user/:userId",
+        element: <UserDetailView />,
       },
     ],
   },

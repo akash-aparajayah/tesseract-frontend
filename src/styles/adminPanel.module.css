@@ -196,7 +196,8 @@ body {
 
 .roleSelect {
   height: 42px;
-  padding: 0 32px 0 18px;   /* space for custom arrow */
+  padding: 0 32px 0 18px;
+  /* space for custom arrow */
   border: 1px solid var(--border);
   /* border-radius: 999px; */
   border-radius: 10px;
@@ -207,7 +208,8 @@ body {
   appearance: none;
   -webkit-appearance: none;
   /* Use your saved SVG file */
-  background-image: url('../../public/chevron-down.svg'); /* adjust path */
+  background-image: url('../../public/chevron-down.svg');
+  /* adjust path */
   background-repeat: no-repeat;
   background-position: right 16px center;
   background-size: 14px;
@@ -220,16 +222,14 @@ body {
 
 .addBtn {
   height: 42px;
-     padding: 10px 18px;
+  padding: 10px 18px;
   border-radius: 10px;
   border: none;
   /* border-radius: 999px; */
   background:
-    linear-gradient(
-      135deg,
+    linear-gradient(135deg,
       #0f3d91,
-      #0b2f6b
-    );
+      #0b2f6b);
 
   color: white;
   font-size: 12px;
@@ -266,7 +266,7 @@ body {
 .table {
   width: 100%;
   min-width: 100%;
-border-radius: 99px;
+  border-radius: 99px;
   border-collapse: separate;
   border-spacing: 0;
 
@@ -303,9 +303,10 @@ border-radius: 99px;
 .table th:not(.colUser):not(.colEmail) {
   text-align: center;
 }
- .table thead tr {
-      background: linear-gradient(135deg, #0f3d91, #0b2f6b);
-    }
+
+.table thead tr {
+  background: linear-gradient(135deg, #0f3d91, #0b2f6b);
+}
 
 /* =========================================================
    TABLE BODY
@@ -395,7 +396,7 @@ border-radius: 99px;
 
   border-radius: 12px;
 
-    background: linear-gradient(145deg, #3b82f6, #1e40af);
+  background: linear-gradient(145deg, #3b82f6, #1e40af);
 
   color: white;
 
@@ -463,6 +464,7 @@ border-radius: 99px;
 
   font-size: 12px;
   font-weight: 700;
+
 }
 
 /* SUPER ADMIN */
@@ -567,7 +569,7 @@ border-radius: 99px;
   /* width: 38px;
   height: 34px;
    */
-padding: 7px 12px;
+  padding: 7px 12px;
   border-radius: 10px;
 
   border: 1px solid #e2e8f0;
@@ -773,11 +775,13 @@ padding: 7px 12px;
   text-align: center;
   padding: 480px 480px;
 }
+
 .noDataImg {
   width: 325px;
   margin-bottom: 16px;
   /* opacity: 0.7; */
 }
+
 .noData div {
   font-size: 14px;
   color: var(--text-light);
@@ -792,6 +796,7 @@ padding: 7px 12px;
     opacity: 0;
     transform: translateY(8px);
   }
+
   100% {
     opacity: 1;
     transform: translateY(0);
@@ -806,18 +811,23 @@ padding: 7px 12px;
 .table tbody tr:nth-child(1) {
   animation-delay: 0.00s;
 }
+
 .table tbody tr:nth-child(2) {
   animation-delay: 0.03s;
 }
+
 .table tbody tr:nth-child(3) {
   animation-delay: 0.06s;
 }
+
 .table tbody tr:nth-child(4) {
   animation-delay: 0.09s;
 }
+
 .table tbody tr:nth-child(5) {
   animation-delay: 0.12s;
 }
+
 .table tbody tr:nth-child(n+6) {
   animation-delay: 0.15s;
 }
@@ -830,6 +840,7 @@ padding: 7px 12px;
     opacity: 0;
     transform: translateY(20px);
   }
+
   100% {
     opacity: 1;
     transform: translateY(0);
@@ -838,6 +849,192 @@ padding: 7px 12px;
 
 .statCard {
   animation: cardFadeUp 0.4s ease-out forwards;
-  opacity: 0; /* start invisible, animation makes visible */
+  opacity: 0;
+  /* start invisible, animation makes visible */
 }
 
+/* Modal styles */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modalCard {
+  background: var(--bg-white, #ffffff);
+  border-radius: 28px;
+  width: 90%;
+  max-width: 500px;
+  padding: 1.8rem;
+  box-shadow: 0 20px 35px rgba(0, 0, 0, 0.2);
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.modalHeader h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.modalClose {
+  width: 36px;
+  height: 36px;
+
+  margin-left: auto;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: none;
+
+  border-radius: 50%;
+
+  background: transparent;
+
+  cursor: pointer;
+
+  transition: var(--transition);
+}
+
+.modalClose:hover {
+  color: var(--danger);
+
+  background: rgba(211, 47, 47, 0.08);
+
+  transform: rotate(90deg);
+}
+
+
+.formGroup {
+  margin-bottom: 1rem;
+  
+}
+
+.formGroup label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text-dark, #0f172a);
+  
+}
+
+.formGroup input,
+.formGroup select {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 16px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  
+}
+
+.formGroup input:focus,
+.formGroup select:focus {
+  outline: none;
+  border-color: var(--primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.passwordWrapper {
+  position: relative;
+}
+
+.passwordIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-light, #64748b);
+}
+
+.passwordWrapper input {
+  padding-left: 36px;
+}
+
+.formError {
+  background: #fee2e2;
+  color: #ef4444;
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.cancelBtn {
+  padding: 0.6rem 1.2rem;
+  border-radius: 40px;
+  border: 1px solid var(--border, #e2e8f0);
+  background: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.submitBtn {
+  padding: 0.6rem 1.5rem;
+  border-radius: 40px;
+  border: none;
+  background: linear-gradient(135deg, #0f3d91, #2563eb);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.submitBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+/* Red asterisk for required fields */
+.requiredStar {
+  color: #ef4444;
+  margin-left: 2px;
+  font-weight: 700;
+}
+
+/* Password hint text */
+.passwordHint {
+  font-size: 0.7rem;
+  color: var(--text-light, #64748b);
+  margin-left: 6px;
+  font-weight: normal;
+}
+
+
+/* Password wrapper (already present, ensure it exists) */
+.passwordWrapper {
+  position: relative;
+}
+
+.passwordIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-light, #64748b);
+}
+
+.passwordWrapper input {
+  padding-left: 36px;
+}

@@ -20,17 +20,24 @@ export const changePasswordApi = (id: number, password: string) => {
 };
 
 //create user API
-export const createUserApi = (name: string, email: string, password: string, role: string) => {
-  return api.post("/auth/create-user", {
-    name,
+export const createUserApi = (user_name: string, email: string, password: string, role: string, is_active: boolean) => {
+  return api.post("/users/create-user", {
+    user_name,
     email,
     password,
     role,
+    is_active,
   });
 };
 
 //delete user API
 export const deleteUserApi = (id: number) => {
   return api.delete(`/users/${id}`);
+};
+
+//get user by id API
+export const getUserByIdApi = (id: string) => {
+  console.log("enter")
+  return api.get(`/users/get-user/${id}`);
 };
 

@@ -1,0 +1,219 @@
+/* userDetail.module.css – without config section */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  background: #f8fafc;
+  min-height: 100vh;
+}
+
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+.breadcrumbs a {
+  color: #3b82f6;
+  text-decoration: none;
+}
+.breadcrumbs a:hover {
+  text-decoration: underline;
+}
+.breadcrumbs .current {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.heroBanner {
+  background: linear-gradient(135deg, #0f3d91, #0b2f6b);
+  border-radius: 28px;
+  padding: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  color: white;
+  box-shadow: 0 8px 20px rgba(11, 47, 107, 0.25);
+}
+.heroContent h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 1rem;
+}
+.badgeRow {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.userBadge {
+  background: rgba(255,255,255,0.2);
+  backdrop-filter: blur(4px);
+  padding: 0.3rem 0.9rem;
+  border-radius: 40px;
+  font-size: 0.75rem;
+  font-family: monospace;
+}
+.statusPill {
+  padding: 0.3rem 0.9rem;
+  border-radius: 40px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.statusActive { background: #10b981; color: white; }
+.statusInactive { background: #ef4444; color: white; }
+.userInfoInline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+.infoRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+.userAvatarLarge {
+  width: 80px;
+  height: 80px;
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(8px);
+  border-radius: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  font-weight: 700;
+  border: 1px solid rgba(255,255,255,0.3);
+}
+
+.projectsSection {
+  background: white;
+  border-radius: 28px;
+  border: 1px solid #e2e8f0;
+  padding: 1.8rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+}
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.sectionHeader h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.assignBox {
+  display: flex;
+  gap: 0.5rem;
+}
+.assignBox select {
+  padding: 0.6rem 1rem;
+  border-radius: 40px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  font-size: 0.85rem;
+}
+.assignBtn {
+  background: linear-gradient(135deg, #0f3d91, #0b2f6b);
+  color: white;
+  border: none;
+  border-radius: 40px;
+  padding: 0.6rem 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.assignBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+.assignBtn:disabled { opacity: 0.5; }
+.successMsg {
+  background: #e6f7ec;
+  color: #15803d;
+  padding: 0.75rem 1rem;
+  border-radius: 14px;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.projectList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.projectCard {
+  background: #f8fafc;
+  border-radius: 18px;
+  padding: 1rem 1.2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #e2e8f0;
+  transition: 0.2s;
+}
+.projectCard:hover {
+  border-color: #0f3d91;
+  box-shadow: 0 2px 8px rgba(15,61,145,0.08);
+}
+.projectInfo strong { font-size: 0.95rem; }
+.projectInfo p {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 0.25rem;
+}
+.removeBtn {
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 10px;
+  transition: 0.2s;
+}
+.removeBtn:hover { background: #fee2e2; }
+.noProjects {
+  text-align: center;
+  padding: 2.5rem;
+  color: #64748b;
+}
+
+@media (max-width: 768px) {
+  .container { padding: 1rem; }
+  .heroBanner { flex-direction: column; text-align: center; gap: 1rem; }
+  .userInfoInline { align-items: center; }
+  .badgeRow { justify-content: center; }
+  .assignBox { width: 100%; }
+  .assignBox select { flex: 1; }
+}
+
+.errorContainer {
+  text-align: center;
+  padding: 4rem;
+  color: #ef4444;
+}
+.backBtn {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background: #f1f5f9;
+  border: none;
+  border-radius: 30px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
