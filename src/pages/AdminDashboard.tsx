@@ -17,14 +17,15 @@ import {
   X,
 } from "lucide-react";
 
-import noDataImg from "../assets/illustration/No data.svg";
+import noDataImg from "../assets/illustration/No-data.svg";
 import errorImg from "../assets/illustration/error.svg";
 import Loader from "@/components/common/Loader";
 
 import {
-getAllUsersApi,
-activateOrDeactivateUserApi,
-
+  getAllUsersApi,
+  activateOrDeactivateUserApi,
+  deleteUserApi,
+  createUserApi,
 } from "../services/adminApi";
 
 /* =========================================================
@@ -35,7 +36,7 @@ interface Admin {
   id: string;
   name: string;
   email: string;
-  role: "ADMIN" | "SUPER_ADMIN";
+  role: "ADMIN" | "SUPER_ADMIN" | "USER";
   active: boolean;
 }
 
@@ -61,17 +62,20 @@ const api = {
       }));
     } catch (error) {
       console.error("GET ADMINS ERROR:", error);
-      return []; // empty array → triggers illustration
+      return [];
     }
   },
 
-  async toggleStatus(id: string, currentActive: boolean): Promise<Admin> {
+  async toggleStatus(id: string, currentActive: boolean) {
     try {
       const newActive = !currentActive;
-      const response = await activateOrDeactivateUserApi(id, newActive);
-      return response.data;
+
+      await activateOrDeactivateUserApi(id, newActive);
+
+      return true;
     } catch (error) {
       console.error("TOGGLE STATUS ERROR:", error);
+
       throw error;
     }
   },
@@ -100,7 +104,7 @@ const api = {
    HELPERS
 ========================================================= */
 
-const getInitials = (name: string) => name?.charAt(0)?.toUpperCase();
+const getInitials = (name: string) => name?.charAt(0)?.toUpperCase() || "";
 
 /* =========================================================
    MAIN COMPONENT
@@ -111,8 +115,12 @@ const AdminPanel: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [roleFilter, setRoleFilter] = useState<"all" | "ADMIN" | "SUPER_ADMIN">("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [roleFilter, setRoleFilter] = useState<
+    "all" | "ADMIN" | "SUPER_ADMIN" | "USER"
+  >("all");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "active" | "inactive"
+  >("all");
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5;
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
@@ -130,7 +138,9 @@ const AdminPanel: React.FC = () => {
         console.log("No admins found");
       }
     } catch (err) {
-      setFetchError(err instanceof Error ? err.message : "Failed to load admins");
+      setFetchError(
+        err instanceof Error ? err.message : "Failed to load admins",
+      );
       setAdmins([]);
     } finally {
       setLoading(false);
@@ -153,12 +163,11 @@ const AdminPanel: React.FC = () => {
   ========================================================= */
   const filteredAdmins = useMemo(() => {
     let filtered = [...admins];
-
     if (searchTerm) {
       filtered = filtered.filter(
         (admin) =>
           admin.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          admin.email.toLowerCase().includes(searchTerm.toLowerCase())
+          admin.email.toLowerCase().includes(searchTerm.toLowerCase()),
       );
     }
     if (roleFilter !== "all") {
@@ -195,17 +204,31 @@ const AdminPanel: React.FC = () => {
   ========================================================= */
   const handleToggleStatus = async (id: string, currentActive: boolean) => {
     try {
-      const updatedAdmin = await api.toggleStatus(id, currentActive);
+      // API CALL
+      await api.toggleStatus(id, currentActive);
+
+      // UPDATE LOCAL STATE
       setAdmins((prev) =>
-        prev.map((admin) => (admin.id === id ? updatedAdmin : admin))
+        prev.map((admin) =>
+          admin.id === id
+            ? {
+                ...admin,
+                active: !currentActive,
+              }
+            : admin,
+        ),
       );
     } catch (error) {
+      console.error(error);
+
       alert("Failed to update status");
     }
   };
 
   const handleView = (admin: Admin) => {
-    alert(`Name: ${admin.name}\nEmail: ${admin.email}\nRole: ${admin.role}\nActive: ${admin.active}`);
+    alert(
+      `Name: ${admin.name}\nEmail: ${admin.email}\nRole: ${admin.role}\nActive: ${admin.active}`,
+    );
   };
 
   const handleEdit = (admin: Admin) => {
@@ -367,7 +390,8 @@ const AdminPanel: React.FC = () => {
           <tbody>
             {paginatedAdmins.length > 0 ? (
               paginatedAdmins.map((admin, index) => {
-                const serialNumber = (currentPage - 1) * rowsPerPage + index + 1;
+                const serialNumber =
+                  (currentPage - 1) * rowsPerPage + index + 1;
                 return (
                   <tr key={admin.id}>
                     <td className={styles.colNo}>{serialNumber}</td>
@@ -391,13 +415,17 @@ const AdminPanel: React.FC = () => {
                       <div className={styles.statusCell}>
                         <div
                           className={`${styles.toggle} ${admin.active ? styles.active : ""}`}
-                          onClick={() => handleToggleStatus(admin.id, admin.active)}
+                          onClick={() =>
+                            handleToggleStatus(admin.id, admin.active)
+                          }
                         >
                           <div className={styles.knob} />
                         </div>
                         <span
                           className={`${styles.statusText} ${
-                            admin.active ? styles.statusActive : styles.statusInactive
+                            admin.active
+                              ? styles.statusActive
+                              : styles.statusInactive
                           }`}
                         >
                           {admin.active ? "Active" : "Inactive"}
