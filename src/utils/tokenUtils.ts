@@ -48,14 +48,14 @@ export function formatDate(dateString: string): string {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-// Updated: key includes projectId AND environmentName
-export function saveToken(projectId: string, environmentName: string, token: ApiToken): void {
-    const key = `token_${projectId}_${environmentName}`;
+// Save token with instance
+export function saveToken(projectId: string, environmentName: string, instance: string, token: ApiToken): void {
+    const key = `token_${projectId}_${environmentName}_${instance}`;
     localStorage.setItem(key, JSON.stringify(token));
 }
 
-export function getToken(projectId: string, environmentName: string): ApiToken | null {
-    const key = `token_${projectId}_${environmentName}`;
+export function getToken(projectId: string, environmentName: string, instance: string): ApiToken | null {
+    const key = `token_${projectId}_${environmentName}_${instance}`;
     const data = localStorage.getItem(key);
     if (!data) return null;
     try {
@@ -65,18 +65,20 @@ export function getToken(projectId: string, environmentName: string): ApiToken |
     }
 }
 
-// Get all tokens for a project
+// Get all tokens for a project (across all environments and instances)
 export function getAllTokens(projectId: string): Record<string, ApiToken> {
     const tokens: Record<string, ApiToken> = {};
     const allKeys = Object.keys(localStorage);
     allKeys.forEach(key => {
-        const match = key.match(new RegExp(`^token_${projectId}_(.+)$`));
+        const match = key.match(new RegExp(`^token_${projectId}_(.+)_(Sandbox|Live)$`));
         if (match) {
             const envName = match[1];
+            const instance = match[2];
             const data = localStorage.getItem(key);
             if (data) {
                 try {
-                    tokens[envName] = JSON.parse(data);
+                    // Key format: "envName_instance"
+                    tokens[`${envName}_${instance}`] = JSON.parse(data);
                 } catch { }
             }
         }
@@ -84,16 +86,16 @@ export function getAllTokens(projectId: string): Record<string, ApiToken> {
     return tokens;
 }
 
-export function markTokenRevealed(projectId: string, environmentName: string): void {
-    const token = getToken(projectId, environmentName);
+export function markTokenRevealed(projectId: string, environmentName: string, instance: string): void {
+    const token = getToken(projectId, environmentName, instance);
     if (token) {
         token.revealed = true;
-        saveToken(projectId, environmentName, token);
+        saveToken(projectId, environmentName, instance, token);
     }
 }
 
-export function deleteToken(projectId: string, environmentName: string): void {
-    localStorage.removeItem(`token_${projectId}_${environmentName}`);
+export function deleteToken(projectId: string, environmentName: string, instance: string): void {
+    localStorage.removeItem(`token_${projectId}_${environmentName}_${instance}`);
 }
 
 export function calculateExpiryLabel(expires: string, expiresInDays: number | null): string {

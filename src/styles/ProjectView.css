@@ -691,6 +691,7 @@
     border-radius: 16px;
     padding: 8px;
     margin-bottom: 28px;
+    overflow: visible;
 }
 
 .env-tabs {
@@ -698,6 +699,7 @@
     align-items: center;
     gap: 10px;
     overflow-x: auto;
+    overflow-y: visible;
 }
 
 .env-tab {
@@ -711,6 +713,7 @@
     background: #f8fafc;
     color: #475569;
     min-width: fit-content;
+    overflow: visible;
 }
 
 .env-tab:hover {
@@ -733,20 +736,28 @@
 }
 
 .env-menu-trigger {
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     border: none;
     background: transparent;
     border-radius: 6px;
     color: inherit;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -2px;
+    line-height: 1;
 }
 
 .env-menu-dropdown {
     position: absolute;
-    top: -52px;
-    right: 0;
+    top: -54px;
+    right: -60px;
     display: flex;
+    flex-direction: row;
     align-items: center;
     gap: 6px;
     background: white;
@@ -754,7 +765,7 @@
     border-radius: 12px;
     padding: 6px;
     box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
-    z-index: 9999;
+    z-index: 99999;
     animation: envMenuIn 0.18s ease;
 }
 
@@ -781,11 +792,35 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
 }
 
 .env-menu-dropdown button:hover {
     background: #f1f5f9;
     color: #0f172a;
+}
+
+.env-menu-dropdown button:hover .env-menu-tooltip {
+    opacity: 1;
+    visibility: visible;
+}
+
+.env-menu-tooltip {
+    position: absolute;
+    top: -24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #0f172a;
+    color: white;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s ease;
+    pointer-events: none;
 }
 
 /* ===== SERVICE ENV INFO ===== */
@@ -1803,4 +1838,347 @@
         opacity: 0;
         transform: translateX(20px);
     }
+}
+
+/* ===== USER ASSIGNMENT PANEL ===== */
+.user-panel-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.user-panel {
+    position: fixed;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 50%;
+    min-width: 500px;
+    background: white;
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    animation: slideInRight 0.3s ease;
+    z-index: 1001;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+    }
+
+    to {
+        transform: translateX(0);
+    }
+}
+
+.user-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 24px 16px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.user-panel-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-panel-header-left h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+}
+
+.user-panel-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: #f1f5f9;
+    border-radius: 8px;
+    color: #64748b;
+    cursor: pointer;
+}
+
+.user-panel-close:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+/* Tabs */
+.user-panel-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.user-panel-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 20px;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    font-weight: 500;
+    color: #64748b;
+    cursor: pointer;
+    font-family: inherit;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+}
+
+.user-panel-tab:hover {
+    color: #475569;
+    background: #f8fafc;
+}
+
+.user-panel-tab.active {
+    color: #6366f1;
+    background: #eef2ff;
+    border-bottom: 2px solid #6366f1;
+    font-weight: 600;
+    border-radius: 10px 10px 0 0;
+}
+
+/* Search Row */
+.user-panel-search-row {
+    display: flex;
+    gap: 12px;
+    padding: 16px 24px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.user-panel-search {
+    position: relative;
+    flex: 1;
+}
+
+.user-panel-search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    pointer-events: none;
+}
+
+.user-panel-search-input {
+    width: 100%;
+    height: 40px;
+    padding: 0 36px 0 40px;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #0f172a;
+    font-family: inherit;
+    outline: none;
+}
+
+.user-panel-search-input:focus {
+    border-color: #6366f1;
+}
+
+.user-panel-search-clear {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: #e2e8f0;
+    border-radius: 50%;
+    color: #64748b;
+    cursor: pointer;
+}
+
+.user-panel-filter {
+    height: 40px;
+    padding: 0 14px;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 13px;
+    color: #475569;
+    background: white;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+/* Table */
+.user-panel-table-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 24px;
+}
+
+.user-panel-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.user-panel-table thead {
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 1;
+}
+
+.user-panel-table th {
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.user-panel-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.user-panel-table tr:hover {
+    background: #f8fafc;
+}
+
+.user-panel-table tr.selected {
+    background: #eef2ff;
+}
+
+.col-checkbox {
+    width: 48px;
+}
+
+.user-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #6366f1;
+}
+
+.user-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.user-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #0f172a;
+}
+
+.user-email {
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+.user-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.user-status-badge.active {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.user-status-badge.inactive {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.user-status-badge.pending {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.user-empty-state {
+    text-align: center;
+    padding: 48px 20px;
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+/* Footer */
+.user-panel-footer {
+    padding: 16px 24px;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.user-panel-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 28px;
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+
+.user-panel-action-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.user-panel-action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+    .user-panel {
+        width: 100%;
+        min-width: auto;
+    }
+}
+
+.token-manage-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.token-manage-btn:disabled:hover {
+    transform: none;
+    box-shadow: none;
+    background: rgba(99, 102, 241, 0.4);
 }

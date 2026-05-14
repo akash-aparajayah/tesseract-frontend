@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/ProjectDashboard.css";
-import { Eye, Pencil, Globe, Trash2, Plus, Settings, Search, FileText } from 'lucide-react';
+import { Eye, Pencil, Trash2, Plus, Settings, Search, FileText } from 'lucide-react';
 
 interface Project {
   id: number;

@@ -6,8 +6,11 @@ import {
   Pencil, FolderOpen, Plus, MessageSquare, Mail, MessageCircle, Plug, Check,
   Save, X, ChevronDown, Server, Copy, Trash2, Globe, Rocket, Wrench,
   Search, Lock, AlertTriangle, Home, Monitor, Key,
+  User,
+  UserMinus,
+  UserPlus,
+  AlertCircle,
 } from 'lucide-react';
-import { getToken } from '../utils/tokenUtils';
 
 interface Project {
   id: string;
@@ -209,6 +212,103 @@ export default function ProjectView() {
   const [instanceFilter, setInstanceFilter] = useState<string>("Live");
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [toastMessage, setToastMessage] = useState("");
+
+  // User Assignment Panel states
+  const [showUserPanel, setShowUserPanel] = useState(false);
+  const [userActiveTab, setUserActiveTab] = useState<"assign" | "unassign">("assign");
+  const [userSearchTerm, setUserSearchTerm] = useState("");
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+  const [selectAll, setSelectAll] = useState(false);
+  const [userFilter, setUserFilter] = useState("all");
+
+  // Mock user data - Replace with actual API calls
+  const availableUsers = [
+    { id: "u1", name: "John Doe", email: "john@example.com", role: "Developer", status: "active", assignedAt: "2026-05-14" },
+    { id: "u2", name: "Jane Smith", email: "jane@example.com", role: "Admin", status: "active", assignedAt: "2026-05-13" },
+    { id: "u3", name: "Mike Johnson", email: "mike@example.com", role: "Viewer", status: "inactive", assignedAt: "2026-05-12" },
+    { id: "u4", name: "Sarah Wilson", email: "sarah@example.com", role: "Developer", status: "active", assignedAt: "2026-05-11" },
+    { id: "u5", name: "Tom Brown", email: "tom@example.com", role: "Viewer", status: "active", assignedAt: "2026-05-10" },
+    { id: "u6", name: "Alice Cooper", email: "alice@example.com", role: "Developer", status: "active", assignedAt: "2026-05-09" },
+    { id: "u7", name: "Bob Marley", email: "bob@example.com", role: "Admin", status: "active", assignedAt: "2026-05-08" },
+  ];
+
+  // Assigned users for this environment
+  const [assignedUsers, setAssignedUsers] = useState<any[]>([
+    { id: "u6", name: "Alice Cooper", email: "alice@example.com", role: "Developer", status: "active", assignedAt: "2026-05-14" },
+    { id: "u7", name: "Bob Marley", email: "bob@example.com", role: "Admin", status: "active", assignedAt: "2026-05-13" },
+  ]);
+
+  // Get unassigned users (available but not assigned)
+  const unassignedUsers = availableUsers.filter(u => !assignedUsers.some(au => au.id === u.id));
+
+  // Filter users based on search and tab
+  const getFilteredUsers = () => {
+    const userList = userActiveTab === "assign" ? unassignedUsers : assignedUsers;
+    let filtered = userList;
+
+    if (userSearchTerm.trim()) {
+      const query = userSearchTerm.toLowerCase();
+      filtered = filtered.filter(user =>
+        user.name.toLowerCase().includes(query) ||
+        user.email.toLowerCase().includes(query) ||
+        user.role.toLowerCase().includes(query)
+      );
+    }
+
+    if (userFilter !== "all") {
+      filtered = filtered.filter(user => user.status === userFilter);
+    }
+
+    // Sort by most recent first for unassign tab
+    if (userActiveTab === "unassign") {
+      filtered = [...filtered].sort((a, b) =>
+        new Date(b.assignedAt || "").getTime() - new Date(a.assignedAt || "").getTime()
+      );
+    }
+
+    return filtered;
+  };
+
+  const filteredUserList = getFilteredUsers();
+
+  // Handle select all
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedUsers(new Set());
+    } else {
+      setSelectedUsers(new Set(filteredUserList.map(u => u.id)));
+    }
+    setSelectAll(!selectAll);
+  };
+
+  // Handle individual select
+  const handleUserSelect = (userId: string) => {
+    const newSelected = new Set(selectedUsers);
+    if (newSelected.has(userId)) {
+      newSelected.delete(userId);
+    } else {
+      newSelected.add(userId);
+    }
+    setSelectedUsers(newSelected);
+    setSelectAll(newSelected.size === filteredUserList.length);
+  };
+
+  // Handle assign users
+  const handleAssignUsers = () => {
+    const usersToAssign = unassignedUsers
+      .filter(u => selectedUsers.has(u.id))
+      .map(u => ({ ...u, assignedAt: new Date().toISOString().split('T')[0] }));
+    setAssignedUsers(prev => [...usersToAssign, ...prev]);
+    setSelectedUsers(new Set());
+    setSelectAll(false);
+  };
+
+  // Handle unassign users
+  const handleUnassignUsers = () => {
+    setAssignedUsers(prev => prev.filter(u => !selectedUsers.has(u.id)));
+    setSelectedUsers(new Set());
+    setSelectAll(false);
+  };
 
   useEffect(() => {
     const loadProject = () => {
@@ -600,7 +700,13 @@ export default function ProjectView() {
                   <div className="token-info-row">
                     <button
                       className="token-manage-btn"
-                      onClick={() => navigate(`/dashboard/token-generate`, { state: { project } })}
+                      onClick={() => {
+                        if (environments.length > 0) {
+                          navigate(`/dashboard/token-generate`, { state: { project } });
+                        }
+                      }}
+                      disabled={environments.length === 0}
+                      style={environments.length === 0 ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                     >
                       <Key size={16} /> Manage Token
                     </button>
@@ -730,21 +836,51 @@ export default function ProjectView() {
                   <div key={env} className={`env-tab ${selectedEnv === env ? 'active' : ''}`} onClick={() => setSelectedEnv(env)}>
                     <span className="env-tab-name">{env}</span>
                     <div className="env-tab-menu" onClick={(e) => e.stopPropagation()}>
-                      <button className="env-menu-trigger" onClick={() => setOpenEnvMenu(openEnvMenu === env ? null : env)}>⋯</button>
-                      {openEnvMenu === env && (
+                      <button className="env-menu-trigger" onClick={() => setOpenEnvMenu(openEnvMenu === env ? null : env)}>⋮</button>                      {openEnvMenu === env && (
                         <div className="env-menu-dropdown">
-                          <button onClick={() => { setEditingEnvName(env); setEditEnvName(env); setShowEditEnvModal(true); setOpenEnvMenu(null); }}><Pencil size={14} /></button>
-                          <button onClick={() => { setCloneTarget(""); setCloneCustomMode(false); setShowCloneModal(true); setOpenEnvMenu(null); }}><Copy size={14} /></button>
-                          <button onClick={() => {
-                            const sms = JSON.parse(localStorage.getItem(`env_${env}_sms_providers`) || '{"providers":[]}');
-                            const email = JSON.parse(localStorage.getItem(`env_${env}_email_providers`) || '{"providers":[]}');
-                            const wa = JSON.parse(localStorage.getItem(`env_${env}_whatsapp_providers`) || '{"providers":[]}');
-                            const total = (sms.providers?.length || 0) + (email.providers?.length || 0) + (wa.providers?.length || 0);
-                            setDeletingEnvName(env);
-                            if (total > 0) setBlockedDeleteCounts({ sms: sms.providers?.length || 0, email: email.providers?.length || 0, whatsapp: wa.providers?.length || 0 });
-                            else setShowDeleteEnvModal(true);
-                            setOpenEnvMenu(null);
-                          }}><Trash2 size={14} /></button>
+                          <button
+                            onClick={() => { setEditingEnvName(env); setEditEnvName(env); setShowEditEnvModal(true); setOpenEnvMenu(null); }}
+
+                          >
+                            <Pencil size={14} />
+                            <span className="env-menu-tooltip">Edit</span>
+                          </button>
+                          <button
+                            onClick={() => { setCloneTarget(""); setCloneCustomMode(false); setShowCloneModal(true); setOpenEnvMenu(null); }}
+
+                          >
+                            <Copy size={14} />
+                            <span className="env-menu-tooltip">Clone</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowUserPanel(true);
+                              setOpenEnvMenu(null);
+                              setUserSearchTerm("");
+                              setSelectedUsers(new Set());
+                              setSelectAll(false);
+                              setUserFilter("all");
+                            }}
+                          >
+                            <User size={14} />
+                            <span className="env-menu-tooltip">Users</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              const sms = JSON.parse(localStorage.getItem(`env_${env}_sms_providers`) || '{"providers":[]}');
+                              const email = JSON.parse(localStorage.getItem(`env_${env}_email_providers`) || '{"providers":[]}');
+                              const wa = JSON.parse(localStorage.getItem(`env_${env}_whatsapp_providers`) || '{"providers":[]}');
+                              const total = (sms.providers?.length || 0) + (email.providers?.length || 0) + (wa.providers?.length || 0);
+                              setDeletingEnvName(env);
+                              if (total > 0) setBlockedDeleteCounts({ sms: sms.providers?.length || 0, email: email.providers?.length || 0, whatsapp: wa.providers?.length || 0 });
+                              else setShowDeleteEnvModal(true);
+                              setOpenEnvMenu(null);
+                            }}
+
+                          >
+                            <Trash2 size={14} />
+                            <span className="env-menu-tooltip">Delete</span>
+                          </button>
                         </div>
                       )}
                     </div>
@@ -1014,112 +1150,111 @@ export default function ProjectView() {
       }
 
       {/* Add/Edit Provider Modal */}
-      {
-        showAddProviderModal && (
-          <div className="pc-modal-overlay" onClick={() => { setShowAddProviderModal(false); setEditingProvider(null); }}>
-            <div className="pc-modal pc-modal-provider" onClick={e => e.stopPropagation()}>
-              <div className="pc-modal-header">
-                <div className="pc-modal-header-left">
-                  <span className="pc-modal-service-badge" style={{ backgroundColor: `${SERVICE_COLORS[activeService]}15`, color: SERVICE_COLORS[activeService], border: `1px solid ${SERVICE_COLORS[activeService]}40` }}>
-                    {SERVICE_ICONS[activeService]}<span>{activeService}</span>
-                  </span>
-                  <h3>{editingProvider ? 'Edit Provider' : 'Add Provider'}</h3>
-                </div>
-                <button className="pc-modal-close" onClick={() => { setShowAddProviderModal(false); setEditingProvider(null); }}><X size={20} /></button>
+      {showAddProviderModal && (
+        <div className="pc-modal-overlay" onClick={() => { setShowAddProviderModal(false); setEditingProvider(null); }}>
+          <div className="pc-modal pc-modal-provider" onClick={e => e.stopPropagation()}>
+            <div className="pc-modal-header">
+              <div className="pc-modal-header-left">
+                <span className="pc-modal-service-badge" style={{ backgroundColor: `${SERVICE_COLORS[activeService]}15`, color: SERVICE_COLORS[activeService], border: `1px solid ${SERVICE_COLORS[activeService]}40` }}>
+                  {SERVICE_ICONS[activeService]}<span>{activeService}</span>
+                </span>
+                <h3>{editingProvider ? 'Edit Provider' : 'Add Provider'}</h3>
               </div>
-              <div className="pc-modal-env-info"><Globe size={14} /><span>Environment: <strong>{selectedEnv}</strong></span></div>
-              <div className="pc-modal-body">
-                <div className="pc-form-group">
-                  <label>Select Provider *</label>
-                  <select value={selectedProvider} onChange={handleProviderChange} className="pc-select">
-                    <option value="">-- Choose provider --</option>
-                    {PROVIDERS_BY_SERVICE[activeService]?.filter(p => {
-                      // Always show if editing this provider
-                      if (editingProvider?.name === p) return true;
-                      // Check if provider exists in ANY instance (Live OR Sandbox)
-                      const providerExistsInLive = providers.some(prov => prov.name === p && prov.fields.instance === 'Live');
-                      const providerExistsInSandbox = providers.some(prov => prov.name === p && prov.fields.instance === 'Sandbox');
-                      // Hide only if it exists in BOTH instances
-                      const existsInBoth = providerExistsInLive && providerExistsInSandbox;
-                      return !existsInBoth;
-                    }).map(p => <option key={p} value={p}>{p.replace(/_/g, ' ')}</option>)}
-                  </select>
-                </div>
-                {selectedProvider && PROVIDER_FIELDS_MAP[selectedProvider] && (
-                  <>
-                    {/* Instance field outside credentials */}
+              <button className="pc-modal-close" onClick={() => { setShowAddProviderModal(false); setEditingProvider(null); }}><X size={20} /></button>
+            </div>
+            <div className="pc-modal-env-info"><Globe size={14} /><span>Environment: <strong>{selectedEnv}</strong></span></div>
+            <div className="pc-modal-body">
+              <div className="pc-form-group">
+                <label>Select Provider *</label>
+                <select value={selectedProvider} onChange={handleProviderChange} className="pc-select">
+                  <option value="">-- Choose provider --</option>
+                  {PROVIDERS_BY_SERVICE[activeService]?.filter(p => {
+                    // Always show if editing this provider
+                    if (editingProvider?.name === p) return true;
+                    // Check if provider exists in ANY instance (Live OR Sandbox)
+                    const providerExistsInLive = providers.some(prov => prov.name === p && prov.fields.instance === 'Live');
+                    const providerExistsInSandbox = providers.some(prov => prov.name === p && prov.fields.instance === 'Sandbox');
+                    // Hide only if it exists in BOTH instances
+                    const existsInBoth = providerExistsInLive && providerExistsInSandbox;
+                    return !existsInBoth;
+                  }).map(p => <option key={p} value={p}>{p.replace(/_/g, ' ')}</option>)}
+                </select>
+              </div>
+              {selectedProvider && PROVIDER_FIELDS_MAP[selectedProvider] && (
+                <>
+                  {/* Instance field outside credentials */}
+                  {PROVIDER_FIELDS_MAP[selectedProvider]
+                    .filter((f: any) => f.type === "select")
+                    .map((field: any) => (
+                      <div className="pc-form-group" key={field.name}>
+                        <label>{field.label}{field.required && " *"}</label>
+                        <select
+                          value={providerFields[field.name] || ""}
+                          onChange={(e) => handleFieldChange(field.name, e.target.value)}
+                          className="pc-select"
+                        >
+                          <option value="">-- Choose instance --</option>
+                          {(() => {
+                            const liveExists = providers.some(p => p.name === selectedProvider && p.fields.instance === 'Live');
+                            const sandboxExists = providers.some(p => p.name === selectedProvider && p.fields.instance === 'Sandbox');
+
+                            // When editing, show both
+                            if (editingProvider) {
+                              return (
+                                <>
+                                  <option value="Sandbox">Sandbox</option>
+                                  <option value="Live">Live</option>
+                                </>
+                              );
+                            }
+
+                            // When adding new, hide instances that already have this provider
+                            return (
+                              <>
+                                {!sandboxExists && <option value="Sandbox">Sandbox</option>}
+                                {!liveExists && <option value="Live">Live</option>}
+                              </>
+                            );
+                          })()}
+                        </select>
+                      </div>
+                    ))}
+                  <div className="pc-credentials-section">
+                    <h4><Lock size={14} /> Credentials</h4>
                     {PROVIDER_FIELDS_MAP[selectedProvider]
-                      .filter((f: any) => f.type === "select")
+                      .filter((f: any) => f.type !== "select")
                       .map((field: any) => (
                         <div className="pc-form-group" key={field.name}>
                           <label>{field.label}{field.required && " *"}</label>
-                          <select
-                            value={providerFields[field.name] || ""}
-                            onChange={(e) => handleFieldChange(field.name, e.target.value)}
-                            className="pc-select"
-                          >
-                            <option value="">-- Choose instance --</option>
-                            {(() => {
-                              const liveExists = providers.some(p => p.name === selectedProvider && p.fields.instance === 'Live');
-                              const sandboxExists = providers.some(p => p.name === selectedProvider && p.fields.instance === 'Sandbox');
-
-                              // When editing, show both
-                              if (editingProvider) {
-                                return (
-                                  <>
-                                    <option value="Sandbox">Sandbox</option>
-                                    <option value="Live">Live</option>
-                                  </>
-                                );
-                              }
-
-                              // When adding new, hide instances that already have this provider
-                              return (
-                                <>
-                                  {!sandboxExists && <option value="Sandbox">Sandbox</option>}
-                                  {!liveExists && <option value="Live">Live</option>}
-                                </>
-                              );
-                            })()}
-                          </select>
+                          <div className="pc-input-wrapper">
+                            <input
+                              type={field.type === "password" && !showPasswords[field.name] ? "password" : "text"}
+                              value={providerFields[field.name] || ""}
+                              onChange={(e) => handleFieldChange(field.name, e.target.value)}
+                              placeholder={`Enter ${field.label}`}
+                              className="pc-input"
+                            />
+                            {field.type === "password" &&
+                              <button type="button" className="pc-eye-btn" onClick={() => togglePasswordVisibility(field.name)}>
+                                {showPasswords[field.name] ? <FaEyeSlash /> : <FaEye />}
+                              </button>
+                            }
+                          </div>
                         </div>
                       ))}
-                    <div className="pc-credentials-section">
-                      <h4><Lock size={14} /> Credentials</h4>
-                      {PROVIDER_FIELDS_MAP[selectedProvider]
-                        .filter((f: any) => f.type !== "select")
-                        .map((field: any) => (
-                          <div className="pc-form-group" key={field.name}>
-                            <label>{field.label}{field.required && " *"}</label>
-                            <div className="pc-input-wrapper">
-                              <input
-                                type={field.type === "password" && !showPasswords[field.name] ? "password" : "text"}
-                                value={providerFields[field.name] || ""}
-                                onChange={(e) => handleFieldChange(field.name, e.target.value)}
-                                placeholder={`Enter ${field.label}`}
-                                className="pc-input"
-                              />
-                              {field.type === "password" &&
-                                <button type="button" className="pc-eye-btn" onClick={() => togglePasswordVisibility(field.name)}>
-                                  {showPasswords[field.name] ? <FaEyeSlash /> : <FaEye />}
-                                </button>
-                              }
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  </>
-                )}
-              </div>
-              <div className="pc-modal-footer">
-                <button className="pc-btn-cancel" onClick={() => { setShowAddProviderModal(false); setEditingProvider(null); }}>Cancel</button>
-                <button className="pc-btn-primary" onClick={saveProvider} disabled={saving} style={{ backgroundColor: SERVICE_COLORS[activeService] }}>
-                  {saving ? 'Saving...' : editingProvider ? 'Update Provider' : 'Add Provider'}
-                </button>
-              </div>
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="pc-modal-footer">
+              <button className="pc-btn-cancel" onClick={() => { setShowAddProviderModal(false); setEditingProvider(null); }}>Cancel</button>
+              <button className="pc-btn-primary" onClick={saveProvider} disabled={saving} style={{ backgroundColor: SERVICE_COLORS[activeService] }}>
+                {saving ? 'Saving...' : editingProvider ? 'Update Provider' : 'Add Provider'}
+              </button>
             </div>
           </div>
-        )
+        </div>
+      )
       }
 
       {/* Delete Provider Modal */}
@@ -1147,6 +1282,153 @@ export default function ProjectView() {
           </div>
         )
       }
+      {/* User Assignment Panel */}
+      {showUserPanel && (
+        <div className="user-panel-overlay" onClick={() => setShowUserPanel(false)}>
+          <div className="user-panel" onClick={e => e.stopPropagation()}>
+            <div className="user-panel-header">
+              <div className="user-panel-header-left">
+                <User size={20} />
+                <h3>Manage Users - {selectedEnv}</h3>
+              </div>
+              <button className="user-panel-close" onClick={() => setShowUserPanel(false)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Tabs */}
+            {/* Tabs */}
+            <div className="user-panel-tabs">
+              <button
+                className={`user-panel-tab ${userActiveTab === 'assign' ? 'active' : ''}`}
+                onClick={() => {
+                  setUserActiveTab('assign');
+                  setSelectedUsers(new Set());
+                  setSelectAll(false);
+                }}
+              >
+                <UserPlus size={14} />
+                Assign User
+              </button>
+              <button
+                className={`user-panel-tab ${userActiveTab === 'unassign' ? 'active' : ''}`}
+                onClick={() => {
+                  setUserActiveTab('unassign');
+                  setSelectedUsers(new Set());
+                  setSelectAll(false);
+                }}
+              >
+                <UserMinus size={14} />
+                Unassign User
+              </button>
+            </div>
+
+            {/* Search and Filter */}
+            <div className="user-panel-search-row">
+              <div className="user-panel-search">
+                <Search size={16} className="user-panel-search-icon" />
+                <input
+                  type="text"
+                  placeholder="Search users..."
+                  value={userSearchTerm}
+                  onChange={(e) => setUserSearchTerm(e.target.value)}
+                  className="user-panel-search-input"
+                />
+                {userSearchTerm && (
+                  <button className="user-panel-search-clear" onClick={() => setUserSearchTerm("")}>
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+              <select
+                className="user-panel-filter"
+                value={userFilter}
+                onChange={(e) => setUserFilter(e.target.value)}
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+
+            {/* User Table */}
+            <div className="user-panel-table-wrapper">
+              <table className="user-panel-table">
+                <thead>
+                  <tr>
+                    <th className="col-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={selectAll}
+                        onChange={handleSelectAll}
+                        className="user-checkbox"
+                      />
+                    </th>
+                    <th className="col-user">User</th>
+                    <th className="col-status">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredUserList.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="user-empty-state">
+                        {userSearchTerm.trim()
+                          ? 'No users match your search'
+                          : userActiveTab === 'assign'
+                            ? 'No users available to assign'
+                            : 'No users assigned yet'}
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredUserList.map(user => (
+                      <tr key={user.id} className={selectedUsers.has(user.id) ? 'selected' : ''}>
+                        <td className="col-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={selectedUsers.has(user.id)}
+                            onChange={() => handleUserSelect(user.id)}
+                            className="user-checkbox"
+                          />
+                        </td>
+                        <td className="col-user">
+                          <div className="user-cell">
+                            <span className="user-name">{user.name}</span>
+                            <span className="user-email">{user.email}</span>
+                          </div>
+                        </td>
+                        <td className="col-status">
+                          <span className={`user-status-badge ${user.status}`}>
+                            {user.status === 'active' ? <Check size={12} /> : <AlertCircle size={12} />}
+                            {user.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Action Button */}
+            <div className="user-panel-footer">
+              <button
+                className="user-panel-action-btn"
+                onClick={userActiveTab === 'assign' ? handleAssignUsers : handleUnassignUsers}
+                disabled={selectedUsers.size === 0}
+                style={{
+                  background: userActiveTab === 'assign' ? '#6366f1' : '#ef4444'
+                }}
+              >
+                {userActiveTab === 'assign' ? (
+                  <><UserPlus size={16} /> Unassign Selected ({selectedUsers.size})</>
+                ) : (
+                  <><UserMinus size={16} /> Assign Selected ({selectedUsers.size})</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div >
   );
 }

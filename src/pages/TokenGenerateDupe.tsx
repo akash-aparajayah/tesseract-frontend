@@ -40,13 +40,12 @@ export default function TokenGenerate() {
     const [leaveModalType, setLeaveModalType] = useState<
         "form" | "token" | null
     >(null);
+    const [instanceFilter, setInstanceFilter] = useState<string>("all");
+    const [activeTab, setActiveTab] = useState<string>("all");
     const [tokenInstance, setTokenInstance] = useState("");
     const [expiryFilter, setExpiryFilter] = useState<string>("all"); // all, active, expired, expiring-soon
     const [sortBy, setSortBy] = useState<string>("name"); // name, created, expires
     const [showFilterPanel, setShowFilterPanel] = useState(false);
-    const [useForBothInstances, setUseForBothInstances] = useState(false);
-    const [instanceFilter, setInstanceFilter] = useState<string>("Sandbox");
-    const [filterPanelInstance, setFilterPanelInstance] = useState<string>("all");
 
     // Add this when any modal opens
     useEffect(() => {
@@ -107,55 +106,67 @@ export default function TokenGenerate() {
         });
     };
 
+    // Update the filteredEnvs logic to include all filters
     const getFilteredAndSortedTokens = () => {
+        // First filter environments
         let filtered = environments.filter(env => {
             if (!searchTerm.trim()) return true;
             const query = searchTerm.toLowerCase();
-
-            // Check both instance tokens for search
-            const sandboxToken = allTokens[`${env}_Sandbox`];
-            const liveToken = allTokens[`${env}_Live`];
+            const token = allTokens[env];
 
             if (env.toLowerCase().includes(query)) return true;
-            if (sandboxToken?.name?.toLowerCase().includes(query)) return true;
-            if (liveToken?.name?.toLowerCase().includes(query)) return true;
+            if (token?.name?.toLowerCase().includes(query)) return true;
+            if (token?.instance?.toLowerCase().includes(query)) return true;
 
             return false;
         });
 
+        // Then apply tab filter
+        if (activeTab !== 'all') {
+            filtered = filtered.filter(env => {
+                const token = allTokens[env];
+                if (!token) return false;
+                return token.instance === activeTab;
+            });
+        }
+
+        // Apply expiry filter
         if (expiryFilter !== 'all') {
             filtered = filtered.filter(env => {
-                const token = allTokens[`${env}_${instanceFilter}`];
+                const token = allTokens[env];
                 if (!token && expiryFilter === 'no-token') return true;
                 const status = getTokenExpiryStatus(token);
                 return status === expiryFilter;
             });
         }
 
-        const tokenEntries = filtered.map(env => {
-            const token = allTokens[`${env}_${instanceFilter}`];
-            return [env, token] as [string, ApiToken | undefined];
-        });
+        // Sort the results
+        const tokenEntries = filtered.map(env => [env, allTokens[env]] as [string, ApiToken | undefined]);
         return sortTokens(tokenEntries);
     };
 
-
-    // Update the filteredEnvs logic to include all filters
-
-
-    const filteredTokens = useMemo(() => getFilteredAndSortedTokens(), [environments, allTokens, searchTerm, instanceFilter, expiryFilter, sortBy]);
+    const filteredTokens = useMemo(() => getFilteredAndSortedTokens(), [environments, allTokens, searchTerm, activeTab, expiryFilter, sortBy]);
 
     // Update tab counts to reflect current search
     const getTabCounts = () => {
         const allFiltered = environments.filter(env => {
             if (!searchTerm.trim()) return true;
             const query = searchTerm.toLowerCase();
-            return env.toLowerCase().includes(query);
+            const token = allTokens[env];
+            return env.toLowerCase().includes(query) ||
+                token?.name?.toLowerCase().includes(query);
         });
 
         return {
-            sandbox: allFiltered.filter(env => allTokens[`${env}_Sandbox`]).length,
-            live: allFiltered.filter(env => allTokens[`${env}_Live`]).length
+            all: allFiltered.length,
+            live: Object.values(allTokens).filter(t => {
+                const env = allFiltered.find(e => e === t.environmentName);
+                return env && t.instance === 'Live';
+            }).length,
+            sandbox: Object.values(allTokens).filter(t => {
+                const env = allFiltered.find(e => e === t.environmentName);
+                return env && t.instance === 'Sandbox';
+            }).length
         };
     };
 
@@ -186,13 +197,12 @@ export default function TokenGenerate() {
         setCustomDate("");
         setIsRegenerating(false);
         setCurrentToken(null);
-        setTokenInstance(instanceFilter);
-        setUseForBothInstances(false);
+        setTokenInstance(instanceFilter === 'all' ? '' : instanceFilter);
         setShowFormModal(true);
     };
 
-    const openRegenerateForm = (env: string, instance: string) => {
-        const token = allTokens[`${env}_${instance}`];
+    const openRegenerateForm = (env: string) => {
+        const token = allTokens[env];
         setSelectedEnv(env);
         setCurrentToken(token || null);
         setTokenName("");
@@ -200,8 +210,7 @@ export default function TokenGenerate() {
         setCustomDays("");
         setCustomDate("");
         setIsRegenerating(true);
-        setTokenInstance(token?.instance || instance);
-        setUseForBothInstances(false);
+        setTokenInstance(token?.instance || "");
         setShowFormModal(true);
     };
 
@@ -221,24 +230,8 @@ export default function TokenGenerate() {
             revealed: false,
         };
 
-        // Save token with instance
-        saveToken(project.id, selectedEnv, tokenInstance, token);
-
-        // Update allTokens state
-        setAllTokens(prev => ({ ...prev, [`${selectedEnv}_${tokenInstance}`]: token }));
-
-        // If checkbox is checked, also save for the other instance
-        if (useForBothInstances) {
-            const otherInstance = tokenInstance === 'Sandbox' ? 'Live' : 'Sandbox';
-            const otherToken: ApiToken = {
-                ...token,
-                id: (Date.now() + 1).toString(),
-                instance: otherInstance,
-            };
-            saveToken(project.id, selectedEnv, otherInstance, otherToken);
-            setAllTokens(prev => ({ ...prev, [`${selectedEnv}_${otherInstance}`]: otherToken }));
-        }
-
+        saveToken(project.id, selectedEnv, token);
+        setAllTokens(prev => ({ ...prev, [selectedEnv]: token }));
         setGeneratedToken(token);
         setShowFormModal(false);
 
@@ -248,16 +241,15 @@ export default function TokenGenerate() {
     };
 
     const handleDelete = () => {
-        if (!project || !selectedEnv || !currentToken?.instance) return;
-        deleteToken(project.id, selectedEnv, currentToken.instance);
+        if (!project || !selectedEnv) return;
+        deleteToken(project.id, selectedEnv);
         setAllTokens(prev => {
             const updated = { ...prev };
-            delete updated[`${selectedEnv}_${currentToken.instance}`];
+            delete updated[selectedEnv];
             return updated;
         });
         setShowDeleteModal(false);
         setSelectedEnv("");
-        setCurrentToken(null);
         window.dispatchEvent(new CustomEvent('tokenUpdated', { detail: null }));
     };
 
@@ -380,14 +372,14 @@ export default function TokenGenerate() {
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                         className="token-search-input"
                                     />
-                                    {(searchTerm || filterPanelInstance !== 'all' || expiryFilter !== 'all') && (
+                                    {(searchTerm || instanceFilter !== 'all' || expiryFilter !== 'all') && (
                                         <button
                                             className="token-clear-btn"
                                             onClick={() => {
                                                 setSearchTerm("");
-                                                setInstanceFilter("Sandbox");
-                                                setFilterPanelInstance("all");
+                                                setInstanceFilter("all");
                                                 setExpiryFilter("all");
+                                                setActiveTab("all");
                                             }}
                                             title="Clear all filters"
                                             style={(searchTerm || instanceFilter !== 'all' || expiryFilter !== 'all') ? { background: '#dc2626', borderColor: '#dc2626' } : {}}
@@ -402,14 +394,11 @@ export default function TokenGenerate() {
                             {/* Filter Button */}
                             <button
                                 className="token-filter-btn"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setShowFilterPanel(true);
-                                }}
+                                onClick={() => setShowFilterPanel(true)}
                             >
                                 <Filter size={16} />
                                 Filters
-                                {(filterPanelInstance !== 'all' || expiryFilter !== 'all') && (
+                                {(instanceFilter !== 'all' || expiryFilter !== 'all') && (
                                     <span className="filter-active-indicator" />
                                 )}
                             </button>
@@ -420,24 +409,35 @@ export default function TokenGenerate() {
                     {environments.length > 0 && (
                         <div className="pc-instance-tabs">
                             <button
-                                className={`pc-instance-tab ${instanceFilter === 'Sandbox' ? 'active sandbox' : ''}`}
-                                onClick={() => setInstanceFilter('Sandbox')}
+                                className={`pc-instance-tab ${activeTab === 'all' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('all')}
+                                style={activeTab === 'all' ? { background: '#6366f1', color: 'white', fontWeight: 600, boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)' } : {}}
                             >
-                                <Wrench size={14} />
-                                Sandbox
-                                {/* <span className="pc-instance-tab-count">
-                                    {tabCounts.sandbox}
-                                </span> */}
+                                <Globe size={14} />
+                                All
+                                <span className="pc-instance-tab-count" style={activeTab === 'all' ? { background: 'rgba(255,255,255,0.25)', color: 'white' } : {}}>
+                                    {tabCounts.all}
+                                </span>
                             </button>
                             <button
-                                className={`pc-instance-tab ${instanceFilter === 'Live' ? 'active live' : ''}`}
-                                onClick={() => setInstanceFilter('Live')}
+                                className={`pc-instance-tab ${activeTab === 'Live' ? 'active live' : ''}`}
+                                onClick={() => setActiveTab('Live')}
                             >
                                 <Rocket size={14} />
                                 Live
-                                {/* <span className="pc-instance-tab-count">
+                                <span className="pc-instance-tab-count">
                                     {tabCounts.live}
-                                </span> */}
+                                </span>
+                            </button>
+                            <button
+                                className={`pc-instance-tab ${activeTab === 'Sandbox' ? 'active sandbox' : ''}`}
+                                onClick={() => setActiveTab('Sandbox')}
+                            >
+                                <Wrench size={14} />
+                                Sandbox
+                                <span className="pc-instance-tab-count">
+                                    {tabCounts.sandbox}
+                                </span>
                             </button>
                         </div>
                     )}
@@ -456,12 +456,16 @@ export default function TokenGenerate() {
                                     <h4>
                                         {searchTerm.trim() || expiryFilter !== 'all'
                                             ? 'No results match your filters'
-                                            : `No ${instanceFilter} tokens yet`}
+                                            : activeTab === 'all'
+                                                ? 'No environments yet'
+                                                : `No ${activeTab} tokens yet`}
                                     </h4>
                                     <p>
                                         {searchTerm.trim() || expiryFilter !== 'all'
                                             ? 'Try adjusting your search or filters'
-                                            : `Generate a ${instanceFilter} token to get started`}
+                                            : activeTab === 'all'
+                                                ? 'Create an environment first to get started'
+                                                : `Generate a ${activeTab} token or switch tabs`}
                                     </p>
                                 </div>
                             ) : (
@@ -512,11 +516,7 @@ export default function TokenGenerate() {
                                                                         <button className="token-action-btn delete" onClick={() => { setSelectedEnv(env); setCurrentToken(token); setShowDeleteModal(true); }}>
                                                                             <Trash2 size={14} /> Delete
                                                                         </button>
-                                                                        <button className="token-action-btn regenerate" onClick={() => {
-                                                                            setSelectedEnv(env);
-                                                                            setCurrentToken(token);
-                                                                            setShowRegenModal(true);
-                                                                        }}>
+                                                                        <button className="token-action-btn regenerate" onClick={() => { setSelectedEnv(env); setCurrentToken(token); setShowRegenModal(true); }}>
                                                                             <RefreshCw size={14} /> Regenerate
                                                                         </button>
                                                                     </div>
@@ -552,18 +552,26 @@ export default function TokenGenerate() {
                             <h3>{isRegenerating ? 'Regenerate Token' : 'Generate Token'}</h3>
                         </div>
                         <div className="modal-body">
-
                             <div className="modal-token-info">
                                 <div><Globe size={14} /> Environment: <strong>{selectedEnv}</strong></div>
-                                <div>
-                                    {tokenInstance === 'Sandbox' ? <Wrench size={14} /> : <Rocket size={14} />}
-                                    Instance: <strong>{tokenInstance}</strong>
-                                </div>
                                 {isRegenerating && currentToken && (
                                     <div className="regenerating-info">
                                         Regenerating will revoke: <strong>{currentToken.name}</strong>
                                     </div>
                                 )}
+                            </div>
+
+                            <div className="form-group">
+                                <label>Select Instance *</label>
+                                <select
+                                    value={tokenInstance}
+                                    onChange={(e) => setTokenInstance(e.target.value)}
+                                    className="token-input"
+                                >
+                                    <option value="">-- Choose instance --</option>
+                                    <option value="Sandbox">Sandbox</option>
+                                    <option value="Live">Live</option>
+                                </select>
                             </div>
 
                             <div className="form-group">
@@ -621,24 +629,7 @@ export default function TokenGenerate() {
                                     </div>
                                 </div>
                             )}
-                            {/* Checkbox for both instances - only show if the other instance doesn't have a token */}
-                            {!allTokens[`${selectedEnv}_${instanceFilter === 'Sandbox' ? 'Live' : 'Sandbox'}`] && (
-                                <div className="form-group">
-                                    <label className="checkbox-label">
-                                        <input
-                                            type="checkbox"
-                                            checked={useForBothInstances}
-                                            onChange={(e) => setUseForBothInstances(e.target.checked)}
-                                            className="token-checkbox"
-                                        />
-                                        <span className="checkbox-text">
-                                            {instanceFilter === 'Sandbox'
-                                                ? 'Use the same token for Live as well'
-                                                : 'Use the same token for Sandbox as well'}
-                                        </span>
-                                    </label>
-                                </div>
-                            )}
+
                             <div className="token-warning">
                                 <AlertTriangle size={16} />
                                 <span>The token will only be shown once after creation.</span>
@@ -738,7 +729,7 @@ export default function TokenGenerate() {
                             <button className="btn-cancel" onClick={() => setShowRegenModal(false)}>Cancel</button>
                             <button className="btn-submit" onClick={() => {
                                 setShowRegenModal(false);
-                                openRegenerateForm(selectedEnv, currentToken?.instance || instanceFilter);
+                                openRegenerateForm(selectedEnv);
                             }}>Continue</button>
                         </div>
                     </div>
@@ -897,13 +888,8 @@ export default function TokenGenerate() {
                                 </label>
                                 <select
                                     className="filter-panel-select"
-                                    value={filterPanelInstance}
-                                    onChange={(e) => {
-                                        setFilterPanelInstance(e.target.value);
-                                        if (e.target.value !== 'all') {
-                                            setInstanceFilter(e.target.value);
-                                        }
-                                    }}
+                                    value={instanceFilter}
+                                    onChange={(e) => setInstanceFilter(e.target.value)}
                                 >
                                     <option value="all">All Instances</option>
                                     <option value="Live">Live</option>
@@ -960,10 +946,10 @@ export default function TokenGenerate() {
                                                 </button>
                                             </span>
                                         )}
-                                        {filterPanelInstance !== 'all' && (
+                                        {instanceFilter !== 'all' && (
                                             <span className="active-filter-tag">
-                                                Instance: {filterPanelInstance}
-                                                <button onClick={() => setFilterPanelInstance("all")}>
+                                                Instance: {instanceFilter}
+                                                <button onClick={() => setInstanceFilter("all")}>
                                                     <X size={12} />
                                                 </button>
                                             </span>
@@ -986,10 +972,10 @@ export default function TokenGenerate() {
                                 className="filter-panel-clear-btn"
                                 onClick={() => {
                                     setSearchTerm("");
-                                    setInstanceFilter("Sandbox");
-                                    setFilterPanelInstance("all");
+                                    setInstanceFilter("all");
                                     setExpiryFilter("all");
                                     setSortBy("name");
+                                    setActiveTab("all");
                                 }}
                                 style={(searchTerm || instanceFilter !== 'all' || expiryFilter !== 'all') ? { background: '#dc2626', borderColor: '#dc2626', color: 'white' } : {}}
                             >

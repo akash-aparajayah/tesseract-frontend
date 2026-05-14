@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "../hooks/useToast";
 import "../styles/EnvironmentManagement.css";
 import { createPortal } from 'react-dom';
-import { MoreVertical, Pencil, Copy, Trash2, AlertTriangle, X, MessageSquare, Mail, MessageCircle, Globe, Plus, Cloud } from 'lucide-react'; interface EnvironmentProvider {
+import { MoreVertical, Pencil, Copy, Trash2, AlertTriangle, X, MessageSquare, Mail, MessageCircle, Plus, Cloud } from 'lucide-react'; interface EnvironmentProvider {
     id: string;
     name: string;
     serviceCounts: {

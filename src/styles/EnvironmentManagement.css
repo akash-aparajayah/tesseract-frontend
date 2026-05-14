@@ -2180,29 +2180,6 @@
     overflow: visible;
 }
 
-.env-menu-dropdown {
-    position: absolute;
-    top: -52px;
-    right: 0;
-
-    display: flex;
-    align-items: center;
-    gap: 6px;
-
-    background: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-
-    padding: 6px;
-
-    box-shadow:
-        0 10px 25px rgba(15, 23, 42, 0.08),
-        0 4px 10px rgba(15, 23, 42, 0.04);
-
-    z-index: 9999;
-
-    animation: envMenuIn 0.18s ease;
-}
 
 @keyframes envMenuIn {
     from {
