@@ -224,9 +224,15 @@ body {
   border-radius: 10px;
   border: none;
   /* border-radius: 999px; */
-  background: var(--primary);
+  background:
+    linear-gradient(
+      135deg,
+      #0f3d91,
+      #0b2f6b
+    );
+
   color: white;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -235,9 +241,9 @@ body {
   transition: 0.2s ease;
 }
 
-.addBtn:hover {
+/* .addBtn:hover {
   background: #2563eb;
-}
+} */
 
 /* =========================================================
    TABLE WRAPPER
@@ -260,7 +266,7 @@ body {
 .table {
   width: 100%;
   min-width: 100%;
-
+border-radius: 99px;
   border-collapse: separate;
   border-spacing: 0;
 
@@ -272,13 +278,20 @@ body {
    TABLE HEADER
 ========================================================= */
 .table th {
-  background: #fafcff;
+  /* background: #fafcff; */
+  /* background:
+    linear-gradient(
+      135deg,
+      #0f3d91,
+      #0b2f6b
+    ); */
+
   padding: 14px 16px;
 
   font-size: 14px;
   font-weight: 600;
 
-  color: #334155;
+  color: #fafcff;
 
   border-bottom: 1px solid var(--border);
 
@@ -290,6 +303,9 @@ body {
 .table th:not(.colUser):not(.colEmail) {
   text-align: center;
 }
+ .table thead tr {
+      background: linear-gradient(135deg, #0f3d91, #0b2f6b);
+    }
 
 /* =========================================================
    TABLE BODY
@@ -379,11 +395,7 @@ body {
 
   border-radius: 12px;
 
-  background: linear-gradient(
-    135deg,
-    #3b82f6,
-    #2563eb
-  );
+    background: linear-gradient(145deg, #3b82f6, #1e40af);
 
   color: white;
 

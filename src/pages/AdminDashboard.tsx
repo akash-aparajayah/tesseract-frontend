@@ -17,7 +17,7 @@ import {
   X,
 } from "lucide-react";
 
-import noDataImg from "../assets/illustration/No-data.svg";
+import noDataImg from "../assets/illustration/No data.gif";
 import errorImg from "../assets/illustration/error.svg";
 import Loader from "@/components/common/Loader";
 
@@ -303,7 +303,7 @@ const AdminPanel: React.FC = () => {
 
       {/* Header */}
       <div className={styles.header}>
-        <h1>Admin Control Panel</h1>
+        <h1>User Control Panel</h1>
       </div>
 
       {/* Stats Cards */}

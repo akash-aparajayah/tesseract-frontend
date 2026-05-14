@@ -43,7 +43,7 @@ const Dashboard: React.FC = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const profileData = await getUserApi();
+        const profileData = (await getUserApi()).data;
         const healthData = await healthCheckApi();
 
         setProfile({
