@@ -1,13 +1,13 @@
 import api from "./api";
 
-// get admin API
-export const getAllAdminApi = () => {
+// get user API
+export const getAllUsersApi = () => {
     return api.get("/users/getAllUsers");
 };
 
-//activate or deactivate admin API
-export const activateOrDeactivateAdminApi = (id: number, active: boolean) => {
-  return api.patch(`/users/${id}/status`, {
+//activate or deactivate user API
+export const activateOrDeactivateUserApi = (id: string, active: boolean) => {
+  return api.patch(`/users/changeUserStatus/${id}`, {
     active,
   });
 };
@@ -19,9 +19,9 @@ export const changePasswordApi = (id: number, password: string) => {
   });
 };
 
-//create admin API
-export const createAdminApi = (name: string, email: string, password: string, role: string) => {
-  return api.post("/auth/create-admin", {
+//create user API
+export const createUserApi = (name: string, email: string, password: string, role: string) => {
+  return api.post("/auth/create-user", {
     name,
     email,
     password,
@@ -29,8 +29,8 @@ export const createAdminApi = (name: string, email: string, password: string, ro
   });
 };
 
-//delete admin API
-export const deleteAdminApi = (id: number) => {
-  return api.delete(`/admin/users/${id}`);
+//delete user API
+export const deleteUserApi = (id: number) => {
+  return api.delete(`/users/${id}`);
 };
 
