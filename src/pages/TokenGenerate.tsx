@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { AlertTriangle, Key, Calendar, Clock, Globe, Check, Copy, Trash2, RefreshCw, Search, Plus, Rocket, Wrench, Filter, X, SortAsc } from "lucide-react";
+import { AlertTriangle, Key, Calendar, Clock, Globe, Check, Copy, Trash2, RefreshCw, Search, Plus, Rocket, Wrench, X } from "lucide-react";
 import { generateToken, getExpiryDate, getExpiryDays, saveToken, getAllTokens, deleteToken, formatDate, calculateExpiryLabel } from "../utils/tokenUtils";
 import { ApiToken } from "../types/token";
 import "../styles/ProjectCreation.css";
@@ -37,20 +37,10 @@ export default function TokenGenerate() {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showLeaveModal, setShowLeaveModal] = useState(false);
     const [leaveAction, setLeaveAction] = useState<(() => void) | null>(null);
-    const [leaveModalType, setLeaveModalType] = useState<
-        "form" | "token" | null
-    >(null);
-    const [tokenInstance, setTokenInstance] = useState("");
-    const [expiryFilter, setExpiryFilter] = useState<string>("all"); // all, active, expired, expiring-soon
-    const [sortBy, setSortBy] = useState<string>("name"); // name, created, expires
-    const [showFilterPanel, setShowFilterPanel] = useState(false);
-    const [useForBothInstances, setUseForBothInstances] = useState(false);
-    const [instanceFilter, setInstanceFilter] = useState<string>("Sandbox");
-    const [filterPanelInstance, setFilterPanelInstance] = useState<string>("all");
-
-    // Add this when any modal opens
+    const [leaveModalType, setLeaveModalType] = useState<"form" | "token" | null>(null);
+    const [tokenmode, setTokenmode] = useState("");
     useEffect(() => {
-        if (showFormModal || generatedToken || showRegenModal || showDeleteModal || showLeaveModal || showFilterPanel) {
+        if (showFormModal || generatedToken || showRegenModal || showDeleteModal || showLeaveModal) {
             document.body.style.overflow = 'hidden';
         } else {
             document.body.style.overflow = '';
@@ -58,22 +48,15 @@ export default function TokenGenerate() {
         return () => {
             document.body.style.overflow = '';
         };
-    }, [showFormModal, generatedToken, showRegenModal, showDeleteModal, showLeaveModal, showFilterPanel]);
+    }, [showFormModal, generatedToken, showRegenModal, showDeleteModal, showLeaveModal]);
 
     useEffect(() => {
-        const presetEnvs = ['Local', 'Dev', 'Staging', 'Live'];
+        if (!project?.id) return;
         const allKeys = Object.keys(localStorage);
         const envSet = new Set<string>();
         allKeys.forEach(key => {
-            const match = key.match(/^env_(.+)_(sms|email|whatsapp)_providers$/);
+            const match = key.match(new RegExp(`^env_${project.id}_(.+)_(sms|email|whatsapp)_providers$`));
             if (match) envSet.add(match[1]);
-        });
-        presetEnvs.forEach(env => {
-            if (localStorage.getItem(`env_${env}_sms_providers`) ||
-                localStorage.getItem(`env_${env}_email_providers`) ||
-                localStorage.getItem(`env_${env}_whatsapp_providers`)) {
-                envSet.add(env);
-            }
         });
         setEnvironments(Array.from(envSet));
 
@@ -82,86 +65,21 @@ export default function TokenGenerate() {
             setAllTokens(tokens);
         }
     }, [project]);
-    // Add this function to check token expiry status
-    const getTokenExpiryStatus = (token: ApiToken | undefined) => {
-        if (!token) return null;
-        const now = new Date();
-        const expiryDate = new Date(token.expires);
-        const daysUntilExpiry = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-
-        if (daysUntilExpiry < 0) return 'expired';
-        if (daysUntilExpiry <= 7) return 'expiring-soon';
-        return 'active';
-    };
-
-    const sortTokens = (tokens: [string, ApiToken | undefined][]) => {
-        return [...tokens].sort(([envA, tokenA], [envB, tokenB]) => {
-            if (sortBy === 'name') {
-                return envA.localeCompare(envB);
-            } else if (sortBy === 'created' && tokenA && tokenB) {
-                return new Date(tokenB.created).getTime() - new Date(tokenA.created).getTime();
-            } else if (sortBy === 'expires' && tokenA && tokenB) {
-                return new Date(tokenA.expires).getTime() - new Date(tokenB.expires).getTime();
-            }
-            return 0;
-        });
-    };
-
-    const getFilteredAndSortedTokens = () => {
-        let filtered = environments.filter(env => {
-            if (!searchTerm.trim()) return true;
-            const query = searchTerm.toLowerCase();
-
-            // Check both instance tokens for search
-            const sandboxToken = allTokens[`${env}_Sandbox`];
-            const liveToken = allTokens[`${env}_Live`];
-
-            if (env.toLowerCase().includes(query)) return true;
-            if (sandboxToken?.name?.toLowerCase().includes(query)) return true;
-            if (liveToken?.name?.toLowerCase().includes(query)) return true;
-
-            return false;
-        });
-
-        if (expiryFilter !== 'all') {
-            filtered = filtered.filter(env => {
-                const token = allTokens[`${env}_${instanceFilter}`];
-                if (!token && expiryFilter === 'no-token') return true;
-                const status = getTokenExpiryStatus(token);
-                return status === expiryFilter;
-            });
-        }
-
-        const tokenEntries = filtered.map(env => {
-            const token = allTokens[`${env}_${instanceFilter}`];
-            return [env, token] as [string, ApiToken | undefined];
-        });
-        return sortTokens(tokenEntries);
-    };
 
 
-    // Update the filteredEnvs logic to include all filters
 
+    // Simple filter by search only
+    const filteredEnvs = environments.filter(env => {
+        if (!searchTerm.trim()) return true;
+        const query = searchTerm.toLowerCase();
+        const sandboxToken = allTokens[`${env}_Sandbox`];
+        const liveToken = allTokens[`${env}_Live`];
 
-    const filteredTokens = useMemo(() => getFilteredAndSortedTokens(), [environments, allTokens, searchTerm, instanceFilter, expiryFilter, sortBy]);
-
-    // Update tab counts to reflect current search
-    const getTabCounts = () => {
-        const allFiltered = environments.filter(env => {
-            if (!searchTerm.trim()) return true;
-            const query = searchTerm.toLowerCase();
-            return env.toLowerCase().includes(query);
-        });
-
-        return {
-            sandbox: allFiltered.filter(env => allTokens[`${env}_Sandbox`]).length,
-            live: allFiltered.filter(env => allTokens[`${env}_Live`]).length
-        };
-    };
-
-    const tabCounts = useMemo(() => getTabCounts(), [environments, allTokens, searchTerm]);
-
-    // Add sorting function
+        if (env.toLowerCase().includes(query)) return true;
+        if (sandboxToken?.name?.toLowerCase().includes(query)) return true;
+        if (liveToken?.name?.toLowerCase().includes(query)) return true;
+        return false;
+    });
 
     const expirationOptions = [
         { value: "7", label: "7 Days" },
@@ -178,21 +96,10 @@ export default function TokenGenerate() {
         return getExpiryDate(days);
     };
 
-    const openGenerateForm = (env: string) => {
-        setSelectedEnv(env);
-        setTokenName("");
-        setExpiration("30");
-        setCustomDays("");
-        setCustomDate("");
-        setIsRegenerating(false);
-        setCurrentToken(null);
-        setTokenInstance(instanceFilter);
-        setUseForBothInstances(false);
-        setShowFormModal(true);
-    };
-
-    const openRegenerateForm = (env: string, instance: string) => {
-        const token = allTokens[`${env}_${instance}`];
+    const openRegenerateForm = (env: string, mode: string) => {
+        console.log('openRegenerateForm - env:', env, 'mode:', mode);
+        const token = allTokens[`${env}_${mode}`];
+        console.log('token:', token);
         setSelectedEnv(env);
         setCurrentToken(token || null);
         setTokenName("");
@@ -200,13 +107,12 @@ export default function TokenGenerate() {
         setCustomDays("");
         setCustomDate("");
         setIsRegenerating(true);
-        setTokenInstance(token?.instance || instance);
-        setUseForBothInstances(false);
+        setTokenmode(mode);
         setShowFormModal(true);
     };
 
     const handleGenerate = () => {
-        if (!tokenName.trim() || !selectedEnv || !project || !tokenInstance) return;
+        if (!tokenName.trim() || !selectedEnv || !project || !tokenmode) return;
 
         const token: ApiToken = {
             id: Date.now().toString(),
@@ -214,31 +120,15 @@ export default function TokenGenerate() {
             token: generateToken(),
             projectId: project.id,
             environmentName: selectedEnv,
-            instance: tokenInstance,
+            mode: tokenmode,
             created: new Date().toISOString().split('T')[0],
             expires: getExpiryDate(expiration, customDays),
             expiresInDays: getExpiryDays(expiration, customDays),
             revealed: false,
         };
 
-        // Save token with instance
-        saveToken(project.id, selectedEnv, tokenInstance, token);
-
-        // Update allTokens state
-        setAllTokens(prev => ({ ...prev, [`${selectedEnv}_${tokenInstance}`]: token }));
-
-        // If checkbox is checked, also save for the other instance
-        if (useForBothInstances) {
-            const otherInstance = tokenInstance === 'Sandbox' ? 'Live' : 'Sandbox';
-            const otherToken: ApiToken = {
-                ...token,
-                id: (Date.now() + 1).toString(),
-                instance: otherInstance,
-            };
-            saveToken(project.id, selectedEnv, otherInstance, otherToken);
-            setAllTokens(prev => ({ ...prev, [`${selectedEnv}_${otherInstance}`]: otherToken }));
-        }
-
+        saveToken(project.id, selectedEnv, tokenmode, token);
+        setAllTokens(prev => ({ ...prev, [`${selectedEnv}_${tokenmode}`]: token }));
         setGeneratedToken(token);
         setShowFormModal(false);
 
@@ -248,11 +138,11 @@ export default function TokenGenerate() {
     };
 
     const handleDelete = () => {
-        if (!project || !selectedEnv || !currentToken?.instance) return;
-        deleteToken(project.id, selectedEnv, currentToken.instance);
+        if (!project || !selectedEnv || !currentToken?.mode) return;
+        deleteToken(project.id, selectedEnv, currentToken.mode);
         setAllTokens(prev => {
             const updated = { ...prev };
-            delete updated[`${selectedEnv}_${currentToken.instance}`];
+            delete updated[`${selectedEnv}_${currentToken.mode}`];
             return updated;
         });
         setShowDeleteModal(false);
@@ -269,12 +159,7 @@ export default function TokenGenerate() {
         }
     };
 
-    const handleLeaveConfirmation = (
-        action: () => void,
-        type: "form" | "token"
-    ) => {
-
-        // FORM MODAL GO BACK
+    const handleLeaveConfirmation = (action: () => void, type: "form" | "token") => {
         if (type === "form") {
             action();
             setLeaveAction(() => () => {
@@ -283,7 +168,6 @@ export default function TokenGenerate() {
             });
         }
 
-        // TOKEN REVEAL MODAL
         if (type === "token") {
             setLeaveAction(() => () => {
                 action();
@@ -301,7 +185,6 @@ export default function TokenGenerate() {
         if (leaveAction) {
             leaveAction();
         }
-
         setShowLeaveModal(false);
         setLeaveAction(null);
     };
@@ -313,7 +196,6 @@ export default function TokenGenerate() {
             <div className="token-top-header">
                 <div className="token-top-left">
                     <h1 className="page-main-title">API Tokens</h1>
-
                     <p
                         className="token-project-name clickable-project-name"
                         onClick={() => {
@@ -326,37 +208,18 @@ export default function TokenGenerate() {
                     </p>
                 </div>
 
-                {/* Breadcrumb */}
                 <div className="token-breadcrumb">
-                    <span
-                        className="breadcrumb-link"
-                        onClick={() => navigate("/dashboard")}
-                        role="button"
-                        tabIndex={0}
-                    >
+                    <span className="breadcrumb-link" onClick={() => navigate("/dashboard")} role="button" tabIndex={0}>
                         Dashboard
                     </span>
-
                     <span className="breadcrumb-separator">›</span>
-
-                    <span
-                        className="breadcrumb-link"
-                        onClick={() => {
-                            navigate(`/dashboard/project/${project?.id}/view`, {
-                                state: { project }
-                            });
-                        }}
-                        role="button"
-                        tabIndex={0}
-                    >
+                    <span className="breadcrumb-link" onClick={() => {
+                        navigate(`/dashboard/project/${project?.id}/view`, { state: { project } });
+                    }} role="button" tabIndex={0}>
                         Project View
                     </span>
-
                     <span className="breadcrumb-separator">›</span>
-
-                    <span className="active">
-                        Token Generation
-                    </span>
+                    <span className="active">Token Generation</span>
                 </div>
             </div>
 
@@ -367,7 +230,7 @@ export default function TokenGenerate() {
                         <div className="header-underline"></div>
                     </div>
 
-                    {/* Search + Filter Row */}
+                    {/* Search Bar */}
                     {environments.length > 0 && (
                         <div className="token-search-filter-row">
                             <div className="token-search-bar">
@@ -375,22 +238,16 @@ export default function TokenGenerate() {
                                     <Search size={16} className="search-icon" />
                                     <input
                                         type="text"
-                                        placeholder="Search environments, tokens..."
+                                        placeholder="Search environments..."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                         className="token-search-input"
                                     />
-                                    {(searchTerm || filterPanelInstance !== 'all' || expiryFilter !== 'all') && (
+                                    {searchTerm && (
                                         <button
                                             className="token-clear-btn"
-                                            onClick={() => {
-                                                setSearchTerm("");
-                                                setInstanceFilter("Sandbox");
-                                                setFilterPanelInstance("all");
-                                                setExpiryFilter("all");
-                                            }}
-                                            title="Clear all filters"
-                                            style={(searchTerm || instanceFilter !== 'all' || expiryFilter !== 'all') ? { background: '#dc2626', borderColor: '#dc2626' } : {}}
+                                            onClick={() => setSearchTerm("")}
+                                            title="Clear search"
                                         >
                                             <X size={14} />
                                             Clear
@@ -398,47 +255,6 @@ export default function TokenGenerate() {
                                     )}
                                 </div>
                             </div>
-
-                            {/* Filter Button */}
-                            <button
-                                className="token-filter-btn"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setShowFilterPanel(true);
-                                }}
-                            >
-                                <Filter size={16} />
-                                Filters
-                                {(filterPanelInstance !== 'all' || expiryFilter !== 'all') && (
-                                    <span className="filter-active-indicator" />
-                                )}
-                            </button>
-                        </div>
-                    )}
-
-                    {/* Instance Tabs */}
-                    {environments.length > 0 && (
-                        <div className="pc-instance-tabs">
-                            <button
-                                className={`pc-instance-tab ${instanceFilter === 'Sandbox' ? 'active sandbox' : ''}`}
-                                onClick={() => setInstanceFilter('Sandbox')}
-                            >
-                                <Wrench size={14} />
-                                Sandbox
-                                {/* <span className="pc-instance-tab-count">
-                                    {tabCounts.sandbox}
-                                </span> */}
-                            </button>
-                            <button
-                                className={`pc-instance-tab ${instanceFilter === 'Live' ? 'active live' : ''}`}
-                                onClick={() => setInstanceFilter('Live')}
-                            >
-                                <Rocket size={14} />
-                                Live
-                                {/* <span className="pc-instance-tab-count">
-                                    {tabCounts.live}
-                                </span> */}
-                            </button>
                         </div>
                     )}
 
@@ -450,97 +266,265 @@ export default function TokenGenerate() {
                         </div>
                     ) : (
                         <div className="token-cards-grid">
-                            {filteredTokens.length === 0 ? (
+                            {filteredEnvs.length === 0 ? (
                                 <div className="token-empty-illustration">
                                     <img src={noDataIllustration} alt="No data" className="empty-illustration-img" />
-                                    <h4>
-                                        {searchTerm.trim() || expiryFilter !== 'all'
-                                            ? 'No results match your filters'
-                                            : `No ${instanceFilter} tokens yet`}
-                                    </h4>
-                                    <p>
-                                        {searchTerm.trim() || expiryFilter !== 'all'
-                                            ? 'Try adjusting your search or filters'
-                                            : `Generate a ${instanceFilter} token to get started`}
-                                    </p>
+                                    <h4>{searchTerm.trim() ? 'No results found' : 'No environments yet'}</h4>
+                                    <p>{searchTerm.trim() ? 'Try adjusting your search' : 'Create an environment first to get started'}</p>
                                 </div>
                             ) : (
-                                filteredTokens.map(([env, token]) => {
-                                    const expiryStatus = getTokenExpiryStatus(token);
+                                filteredEnvs.map(env => {
+                                    const sandboxToken = allTokens[`${env}_Sandbox`];
+                                    const liveToken = allTokens[`${env}_Live`];
+
                                     return (
                                         <div key={env} className="token-env-card-full">
                                             <div className="token-card-header">
                                                 <Globe size={18} />
                                                 <span className="token-card-env-name">{env}</span>
-                                                {token && (
-                                                    <>
-                                                        <span className={`token-card-badge ${expiryStatus === 'expired' ? 'expired' : expiryStatus === 'expiring-soon' ? 'warning' : ''}`}>
-                                                            {expiryStatus === 'expired' ? 'Expired' : expiryStatus === 'expiring-soon' ? 'Expiring Soon' : 'Active'}
-                                                        </span>
-                                                        {token.instance && (
-                                                            <span className={`token-instance-badge ${token.instance === 'Live' ? 'live' : 'sandbox'}`}>
-                                                                {token.instance === 'Live' ? <Rocket size={12} /> : <Wrench size={12} />}
-                                                                {token.instance}
-                                                            </span>
-                                                        )}
-                                                    </>
-                                                )}
                                             </div>
 
-                                            {token ? (
-                                                <>
-                                                    <div className="token-card-content-row">
-                                                        <div className="token-card-body">
-                                                            <div className="token-card-info">
-                                                                <div className="token-card-row">
-                                                                    <Key size={14} />
-                                                                    <span>{token.name}</span>
+                                            <div className="token-mode-buttons-row">
+                                                {/* Sandbox Button */}
+                                                <div className="token-mode-card">
+                                                    {sandboxToken ? (
+                                                        <div className="mode-configured">
+
+                                                            <div className="mode-configured-header">
+
+                                                                <div className="mode-header-left">
+                                                                    <Wrench size={16} />
+                                                                    <span>Sandbox</span>
                                                                 </div>
-                                                                <div className="token-card-row">
-                                                                    <Calendar size={14} />
-                                                                    <span>Created {formatDate(token.created)}</span>
+
+                                                                <div className="mode-header-right">
+
+                                                                    <span className="status-badge active">
+                                                                        Active
+                                                                    </span>
+
+                                                                    {sandboxToken.expiresInDays && sandboxToken.expiresInDays <= 7 && (
+                                                                        <span className="status-badge expiring">
+                                                                            Expiring Soon
+                                                                        </span>
+                                                                    )}
+
                                                                 </div>
-                                                                <div className="token-card-row token-expiry-row">
-                                                                    <div className="token-expiry-left">
-                                                                        <Clock size={14} />
-                                                                        <span className={`${expiryStatus === 'expiring-soon' ? 'expiring-soon' : ''} ${expiryStatus === 'expired' ? 'expired-text' : ''}`}>
-                                                                            {calculateExpiryLabel(token.expires, token.expiresInDays)}
+
+                                                            </div>
+
+                                                            <div className="mode-token-info">
+
+                                                                <div className="mode-token-row">
+                                                                    <Key size={12} />
+                                                                    <span>{sandboxToken.name}</span>
+                                                                </div>
+
+                                                                <div className="mode-token-row">
+                                                                    <Calendar size={12} />
+                                                                    <span>
+                                                                        Created {formatDate(sandboxToken.created)}
+                                                                    </span>
+                                                                </div>
+
+                                                                <div className="mode-token-row token-expiry-row">
+
+                                                                    <div className="expiry-left">
+                                                                        <Clock size={12} />
+
+                                                                        <span
+                                                                            className={
+                                                                                sandboxToken.expiresInDays &&
+                                                                                    sandboxToken.expiresInDays <= 7
+                                                                                    ? 'expiring-soon'
+                                                                                    : ''
+                                                                            }
+                                                                        >
+                                                                            {calculateExpiryLabel(
+                                                                                sandboxToken.expires,
+                                                                                sandboxToken.expiresInDays
+                                                                            )}
                                                                         </span>
                                                                     </div>
-                                                                    <div className="token-expiry-spacer"></div>
-                                                                    <div className="token-card-actions-side">
-                                                                        <button className="token-action-btn delete" onClick={() => { setSelectedEnv(env); setCurrentToken(token); setShowDeleteModal(true); }}>
-                                                                            <Trash2 size={14} /> Delete
+
+                                                                    <div className="mode-token-actions">
+
+                                                                        <button
+                                                                            className="token-action-btn regenerate"
+                                                                            onClick={() => {
+                                                                                setSelectedEnv(env);
+                                                                                setCurrentToken(sandboxToken);
+                                                                                setShowRegenModal(true);
+                                                                            }}
+                                                                        >
+                                                                            <RefreshCw size={12} />
+                                                                            Regenerate
                                                                         </button>
-                                                                        <button className="token-action-btn regenerate" onClick={() => {
-                                                                            setSelectedEnv(env);
-                                                                            setCurrentToken(token);
-                                                                            setShowRegenModal(true);
-                                                                        }}>
-                                                                            <RefreshCw size={14} /> Regenerate
+
+                                                                        <button
+                                                                            className="token-action-btn delete"
+                                                                            onClick={() => {
+                                                                                setSelectedEnv(env);
+                                                                                setCurrentToken(sandboxToken);
+                                                                                setShowDeleteModal(true);
+                                                                            }}
+                                                                        >
+                                                                            <Trash2 size={12} />
+                                                                            Delete
                                                                         </button>
+
                                                                     </div>
+
                                                                 </div>
+
                                                             </div>
+
                                                         </div>
-                                                    </div>
-                                                </>
-                                            ) : (
-                                                <div className="token-card-empty">
-                                                    <span className="no-token-text">No token generated</span>
-                                                    <button className="token-action-btn generate-inline" onClick={() => openGenerateForm(env)}>
-                                                        <Plus size={14} /> Generate Token
-                                                    </button>
+                                                    ) : (
+                                                        <button
+                                                            className="mode-generate-btn sandbox"
+                                                            onClick={() => {
+                                                                setSelectedEnv(env);
+                                                                setTokenmode('Sandbox');
+                                                                setTokenName("");
+                                                                setExpiration("30");
+                                                                setCustomDays("");
+                                                                setCustomDate("");
+                                                                setIsRegenerating(false);
+                                                                setCurrentToken(null);
+                                                                setShowFormModal(true);
+                                                            }}
+                                                        >
+                                                            <Wrench size={18} />
+                                                            <span>Generate Sandbox Token</span>
+                                                            <Plus size={16} />
+                                                        </button>
+                                                    )}
                                                 </div>
-                                            )}
+
+                                                {/* Live Button */}
+                                                <div className="token-mode-card">
+                                                    {liveToken ? (
+                                                        <div className="mode-configured">
+
+                                                            <div className="mode-configured-header">
+
+                                                                <div className="mode-header-left">
+                                                                    <Globe size={16} />
+                                                                    <span>Live</span>
+                                                                </div>
+
+                                                                <div className="mode-header-right">
+
+                                                                    <span className="status-badge active">
+                                                                        Active
+                                                                    </span>
+
+                                                                    {liveToken.expiresInDays && liveToken.expiresInDays <= 7 && (
+                                                                        <span className="status-badge expiring">
+                                                                            Expiring Soon
+                                                                        </span>
+                                                                    )}
+
+                                                                </div>
+
+                                                            </div>
+
+                                                            <div className="mode-token-info">
+
+                                                                <div className="mode-token-row">
+                                                                    <Key size={12} />
+                                                                    <span>{liveToken.name}</span>
+                                                                </div>
+
+                                                                <div className="mode-token-row">
+                                                                    <Calendar size={12} />
+                                                                    <span>
+                                                                        Created {formatDate(liveToken.created)}
+                                                                    </span>
+                                                                </div>
+
+                                                                <div className="mode-token-row token-expiry-row">
+
+                                                                    <div className="expiry-left">
+                                                                        <Clock size={12} />
+
+                                                                        <span
+                                                                            className={
+                                                                                liveToken.expiresInDays &&
+                                                                                    liveToken.expiresInDays <= 7
+                                                                                    ? 'expiring-soon'
+                                                                                    : ''
+                                                                            }
+                                                                        >
+                                                                            {calculateExpiryLabel(
+                                                                                liveToken.expires,
+                                                                                liveToken.expiresInDays
+                                                                            )}
+                                                                        </span>
+                                                                    </div>
+
+                                                                    <div className="mode-token-actions">
+
+                                                                        <button
+                                                                            className="token-action-btn regenerate"
+                                                                            onClick={() => {
+                                                                                setSelectedEnv(env);
+                                                                                setCurrentToken(liveToken);
+                                                                                setShowRegenModal(true);
+                                                                            }}
+                                                                        >
+                                                                            <RefreshCw size={12} />
+                                                                            Regenerate
+                                                                        </button>
+
+                                                                        <button
+                                                                            className="token-action-btn delete"
+                                                                            onClick={() => {
+                                                                                setSelectedEnv(env);
+                                                                                setCurrentToken(liveToken);
+                                                                                setShowDeleteModal(true);
+                                                                            }}
+                                                                        >
+                                                                            <Trash2 size={12} />
+                                                                            Delete
+                                                                        </button>
+
+                                                                    </div>
+
+                                                                </div>
+
+                                                            </div>
+
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            className="mode-generate-btn live"
+                                                            onClick={() => {
+                                                                setSelectedEnv(env);
+                                                                setTokenmode('Live');
+                                                                setTokenName("");
+                                                                setExpiration("30");
+                                                                setCustomDays("");
+                                                                setCustomDate("");
+                                                                setIsRegenerating(false);
+                                                                setCurrentToken(null);
+                                                                setShowFormModal(true);
+                                                            }}
+                                                        >
+                                                            <Rocket size={18} />
+                                                            <span>Generate Live Token</span>
+                                                            <Plus size={16} />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
                                     );
                                 })
                             )}
                         </div>
                     )}
-
-
                 </div>
             </div>
 
@@ -552,12 +536,11 @@ export default function TokenGenerate() {
                             <h3>{isRegenerating ? 'Regenerate Token' : 'Generate Token'}</h3>
                         </div>
                         <div className="modal-body">
-
                             <div className="modal-token-info">
                                 <div><Globe size={14} /> Environment: <strong>{selectedEnv}</strong></div>
                                 <div>
-                                    {tokenInstance === 'Sandbox' ? <Wrench size={14} /> : <Rocket size={14} />}
-                                    Instance: <strong>{tokenInstance}</strong>
+                                    {tokenmode === 'Sandbox' ? <Wrench size={14} /> : <Rocket size={14} />}
+                                    Mode: <strong>{tokenmode}</strong>
                                 </div>
                                 {isRegenerating && currentToken && (
                                     <div className="regenerating-info">
@@ -567,10 +550,10 @@ export default function TokenGenerate() {
                             </div>
 
                             <div className="form-group">
-                                <label>Token Name</label>
+                                <label>Note</label>
                                 <input
                                     type="text"
-                                    placeholder="e.g., Production API Key"
+                                    placeholder="What’s this token for?"
                                     value={tokenName}
                                     onChange={(e) => setTokenName(e.target.value)}
                                     className="token-input"
@@ -621,45 +604,20 @@ export default function TokenGenerate() {
                                     </div>
                                 </div>
                             )}
-                            {/* Checkbox for both instances - only show if the other instance doesn't have a token */}
-                            {!allTokens[`${selectedEnv}_${instanceFilter === 'Sandbox' ? 'Live' : 'Sandbox'}`] && (
-                                <div className="form-group">
-                                    <label className="checkbox-label">
-                                        <input
-                                            type="checkbox"
-                                            checked={useForBothInstances}
-                                            onChange={(e) => setUseForBothInstances(e.target.checked)}
-                                            className="token-checkbox"
-                                        />
-                                        <span className="checkbox-text">
-                                            {instanceFilter === 'Sandbox'
-                                                ? 'Use the same token for Live as well'
-                                                : 'Use the same token for Sandbox as well'}
-                                        </span>
-                                    </label>
-                                </div>
-                            )}
+
                             <div className="token-warning">
                                 <AlertTriangle size={16} />
                                 <span>The token will only be shown once after creation.</span>
                             </div>
                         </div>
                         <div className="modal-actions">
-                            <button
-                                className="btn-cancel"
-                                onClick={() =>
-                                    handleLeaveConfirmation(
-                                        () => { },
-                                        "form"
-                                    )
-                                }
-                            >
+                            <button className="btn-cancel" onClick={() => handleLeaveConfirmation(() => { }, "form")}>
                                 Go Back
                             </button>
                             <button
                                 className="btn-submit"
                                 onClick={handleGenerate}
-                                disabled={!tokenName.trim() || !tokenInstance || (expiration === "custom" && !customDays)}
+                                disabled={!tokenName.trim() || !tokenmode || (expiration === "custom" && !customDays)}
                             >
                                 <Key size={16} /> {isRegenerating ? 'Regenerate Token' : 'Generate Token'}
                             </button>
@@ -675,7 +633,6 @@ export default function TokenGenerate() {
                         <div className="reveal-success">
                             <Check size={20} /> Token Generated!
                         </div>
-
                         <div className="reveal-warning-box">
                             <AlertTriangle size={18} />
                             <div>
@@ -683,7 +640,6 @@ export default function TokenGenerate() {
                                 <p>This token will NOT be shown again.</p>
                             </div>
                         </div>
-
                         <div className="reveal-token-box">
                             <div className="reveal-token-row">
                                 <div className="reveal-token-value">{generatedToken.token}</div>
@@ -692,24 +648,21 @@ export default function TokenGenerate() {
                                 </button>
                             </div>
                             <div className="reveal-token-meta">
-                                <div><Globe size={14} /> {generatedToken.environmentName}</div>
+                                <div>
+                                    {generatedToken.mode === 'Sandbox'
+                                        ? <Wrench size={14} />
+                                        : <Rocket size={14} />
+                                    }
+
+                                    {generatedToken.mode}
+                                </div>
                                 <div><Calendar size={14} /> {generatedToken.name} · {formatDate(generatedToken.created)}</div>
                                 <div><Clock size={14} /> Expires: {formatDate(generatedToken.expires)}</div>
                             </div>
                         </div>
-
-                        <button
-                            className="btn-submit"
-                            onClick={() =>
-                                handleLeaveConfirmation(
-                                    () => { },
-                                    "token"
-                                )
-                            }
-                        >
-                            <Check size={16} /> I’ve Saved the Token, Go Back
+                        <button className="btn-submit" onClick={() => handleLeaveConfirmation(() => { }, "token")}>
+                            <Check size={16} /> I've Saved the Token, Go Back
                         </button>
-
                     </div>
                 </div>
             )}
@@ -738,7 +691,7 @@ export default function TokenGenerate() {
                             <button className="btn-cancel" onClick={() => setShowRegenModal(false)}>Cancel</button>
                             <button className="btn-submit" onClick={() => {
                                 setShowRegenModal(false);
-                                openRegenerateForm(selectedEnv, currentToken?.instance || instanceFilter);
+                                openRegenerateForm(selectedEnv, currentToken?.mode || '');
                             }}>Continue</button>
                         </div>
                     </div>
@@ -747,74 +700,29 @@ export default function TokenGenerate() {
 
             {/* Leave Confirmation Modal */}
             {showLeaveModal && (
-                <div
-                    className="modal-overlay"
-                    onClick={() => setShowLeaveModal(false)}
-                >
-                    <div
-                        className="modal-container"
-                        onClick={(e) => e.stopPropagation()}
-                    >
+                <div className="modal-overlay" onClick={() => setShowLeaveModal(false)}>
+                    <div className="modal-container" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
-                            <AlertTriangle
-                                size={22}
-                                color={leaveModalType === "form" ? "#ef4444" : "#f59e0b"}
-                            />
-
-                            <h3>
-                                {leaveModalType === "form"
-                                    ? "Discard Token Form?"
-                                    : "Leave Token Page?"}
-                            </h3>
+                            <AlertTriangle size={22} color={leaveModalType === "form" ? "#ef4444" : "#f59e0b"} />
+                            <h3>{leaveModalType === "form" ? "Discard Token Form?" : "Leave Token Page?"}</h3>
                         </div>
-
                         <div className="modal-body">
                             {leaveModalType === "form" ? (
                                 <>
-                                    <p>
-                                        Are you sure you want to go back?
-                                    </p>
-
-                                    <p className="warning-text">
-                                        The token form you are currently filling out will
-                                        be discarded and your unsaved changes will be lost.
-                                    </p>
+                                    <p>Are you sure you want to go back?</p>
+                                    <p className="warning-text">The token form you are currently filling out will be discarded and your unsaved changes will be lost.</p>
                                 </>
                             ) : (
                                 <>
-                                    <p>
-                                        Have you copied and saved this token?
-                                    </p>
-
-                                    <p className="warning-text">
-                                        This token will not be shown again after leaving
-                                        this page.
-                                    </p>
+                                    <p>Have you copied and saved this token?</p>
+                                    <p className="warning-text">This token will not be shown again after leaving this page.</p>
                                 </>
                             )}
                         </div>
-
                         <div className="modal-actions">
-                            <button
-                                className="btn-cancel"
-                                onClick={() => setShowLeaveModal(false)}
-                            >
-                                Stay Here
-                            </button>
-
-                            <button
-                                className="btn-submit"
-                                onClick={confirmLeave}
-                                style={{
-                                    background:
-                                        leaveModalType === "form"
-                                            ? "#ef4444"
-                                            : undefined
-                                }}
-                            >
-                                {leaveModalType === "form"
-                                    ? "Discard & Go Back"
-                                    : "Yes, Leave Page"}
+                            <button className="btn-cancel" onClick={() => setShowLeaveModal(false)}>Stay Here</button>
+                            <button className="btn-submit" onClick={confirmLeave} style={{ background: leaveModalType === "form" ? "#ef4444" : undefined }}>
+                                {leaveModalType === "form" ? "Discard & Go Back" : "Yes, Leave Page"}
                             </button>
                         </div>
                     </div>
@@ -832,11 +740,14 @@ export default function TokenGenerate() {
                         <div className="modal-body">
                             <div className="modal-token-info">
                                 <div><Globe size={14} /> Environment: <strong>{selectedEnv}</strong></div>
-                                {currentToken && (
-                                    <>
-                                        <div><Key size={14} /> Token: <strong>{currentToken.name}</strong></div>
-                                        <div><Calendar size={14} /> Created: {formatDate(currentToken.created)}</div>
-                                    </>
+                                <div>
+                                    {tokenmode === 'Sandbox' ? <Wrench size={14} /> : <Rocket size={14} />}
+                                    Mode: <strong>{tokenmode}</strong>
+                                </div>
+                                {isRegenerating && currentToken && (
+                                    <div className="regenerating-info">
+                                        Regenerating will revoke: <strong>{currentToken.name}</strong>
+                                    </div>
                                 )}
                             </div>
                             <p className="warning-text">This will permanently revoke API access.</p>
@@ -844,157 +755,6 @@ export default function TokenGenerate() {
                         <div className="modal-actions">
                             <button className="btn-cancel" onClick={() => setShowDeleteModal(false)}>Cancel</button>
                             <button className="btn-submit" onClick={handleDelete} style={{ background: '#ef4444' }}>Delete Token</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Filter Panel Overlay */}
-            {showFilterPanel && (
-                <div className="filter-panel-overlay" onClick={() => setShowFilterPanel(false)}>
-                    <div className="filter-panel" onClick={e => e.stopPropagation()}>
-                        <div className="filter-panel-header">
-                            <h3>Filters</h3>
-                            <button
-                                className="filter-panel-close"
-                                onClick={() => setShowFilterPanel(false)}
-                            >
-                                <X size={20} />
-                            </button>
-                        </div>
-
-                        <div className="filter-panel-body">
-                            {/* Search inside panel */}
-                            <div className="filter-panel-section">
-                                <label className="filter-panel-label">
-                                    <Search size={16} />
-                                    Search
-                                </label>
-                                <div className="filter-panel-search">
-                                    <Search size={16} className="filter-panel-search-icon" />
-                                    <input
-                                        type="text"
-                                        placeholder="Search environments, tokens..."
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="filter-panel-search-input"
-                                    />
-                                    {searchTerm && (
-                                        <button
-                                            className="filter-panel-search-clear"
-                                            onClick={() => setSearchTerm("")}
-                                        >
-                                            <X size={14} />
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                            {/* Instance Filter */}
-                            <div className="filter-panel-section">
-                                <label className="filter-panel-label">
-                                    <Globe size={16} />
-                                    Instance
-                                </label>
-                                <select
-                                    className="filter-panel-select"
-                                    value={filterPanelInstance}
-                                    onChange={(e) => {
-                                        setFilterPanelInstance(e.target.value);
-                                        if (e.target.value !== 'all') {
-                                            setInstanceFilter(e.target.value);
-                                        }
-                                    }}
-                                >
-                                    <option value="all">All Instances</option>
-                                    <option value="Live">Live</option>
-                                    <option value="Sandbox">Sandbox</option>
-                                </select>
-                            </div>
-
-                            {/* Expiry Status Filter */}
-                            <div className="filter-panel-section">
-                                <label className="filter-panel-label">
-                                    <Clock size={16} />
-                                    Status
-                                </label>
-                                <select
-                                    className="filter-panel-select"
-                                    value={expiryFilter}
-                                    onChange={(e) => setExpiryFilter(e.target.value)}
-                                >
-                                    <option value="all">All Status</option>
-                                    <option value="active">Active</option>
-                                    <option value="expiring-soon">Expiring Soon</option>
-                                    <option value="expired">Expired</option>
-                                    <option value="no-token">No Token</option>
-                                </select>
-                            </div>
-
-                            {/* Sort By */}
-                            <div className="filter-panel-section">
-                                <label className="filter-panel-label">
-                                    <SortAsc size={16} />
-                                    Sort By
-                                </label>
-                                <select
-                                    className="filter-panel-select"
-                                    value={sortBy}
-                                    onChange={(e) => setSortBy(e.target.value)}
-                                >
-                                    <option value="name">Name</option>
-                                    <option value="created">Created Date</option>
-                                    <option value="expires">Expiry Date</option>
-                                </select>
-                            </div>
-
-                            {/* Active Filters Summary */}
-                            {(searchTerm || instanceFilter !== 'all' || expiryFilter !== 'all') && (
-                                <div className="filter-panel-section">
-                                    <label className="filter-panel-label">Active Filters</label>
-                                    <div className="active-filters-list">
-                                        {searchTerm && (
-                                            <span className="active-filter-tag">
-                                                Search: "{searchTerm}"
-                                                <button onClick={() => setSearchTerm("")}>
-                                                    <X size={12} />
-                                                </button>
-                                            </span>
-                                        )}
-                                        {filterPanelInstance !== 'all' && (
-                                            <span className="active-filter-tag">
-                                                Instance: {filterPanelInstance}
-                                                <button onClick={() => setFilterPanelInstance("all")}>
-                                                    <X size={12} />
-                                                </button>
-                                            </span>
-                                        )}
-                                        {expiryFilter !== 'all' && (
-                                            <span className="active-filter-tag">
-                                                Status: {expiryFilter.replace('-', ' ')}
-                                                <button onClick={() => setExpiryFilter("all")}>
-                                                    <X size={12} />
-                                                </button>
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="filter-panel-footer">
-                            <button
-                                className="filter-panel-clear-btn"
-                                onClick={() => {
-                                    setSearchTerm("");
-                                    setInstanceFilter("Sandbox");
-                                    setFilterPanelInstance("all");
-                                    setExpiryFilter("all");
-                                    setSortBy("name");
-                                }}
-                                style={(searchTerm || instanceFilter !== 'all' || expiryFilter !== 'all') ? { background: '#dc2626', borderColor: '#dc2626', color: 'white' } : {}}
-                            >
-                                Clear All Filters
-                            </button>
                         </div>
                     </div>
                 </div>

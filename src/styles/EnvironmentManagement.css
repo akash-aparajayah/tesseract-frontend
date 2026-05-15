@@ -937,14 +937,14 @@
     gap: 12px;
 }
 
-.env-tabs-container {
+/* .env-tabs-container {
     background: white;
     border-radius: 12px;
     padding: 6px;
     margin-bottom: 20px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     border: 1px solid #e2e8f0;
-}
+} */
 
 .env-tabs {
     display: flex;
@@ -1005,7 +1005,7 @@
     background: rgba(99, 102, 241, 0.05);
 }
 
-.pc-add-env-btn {
+/* .pc-add-env-btn {
     padding: 8px 14px;
     background: linear-gradient(135deg, #6366f1, #4f46e5);
     border: none;
@@ -1021,19 +1021,19 @@
     align-items: center;
     gap: 5px;
     line-height: 1;
-}
+} */
 
 .pc-add-env-btn:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
 
-.pc-add-env-btn,
+/* .pc-add-env-btn,
 .pc-clone-btn {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-}
+} */
 
 .pc-clone-btn {
     padding: 8px 16px;
@@ -1828,7 +1828,7 @@
     }
 }
 
-.env-tabs-container {
+/* .env-tabs-container {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1838,7 +1838,7 @@
     margin-bottom: 20px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     border: 1px solid #e2e8f0;
-}
+} */
 
 .env-tabs {
     display: flex;
@@ -2101,13 +2101,13 @@
     gap: 10px;
 }
 
-.env-tabs-container {
+/* .env-tabs-container {
     background: white;
     border: 1px solid #e2e8f0;
     border-radius: 16px;
     padding: 8px;
     margin-bottom: 28px;
-}
+} */
 
 .env-tabs {
     display: flex;

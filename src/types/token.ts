@@ -4,7 +4,7 @@ export interface ApiToken {
     token: string;
     projectId: string;
     environmentName: string;
-    instance?: string;
+    mode?: string;
     created: string;
     expires: string;
     expiresInDays: number | null;
