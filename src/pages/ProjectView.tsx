@@ -270,6 +270,141 @@ export default function ProjectView() {
   const [leaveAction, setLeaveAction] = useState<(() => void) | null>(null);
   const [leaveModalType, setLeaveModalType] = useState<"form" | "token" | null>(null);
 
+  const [editingTabEnv, setEditingTabEnv] = useState<string | null>(null);
+  const [editingTabName, setEditingTabName] = useState("");
+
+
+
+  const startEditingTab = (env: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingTabEnv(env);
+    setEditingTabName(env);
+  };
+
+  const saveTabEdit = () => {
+    if (!editingTabEnv || !editingTabName.trim() || editingTabName === editingTabEnv) {
+      setEditingTabEnv(null);
+      setEditingTabName("");
+      return;
+    }
+    handleEditEnvironmentInline(editingTabEnv, editingTabName.trim());
+    setEditingTabEnv(null);
+    setEditingTabName("");
+  };
+
+  const cancelTabEdit = () => {
+    setEditingTabEnv(null);
+    setEditingTabName("");
+  };
+
+  const handleEditEnvironmentInline = (oldName: string, newName: string) => {
+    if (!projectId) return;
+
+    // Rename provider storage keys
+    ['sms', 'email', 'whatsapp'].forEach(s => {
+      const oldKey = `env_${projectId}_${oldName}_${s}_providers`;
+      const newKey = `env_${projectId}_${newName}_${s}_providers`;
+
+      const data = localStorage.getItem(oldKey);
+
+      if (data) {
+        localStorage.setItem(newKey, data);
+        localStorage.removeItem(oldKey);
+      }
+    });
+
+    // Update saved environment order
+    const savedOrder = JSON.parse(
+      localStorage.getItem(`env_order_${projectId}`) || "[]"
+    );
+
+    const updatedOrder = savedOrder.map((env: string) =>
+      env === oldName ? newName : env
+    );
+
+    localStorage.setItem(
+      `env_order_${projectId}`,
+      JSON.stringify(updatedOrder)
+    );
+
+    // Update state instantly
+    setEnvironments(updatedOrder);
+
+    // Keep selected environment
+    if (selectedEnv === oldName) {
+      setSelectedEnv(newName);
+    }
+  };
+  const confirmLeave = () => {
+    if (leaveAction) {
+      leaveAction();
+    }
+    setShowTokenLeaveModal(false);
+    setLeaveAction(null);
+
+    // If leaving token page, close the reveal modal
+    if (leaveModalType === "token") {
+      setGeneratedToken(null);
+      setCopied(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!generatedToken) return;
+
+    // Browser refresh/close
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = 'You have an unsaved token. Are you sure you want to leave?';
+    };
+
+    // Browser back/forward
+    const handlePopState = () => {
+      const confirmLeave = window.confirm('You have an unsaved token. Are you sure you want to leave?');
+      if (!confirmLeave) {
+        window.history.pushState(null, '', window.location.href);
+      } else {
+        setGeneratedToken(null);
+        setCopied(false);
+      }
+    };
+
+    window.history.pushState(null, '', window.location.href);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [generatedToken]);
+
+  useEffect(() => {
+    if (generatedToken) {
+      const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+        e.preventDefault();
+        e.returnValue = '';
+      };
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }
+  }, [generatedToken]);
+
+  // Close edit on click outside
+  useEffect(() => {
+    if (!editingTabEnv) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // Only cancel if clicking outside ALL env-tabs
+      if (!target.closest('.env-tab')) {
+        cancelTabEdit();
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [editingTabEnv]);
+
+
   // Mock user data
   const availableUsers = [
     { id: "u1", name: "John Doe", email: "john@example.com", role: "Developer", status: "active", assignedAt: "2026-05-14" },
@@ -289,15 +424,16 @@ export default function ProjectView() {
   // ---- ENVIRONMENT FUNCTIONS ----
   const loadEnvironments = () => {
     if (!projectId) return;
-    const allKeys = Object.keys(localStorage);
-    const envSet = new Set<string>();
-    allKeys.forEach(key => {
-      const match = key.match(new RegExp(`^env_${projectId}_(.+)_(sms|email|whatsapp)_providers$`));
-      if (match) envSet.add(match[1]);
-    });
-    const allEnvs = Array.from(envSet);
-    setEnvironments(allEnvs);
-    if (allEnvs.length > 0 && !selectedEnv) setSelectedEnv(allEnvs[0]);
+
+    const savedOrder = JSON.parse(
+      localStorage.getItem(`env_order_${projectId}`) || "[]"
+    );
+
+    setEnvironments(savedOrder);
+
+    if (savedOrder.length > 0 && !selectedEnv) {
+      setSelectedEnv(savedOrder[0]);
+    }
   };
 
   const loadProviders = () => {
@@ -332,6 +468,18 @@ export default function ProjectView() {
       const key = `env_${projectId}_${envToCreate}_${service}_providers`;
       if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify({ providers: [], timestamp: Date.now() }));
     });
+    const existingOrder = JSON.parse(
+      localStorage.getItem(`env_order_${projectId}`) || "[]"
+    );
+
+    if (!existingOrder.includes(envToCreate)) {
+      const updatedOrder = [...existingOrder, envToCreate];
+
+      localStorage.setItem(
+        `env_order_${projectId}`,
+        JSON.stringify(updatedOrder)
+      );
+    }
     loadEnvironments();
     setSelectedEnv(envToCreate);
     setNewEnvName(""); setIsCustomEnv(false); setCustomEnvInput("");
@@ -347,28 +495,77 @@ export default function ProjectView() {
       if (!localStorage.getItem(`env_${projectId}_${name}_${s}_providers`))
         localStorage.setItem(`env_${projectId}_${name}_${s}_providers`, JSON.stringify({ providers: [], timestamp: Date.now() }));
     });
-    setEnvironments(prev => [...prev, name]);
+    const updatedEnvs = [...environments, name];
+
+    setEnvironments(updatedEnvs);
+
+    localStorage.setItem(
+      `env_order_${projectId}`,
+      JSON.stringify(updatedEnvs)
+    );
     setSelectedEnv(name); setProviders([]); setServiceProviderCounts({ SMS: 0, EMAIL: 0, WHATSAPP: 0 });
     setShowAddEnvModal(false); setNewEnvName(""); setIsCustomEnv(false); setCustomEnvInput("");
   };
 
   const handleEditEnvironment = () => {
     if (!projectId || !editEnvName.trim()) return;
+
+    // Rename provider storage keys
     ['sms', 'email', 'whatsapp'].forEach(s => {
-      const old = `env_${projectId}_${editingEnvName}_${s}_providers`;
-      const nw = `env_${projectId}_${editEnvName}_${s}_providers`;
-      const d = localStorage.getItem(old);
-      if (d) { localStorage.setItem(nw, d); localStorage.removeItem(old); }
+      const oldKey = `env_${projectId}_${editingEnvName}_${s}_providers`;
+      const newKey = `env_${projectId}_${editEnvName}_${s}_providers`;
+
+      const data = localStorage.getItem(oldKey);
+
+      if (data) {
+        localStorage.setItem(newKey, data);
+        localStorage.removeItem(oldKey);
+      }
     });
-    loadEnvironments();
-    if (selectedEnv === editingEnvName) setSelectedEnv(editEnvName);
+
+    // Update saved environment order
+    const savedOrder = JSON.parse(
+      localStorage.getItem(`env_order_${projectId}`) || "[]"
+    );
+
+    const updatedOrder = savedOrder.map((env: string) =>
+      env === editingEnvName ? editEnvName : env
+    );
+
+    localStorage.setItem(
+      `env_order_${projectId}`,
+      JSON.stringify(updatedOrder)
+    );
+
+    // Update UI state
+    setEnvironments(updatedOrder);
+
+    // Keep selected environment active
+    if (selectedEnv === editingEnvName) {
+      setSelectedEnv(editEnvName);
+    }
+
     setShowEditEnvModal(false);
   };
 
   const handleDeleteEnvironment = () => {
     if (!projectId) return;
     ['sms', 'email', 'whatsapp'].forEach(s => localStorage.removeItem(`env_${projectId}_${deletingEnvName}_${s}_providers`));
+    // Also delete tokens for this environment
+    deleteToken(projectId, deletingEnvName, 'Sandbox');
+    deleteToken(projectId, deletingEnvName, 'Live');
+    // Update allTokens state
+    setAllTokens(prev => {
+      const updated = { ...prev };
+      delete updated[`${deletingEnvName}_Sandbox`];
+      delete updated[`${deletingEnvName}_Live`];
+      return updated;
+    });
     const updated = environments.filter(e => e !== deletingEnvName);
+    localStorage.setItem(
+      `env_order_${projectId}`,
+      JSON.stringify(updated)
+    );
     setEnvironments(updated);
     if (selectedEnv === deletingEnvName) setSelectedEnv(updated[0] || "");
     setShowDeleteEnvModal(false);
@@ -701,35 +898,61 @@ export default function ProjectView() {
                   <div className="env-tabs">
                     {environments.map((env) => (
                       <div key={env} className={`env-tab ${selectedEnv === env ? 'active' : ''}`} onClick={() => setSelectedEnv(env)}>
-                        <span className="env-tab-name">{env}</span>
-                        <div className="env-tab-menu" onClick={(e) => e.stopPropagation()}>
-                          <button className="env-menu-trigger" onClick={() => setOpenEnvMenu(openEnvMenu === env ? null : env)}>⋮</button>
-                          {openEnvMenu === env && (
-                            <div className="env-menu-dropdown">
-                              <button onClick={() => { setEditingEnvName(env); setEditEnvName(env); setShowEditEnvModal(true); setOpenEnvMenu(null); }}>
-                                <Pencil size={14} /><span className="env-menu-tooltip">Edit</span>
-                              </button>
-                              <button onClick={() => { setCloneTarget(""); setCloneCustomMode(false); setShowCloneModal(true); setOpenEnvMenu(null); }}>
-                                <Copy size={14} /><span className="env-menu-tooltip">Clone</span>
-                              </button>
-                              <button onClick={() => { setShowUserPanel(true); setOpenEnvMenu(null); setUserSearchTerm(""); setSelectedUsers(new Set()); setSelectAll(false); setUserFilter("all"); }}>
-                                <User size={14} /><span className="env-menu-tooltip">Users</span>
-                              </button>
-                              <button onClick={() => {
-                                const sms = JSON.parse(localStorage.getItem(`env_${projectId}_${env}_sms_providers`) || '{"providers":[]}');
-                                const email = JSON.parse(localStorage.getItem(`env_${projectId}_${env}_email_providers`) || '{"providers":[]}');
-                                const wa = JSON.parse(localStorage.getItem(`env_${projectId}_${env}_whatsapp_providers`) || '{"providers":[]}');
-                                const total = (sms.providers?.length || 0) + (email.providers?.length || 0) + (wa.providers?.length || 0);
-                                setDeletingEnvName(env);
-                                if (total > 0) setBlockedDeleteCounts({ sms: sms.providers?.length || 0, email: email.providers?.length || 0, whatsapp: wa.providers?.length || 0 });
-                                else setShowDeleteEnvModal(true);
-                                setOpenEnvMenu(null);
-                              }}>
-                                <Trash2 size={14} /><span className="env-menu-tooltip">Delete</span>
-                              </button>
+                        {editingTabEnv === env ? (
+                          <div className="env-tab-editing" onClick={e => e.stopPropagation()}>
+                            <input
+                              type="text"
+                              value={editingTabName}
+                              onChange={(e) => setEditingTabName(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') saveTabEdit();
+                                if (e.key === 'Escape') cancelTabEdit();
+                              }}
+                              className="env-tab-edit-input"
+                              autoFocus
+                              style={{ width: `${Math.max(editingTabName.length * 10, 60)}px` }}
+                            />
+                            <button className="env-tab-save-btn" onClick={saveTabEdit}>
+                              <Check size={14} />
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <span className="env-tab-name" onDoubleClick={(e) => startEditingTab(env, e)}>{env}</span>
+                            <div className="env-tab-menu" onClick={(e) => e.stopPropagation()}>
+                              <button className="env-menu-trigger" onClick={() => setOpenEnvMenu(openEnvMenu === env ? null : env)}>⋮</button>
+                              {openEnvMenu === env && (
+                                <div className="env-menu-dropdown">
+                                  <button onClick={() => {
+                                    setEditingTabEnv(env);
+                                    setEditingTabName(env);
+                                    setOpenEnvMenu(null);
+                                  }}>
+                                    <Pencil size={14} /><span className="env-menu-tooltip">Edit</span>
+                                  </button>
+                                  <button onClick={() => { setCloneTarget(""); setCloneCustomMode(false); setShowCloneModal(true); setOpenEnvMenu(null); }}>
+                                    <Copy size={14} /><span className="env-menu-tooltip">Clone</span>
+                                  </button>
+                                  <button onClick={() => { setShowUserPanel(true); setOpenEnvMenu(null); setUserSearchTerm(""); setSelectedUsers(new Set()); setSelectAll(false); setUserFilter("all"); }}>
+                                    <User size={14} /><span className="env-menu-tooltip">Users</span>
+                                  </button>
+                                  <button onClick={() => {
+                                    const sms = JSON.parse(localStorage.getItem(`env_${projectId}_${env}_sms_providers`) || '{"providers":[]}');
+                                    const email = JSON.parse(localStorage.getItem(`env_${projectId}_${env}_email_providers`) || '{"providers":[]}');
+                                    const wa = JSON.parse(localStorage.getItem(`env_${projectId}_${env}_whatsapp_providers`) || '{"providers":[]}');
+                                    const total = (sms.providers?.length || 0) + (email.providers?.length || 0) + (wa.providers?.length || 0);
+                                    setDeletingEnvName(env);
+                                    if (total > 0) setBlockedDeleteCounts({ sms: sms.providers?.length || 0, email: email.providers?.length || 0, whatsapp: wa.providers?.length || 0 });
+                                    else setShowDeleteEnvModal(true);
+                                    setOpenEnvMenu(null);
+                                  }}>
+                                    <Trash2 size={14} /><span className="env-menu-tooltip">Delete</span>
+                                  </button>
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
+                          </>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -739,87 +962,159 @@ export default function ProjectView() {
                 </div>
               </div>
 
-              {/* Services Sidebar + Providers Panel */}
-              <div className="pc-main-content">
-                <div className="pc-sidebar-wrapper">
-                  <div className="pc-service-env-info">
-                    <span className="pc-service-label">{activeService}</span>
-                    <span className="pc-separator-dash">-</span>
-                    <span className="pc-env-label">{selectedEnv}</span>
+              {/* Environment Content Container */}
+              <div className="env-content-container">
+                {/* Token Status Strip */}
+                <div className="token-status-strip">
+                  {/* Sandbox Token Status */}
+                  <div className="token-status-item">
+                    {(() => {
+                      const sandboxToken = allTokens[`${selectedEnv}_Sandbox`];
+                      const isExpiring = sandboxToken?.expiresInDays != null && sandboxToken.expiresInDays <= 7;
+                      if (sandboxToken) {
+                        return isExpiring ? (
+                          <span className="token-status-dot expiring"></span>
+                        ) : (
+                          <span className="token-status-dot active"></span>
+                        );
+                      }
+                      return <span className="token-status-dot inactive"></span>;
+                    })()}
+                    <Wrench size={14} />
+                    <span className="token-status-name">Sandbox</span>
+                    {(() => {
+                      const sandboxToken = allTokens[`${selectedEnv}_Sandbox`];
+                      if (sandboxToken) {
+                        return (
+                          <span className="token-status-expiry">
+                            {sandboxToken.name} · {calculateExpiryLabel(sandboxToken.expires, sandboxToken.expiresInDays)}
+                          </span>
+                        );
+                      }
+                      return (
+                        <span className="token-status-expiry" style={{ color: '#94a3b8' }}>Not generated yet</span>
+                      );
+                    })()}
                   </div>
-                  <div className="pc-sidebar">
-                    {SERVICE_TYPES.map((service) => (
-                      <div key={service} className={`pc-sidebar-item ${activeService === service ? 'active' : ''}`} onClick={() => setActiveService(service)}
-                        style={{ borderLeftColor: activeService === service ? SERVICE_COLORS[service] : 'transparent', backgroundColor: activeService === service ? `${SERVICE_COLORS[service]}10` : 'transparent' }}>
-                        <span className="pc-sidebar-icon">{SERVICE_ICONS[service]}</span>
-                        <div className="pc-sidebar-info"><div className="pc-sidebar-name">{service}</div><div className="pc-sidebar-count">{serviceProviderCounts[service] || 0} providers</div></div>
-                        {activeService === service && <div className="pc-sidebar-active-indicator" style={{ background: SERVICE_COLORS[service] }} />}
-                      </div>
-                    ))}
+
+                  {/* Live Token Status */}
+                  <div className="token-status-item">
+                    {(() => {
+                      const liveToken = allTokens[`${selectedEnv}_Live`];
+                      const isExpiring = liveToken?.expiresInDays != null && liveToken.expiresInDays <= 7;
+                      if (liveToken) {
+                        return isExpiring ? (
+                          <span className="token-status-dot expiring"></span>
+                        ) : (
+                          <span className="token-status-dot active"></span>
+                        );
+                      }
+                      return <span className="token-status-dot inactive"></span>;
+                    })()}
+                    <Rocket size={14} />
+                    <span className="token-status-name">Live</span>
+                    {(() => {
+                      const liveToken = allTokens[`${selectedEnv}_Live`];
+                      if (liveToken) {
+                        return (
+                          <span className="token-status-expiry">
+                            {liveToken.name} · {calculateExpiryLabel(liveToken.expires, liveToken.expiresInDays)}
+                          </span>
+                        );
+                      }
+                      return (
+                        <span className="token-status-expiry" style={{ color: '#94a3b8' }}>Not generated yet</span>
+                      );
+                    })()}
                   </div>
                 </div>
-                <div className="pc-sidebar-wrapper" style={{ flex: 1 }}>
-                  <h4 className="pc-column-label pc-column-label-providers">Providers</h4>
-                  <div className="pc-providers-panel" style={{ borderTop: `3px solid ${SERVICE_COLORS[activeService]}` }}>
-                    <div className="pc-panel-header">
-                      <div className="pc-panel-title">{SERVICE_ICONS[activeService]}<h3>{activeService} Providers</h3><span className="pc-panel-count">{providers.length}</span></div>
-                      <button className="pc-add-btn" style={{ backgroundColor: SERVICE_COLORS[activeService] }} onClick={() => { setEditingProvider(null); setSelectedProvider(""); setProviderFields({}); setShowAddProviderModal(true); }}>
-                        <Plus size={14} /> Add Provider
-                      </button>
+
+
+
+
+
+                {/* Services Sidebar + Providers Panel */}
+                <div className="pc-main-content" style={{ padding: '0' }}>
+                  <div className="pc-sidebar-wrapper" style={{ padding: '16px 0 16px 16px' }}>
+                    <div className="pc-service-env-info">
+                      <span className="pc-service-label">{activeService}</span>
+                      <span className="pc-separator-dash">-</span>
+                      <span className="pc-env-label">{selectedEnv}</span>
                     </div>
-                    <div className="pc-mode-tabs">
-                      <button className={`pc-mode-tab ${modeFilter === 'Sandbox' ? 'active sandbox' : ''}`} onClick={() => setmodeFilter('Sandbox')}>
-                        <Wrench size={14} /> Sandbox <span className="pc-mode-tab-count">{providers.filter(p => p.fields.mode === 'Sandbox').length}</span>
-                      </button>
-                      <button className={`pc-mode-tab ${modeFilter === 'Live' ? 'active live' : ''}`} onClick={() => setmodeFilter('Live')}>
-                        <Rocket size={14} /> Live <span className="pc-mode-tab-count">{providers.filter(p => p.fields.mode === 'Live').length}</span>
-                      </button>
+                    <div className="pc-sidebar">
+                      {SERVICE_TYPES.map((service) => (
+                        <div key={service} className={`pc-sidebar-item ${activeService === service ? 'active' : ''}`} onClick={() => setActiveService(service)}
+                          style={{ borderLeftColor: activeService === service ? SERVICE_COLORS[service] : 'transparent', backgroundColor: activeService === service ? `${SERVICE_COLORS[service]}10` : 'transparent' }}>
+                          <span className="pc-sidebar-icon">{SERVICE_ICONS[service]}</span>
+                          <div className="pc-sidebar-info"><div className="pc-sidebar-name">{service}</div><div className="pc-sidebar-count">{serviceProviderCounts[service] || 0} providers</div></div>
+                          {activeService === service && <div className="pc-sidebar-active-indicator" style={{ background: SERVICE_COLORS[service] }} />}
+                        </div>
+                      ))}
                     </div>
-                    <div className="pc-providers-list">
-                      {filteredProviders.length === 0 ? (
-                        <div className="pc-empty-state"><Server size={44} color="#cbd5e1" /><h4>No {modeFilter} {activeService} providers yet</h4><p>Add your first {modeFilter.toLowerCase()} provider to start configuring services</p></div>
-                      ) : (
-                        filteredProviders.map((provider, index) => (
-                          <div key={provider.id} className={`pc-provider-card ${dragIndex === index ? 'dragging' : ''}`} style={{ borderLeftColor: SERVICE_COLORS[activeService] }}
-                            draggable onDragStart={(e) => handleDragStart(e, index)} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, index)} onDragEnd={handleDragEnd}>
-                            <div className="pc-provider-card-header" onClick={() => setExpandedProviders(prev => ({ ...prev, [provider.id]: !prev[provider.id] }))}>
-                              <div className="pc-provider-title">
-                                <Plug size={14} /><span>{provider.name.replace(/_/g, ' ')}</span>
-                                {index === 0 && <span className="pc-primary-badge"><Rocket size={10} /> Primary</span>}
-                                <span className="pc-configured-badge" style={{ background: `${SERVICE_COLORS[activeService]}15`, color: SERVICE_COLORS[activeService] }}><Check size={10} /> Configured</span>
-                                <span className="pc-usage-badge"><span className="pc-usage-count">{provider.usageCount || 0}</span><span className="pc-usage-label">sent</span></span>
+                  </div>
+                  <div className="pc-sidebar-wrapper" style={{ flex: 1, padding: '16px 16px 16px 0' }}>
+                    <h4 className="pc-column-label pc-column-label-providers">Providers</h4>
+                    <div className="pc-providers-panel" style={{ borderTop: `3px solid ${SERVICE_COLORS[activeService]}` }}>
+                      <div className="pc-panel-header">
+                        <div className="pc-panel-title">{SERVICE_ICONS[activeService]}<h3>{activeService} Providers</h3><span className="pc-panel-count">{providers.length}</span></div>
+                        <button className="pc-add-btn" style={{ backgroundColor: SERVICE_COLORS[activeService] }} onClick={() => { setEditingProvider(null); setSelectedProvider(""); setProviderFields({}); setShowAddProviderModal(true); }}>
+                          <Plus size={14} /> Add Provider
+                        </button>
+                      </div>
+                      <div className="pc-mode-tabs">
+                        <button className={`pc-mode-tab ${modeFilter === 'Sandbox' ? 'active sandbox' : ''}`} onClick={() => setmodeFilter('Sandbox')}>
+                          <Wrench size={14} /> Sandbox <span className="pc-mode-tab-count">{providers.filter(p => p.fields.mode === 'Sandbox').length}</span>
+                        </button>
+                        <button className={`pc-mode-tab ${modeFilter === 'Live' ? 'active live' : ''}`} onClick={() => setmodeFilter('Live')}>
+                          <Rocket size={14} /> Live <span className="pc-mode-tab-count">{providers.filter(p => p.fields.mode === 'Live').length}</span>
+                        </button>
+                      </div>
+                      <div className="pc-providers-list">
+                        {filteredProviders.length === 0 ? (
+                          <div className="pc-empty-state"><Server size={44} color="#cbd5e1" /><h4>No {modeFilter} {activeService} providers yet</h4><p>Add your first {modeFilter.toLowerCase()} provider to start configuring services</p></div>
+                        ) : (
+                          filteredProviders.map((provider, index) => (
+                            <div key={provider.id} className={`pc-provider-card ${dragIndex === index ? 'dragging' : ''}`} style={{ borderLeftColor: SERVICE_COLORS[activeService] }}
+                              draggable onDragStart={(e) => handleDragStart(e, index)} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, index)} onDragEnd={handleDragEnd}>
+                              <div className="pc-provider-card-header" onClick={() => setExpandedProviders(prev => ({ ...prev, [provider.id]: !prev[provider.id] }))}>
+                                <div className="pc-provider-title">
+                                  <Plug size={14} /><span>{provider.name.replace(/_/g, ' ')}</span>
+                                  {index === 0 && <span className="pc-primary-badge"><Rocket size={10} /> Primary</span>}
+                                  <span className="pc-configured-badge" style={{ background: `${SERVICE_COLORS[activeService]}15`, color: SERVICE_COLORS[activeService] }}><Check size={10} /> Configured</span>
+                                  <span className="pc-usage-badge"><span className="pc-usage-count">{provider.usageCount || 0}</span><span className="pc-usage-label">sent</span></span>
+                                </div>
+                                <div className="pc-provider-actions" onClick={(e) => e.stopPropagation()}>
+                                  <button className="pc-edit-btn" onClick={() => { setEditingProvider(provider); setSelectedProvider(provider.name); setProviderFields({ ...provider.fields }); setShowAddProviderModal(true); }}><Pencil size={14} /></button>
+                                  <button className="pc-delete-btn" onClick={() => setShowDeleteProviderModal({ id: provider.id, name: provider.name })}><Trash2 size={14} /></button>
+                                </div>
                               </div>
-                              <div className="pc-provider-actions" onClick={(e) => e.stopPropagation()}>
-                                <button className="pc-edit-btn" onClick={() => { setEditingProvider(provider); setSelectedProvider(provider.name); setProviderFields({ ...provider.fields }); setShowAddProviderModal(true); }}><Pencil size={14} /></button>
-                                <button className="pc-delete-btn" onClick={() => setShowDeleteProviderModal({ id: provider.id, name: provider.name })}><Trash2 size={14} /></button>
-                              </div>
+                              {expandedProviders[provider.id] && (
+                                <div className="pc-provider-card-body">
+                                  {Object.entries(provider.fields).sort(([a], [b]) => a === 'mode' ? -1 : b === 'mode' ? 1 : 0).map(([key, value]) => {
+                                    const fc = PROVIDER_FIELDS_MAP[provider.name]?.find((f: any) => f.name === key);
+                                    const isPwd = fc?.type === "password" || key.includes("Key") || key.includes("Token");
+                                    const ismode = fc?.type === "select";
+                                    const pk = `${provider.id}_${key}`;
+                                    return (
+                                      <div className="pc-credential-row" key={key}>
+                                        <span className="pc-credential-label">{ismode ? "Mode" : fc?.label || key}</span>
+                                        {ismode ? (
+                                          <span className={`pc-mode-badge ${value === 'Live' ? 'live' : 'sandbox'}`}>{value === 'Live' ? <Rocket size={12} /> : <Wrench size={12} />}{value || "—"}</span>
+                                        ) : (
+                                          <>
+                                            <span className="pc-credential-value">{isPwd ? (visiblePasswords[pk] ? value : "••••••••••") : value || "—"}</span>
+                                            {isPwd && value && <button className="pc-eye-btn-inline" onClick={() => setVisiblePasswords(prev => ({ ...prev, [pk]: !prev[pk] }))}>{visiblePasswords[pk] ? <FaEyeSlash size={14} /> : <FaEye size={14} />}</button>}
+                                          </>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
                             </div>
-                            {expandedProviders[provider.id] && (
-                              <div className="pc-provider-card-body">
-                                {Object.entries(provider.fields).sort(([a], [b]) => a === 'mode' ? -1 : b === 'mode' ? 1 : 0).map(([key, value]) => {
-                                  const fc = PROVIDER_FIELDS_MAP[provider.name]?.find((f: any) => f.name === key);
-                                  const isPwd = fc?.type === "password" || key.includes("Key") || key.includes("Token");
-                                  const ismode = fc?.type === "select";
-                                  const pk = `${provider.id}_${key}`;
-                                  return (
-                                    <div className="pc-credential-row" key={key}>
-                                      <span className="pc-credential-label">{ismode ? "Mode" : fc?.label || key}</span>
-                                      {ismode ? (
-                                        <span className={`pc-mode-badge ${value === 'Live' ? 'live' : 'sandbox'}`}>{value === 'Live' ? <Rocket size={12} /> : <Wrench size={12} />}{value || "—"}</span>
-                                      ) : (
-                                        <>
-                                          <span className="pc-credential-value">{isPwd ? (visiblePasswords[pk] ? value : "••••••••••") : value || "—"}</span>
-                                          {isPwd && value && <button className="pc-eye-btn-inline" onClick={() => setVisiblePasswords(prev => ({ ...prev, [pk]: !prev[pk] }))}>{visiblePasswords[pk] ? <FaEyeSlash size={14} /> : <FaEye size={14} />}</button>}
-                                        </>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        ))
-                      )}
+                          ))
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -846,7 +1141,18 @@ export default function ProjectView() {
             <div className="token-cards-grid">
               {filteredTokens.length === 0 ? (
                 <div className="token-empty-illustration">
-                  <h4>No environments found</h4><p>Create an environment first to get started</p>
+                  <h4>No environments found</h4>
+                  <p>Create an environment first to get started</p>
+                  <button
+                    className="pc-create-first-env-btn"
+                    onClick={() => {
+                      setActiveMainTab('environments');
+
+                    }}
+                    style={{ marginTop: '16px' }}
+                  >
+                    <Plus size={16} /> Create Environment
+                  </button>
                 </div>
               ) : (
                 filteredTokens.map(env => {
@@ -968,7 +1274,7 @@ export default function ProjectView() {
       {showCloneModal && (
         <div className="pc-modal-overlay slide-panel">
           <div className="pc-modal" onClick={e => e.stopPropagation()}>
-            <div className="pc-modal-header"><h3><Copy size={18} /> Clone Environment</h3><button className="pc-modal-close" onClick={() => { setPendingCloseAction(() => () => setShowCloneModal(false)); setShowUnsavedModal(true); }}><X size={20} /></button></div>
+            <div className="pc-modal-header"><h3><Copy size={18} /> Clone Environment</h3><button className="pc-modal-close" onClick={() => setShowCloneModal(false)}><X size={20} /></button></div>
             <div className="pc-modal-body">
               <div className="clone-source-info"><label>Source Environment</label><div className="clone-source-name">{getEnvIcon(selectedEnv)} {selectedEnv}</div></div>
               <div className="pc-form-group"><label>Select Target Environment</label>
@@ -986,7 +1292,7 @@ export default function ProjectView() {
               {cloneCustomMode && <div className="pc-form-group"><label>Custom Environment Name *</label><input type="text" placeholder="Enter environment name" value={cloneCustomName} onChange={(e) => setCloneCustomName(e.target.value)} className="pc-input" autoFocus /></div>}
             </div>
             <div className="pc-modal-footer">
-              <button className="pc-btn-cancel" onClick={() => { setPendingCloseAction(() => () => setShowCloneModal(false)); setShowUnsavedModal(true); }}>Cancel</button>
+              <button className="pc-btn-cancel" onClick={() => setShowCloneModal(false)}>Cancel</button>
               <button className="pc-btn-primary" onClick={executeClone} disabled={(!cloneCustomMode && !cloneTarget) || (cloneCustomMode && !cloneCustomName.trim())}>Clone Environment</button>
             </div>
           </div>
@@ -1142,10 +1448,23 @@ export default function ProjectView() {
             <div className="reveal-success"><Check size={20} /> Token Generated!</div>
             <div className="reveal-warning-box"><AlertTriangle size={18} /><div><strong>SAVE THIS TOKEN NOW</strong><p>This token will NOT be shown again.</p></div></div>
             <div className="reveal-token-box">
-              <div className="reveal-token-row"><div className="reveal-token-value">{generatedToken.token}</div><button className={`btn-copy-inline ${copied ? 'copied' : ''}`} onClick={() => { navigator.clipboard.writeText(generatedToken.token); setCopied(true); setTimeout(() => setCopied(false), 3000); }}>{copied ? <><Check size={14} />Copied!</> : <><Copy size={14} />Copy</>}</button></div>
-              <div className="reveal-token-meta"><div><Globe size={14} />{generatedToken.environmentName}</div><div><Calendar size={14} />{generatedToken.name} · {formatDate(generatedToken.created)}</div><div><Clock size={14} />Expires: {formatDate(generatedToken.expires)}</div></div>
+              <div className="reveal-token-row">
+                <div className="reveal-token-value">{generatedToken.token}</div>
+                <button className={`btn-copy-inline ${copied ? 'copied' : ''}`} onClick={() => { navigator.clipboard.writeText(generatedToken.token); setCopied(true); setTimeout(() => setCopied(false), 3000); }}>
+                  {copied ? <><Check size={14} />Copied!</> : <><Copy size={14} />Copy</>}
+                </button>
+              </div>
+              <div className="reveal-token-meta">
+                <div><Globe size={14} />{generatedToken.environmentName}</div>
+                <div><Calendar size={14} />{generatedToken.name} · {formatDate(generatedToken.created)}</div>
+                <div><Clock size={14} />Expires: {formatDate(generatedToken.expires)}</div>
+              </div>
             </div>
-            <button className="pc-btn-primary" onClick={() => { setGeneratedToken(null); setCopied(false); }}><Check size={16} /> I've Saved the Token, Go Back</button>
+            <div style={{ textAlign: 'center' }}>
+              <button className="pc-btn-primary" onClick={() => setShowTokenLeaveModal(true)}>
+                <Check size={16} /> I've Saved the Token, Go Back
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1194,6 +1513,34 @@ export default function ProjectView() {
             <div className="user-panel-footer">
               <button className="user-panel-action-btn" onClick={userActiveTab === 'assign' ? handleAssignUsers : handleUnassignUsers} disabled={selectedUsers.size === 0} style={{ background: userActiveTab === 'assign' ? '#6366f1' : '#ef4444' }}>
                 {userActiveTab === 'assign' ? <><UserPlus size={16} /> Unassign Selected ({selectedUsers.size})</> : <><UserMinus size={16} /> Assign Selected ({selectedUsers.size})</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Token Leave Confirmation Modal */}
+      {showTokenLeaveModal && (
+        <div className="pc-modal-overlay" onClick={() => setShowTokenLeaveModal(false)}>
+          <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}>
+            <div className="pc-modal-header">
+              <AlertTriangle size={22} color="#f59e0b" />
+              <h3>Leave Token Page?</h3>
+            </div>
+            <div className="pc-modal-body">
+              <p>Have you copied and saved this token?</p>
+              <div className="warning-text">
+                <AlertTriangle size={14} /> This token will not be shown again after leaving this page.
+              </div>
+            </div>
+            <div className="pc-modal-footer">
+              <button className="pc-btn-cancel" onClick={() => setShowTokenLeaveModal(false)}>Stay Here</button>
+              <button className="pc-btn-danger" onClick={() => {
+                setShowTokenLeaveModal(false);
+                setGeneratedToken(null);
+                setCopied(false);
+              }}>
+                <Check size={16} /> Yes, I've Saved It
               </button>
             </div>
           </div>

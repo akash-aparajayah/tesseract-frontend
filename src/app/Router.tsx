@@ -10,10 +10,10 @@ import AdminCreate from "../pages/AdminCreate";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ProjectEditForm from "@/pages/ProjectEditForm";
 import ProjectBasicEdit from "@/pages/ProjectBasicEdit";
-// import EnvironmentManagement from "@/pages/EnvironmentManagement";
 import ProviderConfig from "@/pages/ProviderConfig";
 import TokenGenerate from "@/pages/TokenGenerate";
 import UserDetailView from "@/pages/UserDetailView";
+import ProtectedRoute from "@/app/ProtectedRoute";
 
 const router = createBrowserRouter([
   {
@@ -25,65 +25,66 @@ const router = createBrowserRouter([
     element: <ForgotPassword />,
   },
   {
-    path: "/dashboard",
-    element: <Layout />,
+    // Protected routes wrapper
+    element: <ProtectedRoute />,
     children: [
       {
-        index: true,
-        element: <Dashboard />,
-      },
-      {
-        path: "admin",
-        element: <AdminDashboard />,
-      },
-      {
-        path: "admin-create",
-        element: <AdminCreate />,
-      },
-      {
-        path: "project",
-        element: <ProjectDashboard />,
-      },
-      {
-        path: "project-create",
-        element: <ProjectCreateForm />,
-      },
-      {
-        path: "project/:projectId/view",
-        element: <ProjectView />,
-      },
-      {
-        path: "project-edit/:projectId",
-        element: <ProjectEditForm />,
-      },
-      {
-        path: "project-edit-basic/:projectId",
-        element: <ProjectBasicEdit />,
-      },
-      {
-        path: "project/:projectId/logs",
-        element: <ProjectView />,
-      },
-      // {
-      //   path: "environments",
-      //   element: <EnvironmentManagement />,
-      // },
-      // Environment routes
-      {
-        path: "token-generate",
-        element: <TokenGenerate />,
-      },
-      {
-        path: "provider-config",
-        element: <ProviderConfig />,
-      },
-      {
-        path: "provider-config/:environmentName",
-        element: <ProviderConfig />,
-      },
-      {
-        path: "user/:userId",
-        element: <UserDetailView />,
+        path: "/dashboard",
+        element: <Layout />,
+        children: [
+          {
+            index: true,
+            element: <Dashboard />,
+          },
+          {
+            path: "admin",
+            element: <AdminDashboard />,
+          },
+          {
+            path: "admin-create",
+            element: <AdminCreate />,
+          },
+          {
+            path: "project",
+            element: <ProjectDashboard />,
+          },
+          {
+            path: "project-create",
+            element: <ProjectCreateForm />,
+          },
+          {
+            path: "project/:projectId/view",
+            element: <ProjectView />,
+          },
+          {
+            path: "project-edit/:projectId",
+            element: <ProjectEditForm />,
+          },
+          {
+            path: "project-edit-basic/:projectId",
+            element: <ProjectBasicEdit />,
+          },
+          {
+            path: "project/:projectId/logs",
+            element: <ProjectView />,
+          },
+          {
+            path: "token-generate",
+            element: <TokenGenerate />,
+          },
+          {
+            path: "provider-config",
+            element: <ProviderConfig />,
+          },
+          {
+            path: "provider-config/:environmentName",
+            element: <ProviderConfig />,
+          },
+          {
+            path: "user/:userId",
+            element: <UserDetailView />,
+          },
+        ],
       },
     ],
   },
