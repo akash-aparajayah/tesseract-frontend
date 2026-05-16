@@ -1,8 +1,8 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "https://0csk9hw3-8500.inc1.devtunnels.ms/api",
-  // baseURL: "http://localhost:8500/api",
+//  baseURL: "https://0csk9hw3-8500.inc1.devtunnels.ms/api",
+   baseURL: "http://localhost:8500/api",
 });
 
 // REQUEST INTERCEPTOR: This is what injects the header

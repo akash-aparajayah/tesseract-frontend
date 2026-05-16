@@ -2,19 +2,19 @@ import api from "./api";
 
 // get user API
 export const getAllUsersApi = () => {
-    return api.get("/users/getAllUsers");
+    return api.get("/users/get-all-users");
 };
 
 //activate or deactivate user API
 export const activateOrDeactivateUserApi = (id: string, active: boolean) => {
-  return api.patch(`/users/changeUserStatus/${id}`, {
-    active,
+  return api.patch(`/users/change-user-status/${id}`, {
+    is_active: active,
   });
 };
 
 //change password API
 export const changePasswordApi = (id: number, password: string) => {
-  return api.patch(`/users/${id}/password`, {
+  return api.patch(`/users/change-password/${id}`, {
     password,
   });
 };
@@ -31,8 +31,8 @@ export const createUserApi = (user_name: string, email: string, password: string
 };
 
 //delete user API
-export const deleteUserApi = (id: number) => {
-  return api.delete(`/users/${id}`);
+export const deleteUserApi = (id: string) => {
+  return api.delete(`/users/delete-user/${id}`);
 };
 
 //get user by id API
