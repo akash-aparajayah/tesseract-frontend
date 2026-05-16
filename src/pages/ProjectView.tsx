@@ -6,7 +6,7 @@ import {
   Pencil, FolderOpen, Plus, MessageSquare, Mail, MessageCircle, Plug, Check,
   Save, X, ChevronDown, Server, Copy, Trash2, Globe, Rocket, Wrench,
   Search, Lock, AlertTriangle, Home, Monitor, Key,
-  User, UserMinus, UserPlus, AlertCircle, Calendar, Clock, RefreshCw,
+  User, UserMinus, UserPlus, AlertCircle, Calendar, Clock, RefreshCw, Settings
 } from 'lucide-react';
 
 interface Project {
@@ -153,15 +153,15 @@ const PROVIDER_FIELDS_MAP: Record<string, { name: string; label: string; type: s
   ],
 };
 
-const SERVICE_TYPES = ["SMS", "EMAIL", "WHATSAPP"];
-const SERVICE_COLORS: Record<string, string> = { SMS: "#10b981", EMAIL: "#6366f1", WHATSAPP: "#25D366" };
+const SERVICE_TYPES = ["SMS", "Email", "Whatsapp"];
+const SERVICE_COLORS: Record<string, string> = { SMS: "#10b981", Email: "#6366f1", Whatsapp: "#25D366" };
 const SERVICE_ICONS: Record<string, React.ReactNode> = {
-  SMS: <MessageSquare size={18} />, EMAIL: <Mail size={18} />, WHATSAPP: <MessageCircle size={18} />
+  SMS: <MessageSquare size={18} />, Email: <Mail size={18} />, Whatsapp: <MessageCircle size={18} />
 };
 const PROVIDERS_BY_SERVICE: Record<string, string[]> = {
   SMS: ["MSG91", "Twilio", "Gupshup", "Vonage", "Kaleyra", "Textlocal", "TrueDialog"],
-  EMAIL: ["SendGrid", "AWS_SES", "Mailgun", "SMTP", "Postmark"],
-  WHATSAPP: ["WhatsApp_Twilio", "WhatsApp_Gupshup", "Meta_Cloud", "WhatsApp_Kaleyra", "WhatsApp_Vonage"]
+  Email: ["SendGrid", "AWS_SES", "Mailgun", "SMTP", "Postmark"],
+  Whatsapp: ["WhatsApp_Twilio", "WhatsApp_Gupshup", "Meta_Cloud", "WhatsApp_Kaleyra", "WhatsApp_Vonage"]
 };
 
 // Token Utils
@@ -204,7 +204,7 @@ export default function ProjectView() {
   const [selectedEnv, setSelectedEnv] = useState<string>("");
   const [activeService, setActiveService] = useState<string>("SMS");
   const [providers, setProviders] = useState<Provider[]>([]);
-  const [serviceProviderCounts, setServiceProviderCounts] = useState<Record<string, number>>({ SMS: 0, EMAIL: 0, WHATSAPP: 0 });
+  const [serviceProviderCounts, setServiceProviderCounts] = useState<Record<string, number>>({ SMS: 0, Email: 0, Whatsapp: 0 });
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
   const [expandedProviders, setExpandedProviders] = useState<Record<number, boolean>>({});
   const [openEnvMenu, setOpenEnvMenu] = useState<string | null>(null);
@@ -272,6 +272,8 @@ export default function ProjectView() {
 
   const [editingTabEnv, setEditingTabEnv] = useState<string | null>(null);
   const [editingTabName, setEditingTabName] = useState("");
+
+  const [envStatus, setEnvStatus] = useState<Record<string, "active" | "inactive">>({});
 
 
 
@@ -742,7 +744,12 @@ export default function ProjectView() {
   useEffect(() => { if (selectedEnv && activeMainTab === 'environments') loadProviders(); }, [selectedEnv, activeService, activeMainTab]);
   useEffect(() => { if (selectedEnv && activeMainTab === 'environments') updateAllServiceCounts(); }, [selectedEnv, activeService, modeFilter, activeMainTab]);
   useEffect(() => { loadEnvironments(); }, [projectId]);
-  useEffect(() => { if (projectId && activeMainTab === 'tokens') setAllTokens(getAllTokens(projectId)); }, [projectId, activeMainTab]);
+  useEffect(() => {
+    if (projectId) setAllTokens(getAllTokens(projectId));
+  }, [projectId]);
+  useEffect(() => {
+    if (projectId) setAllTokens(getAllTokens(projectId));
+  }, [showTokenFormModal, showTokenDeleteModal, showRegenModal]);
 
   const getEnvIcon = (name: string): React.ReactNode => {
     const icons: Record<string, React.ReactNode> = { 'Local': <Home size={16} />, 'Dev': <Monitor size={16} />, 'Staging': <Rocket size={16} />, 'Live': <Globe size={16} /> };
@@ -920,7 +927,9 @@ export default function ProjectView() {
                           <>
                             <span className="env-tab-name" onDoubleClick={(e) => startEditingTab(env, e)}>{env}</span>
                             <div className="env-tab-menu" onClick={(e) => e.stopPropagation()}>
-                              <button className="env-menu-trigger" onClick={() => setOpenEnvMenu(openEnvMenu === env ? null : env)}>⋮</button>
+                              <button className="env-menu-trigger" onClick={() => setOpenEnvMenu(openEnvMenu === env ? null : env)}>
+                                <Settings size={14} />
+                              </button>
                               {openEnvMenu === env && (
                                 <div className="env-menu-dropdown">
                                   <button onClick={() => {
@@ -966,7 +975,9 @@ export default function ProjectView() {
               <div className="env-content-container">
                 {/* Token Status Strip */}
                 <div className="token-status-strip">
-                  {/* Sandbox Token Status */}
+                  <span className="token-status-title"><strong>{selectedEnv}</strong> Token Details -</span>
+
+                  {/* Sandbox */}
                   <div className="token-status-item">
                     {(() => {
                       const sandboxToken = allTokens[`${selectedEnv}_Sandbox`];
@@ -997,7 +1008,9 @@ export default function ProjectView() {
                     })()}
                   </div>
 
-                  {/* Live Token Status */}
+                  <span className="token-status-divider">|</span>
+
+                  {/* Live */}
                   <div className="token-status-item">
                     {(() => {
                       const liveToken = allTokens[`${selectedEnv}_Live`];
@@ -1027,7 +1040,34 @@ export default function ProjectView() {
                       );
                     })()}
                   </div>
+                  {/* Vertical Separator */}
+                  <span className="token-section-separator"></span>
+
+                  {/* Active/Inactive Toggle */}
+                  {/* Environment Status Toggle */}
+                  <div className="env-status-wrapper">
+                    <span className="env-status-label"><strong>{selectedEnv}</strong> Environment is:</span>
+                    <button
+                      className={`env-status-toggle ${(envStatus[selectedEnv] || 'active') === 'active' ? 'status-active' : 'status-inactive'}`}
+                      onClick={() => {
+                        setEnvStatus(prev => ({
+                          ...prev,
+                          [selectedEnv]: (prev[selectedEnv] || 'active') === 'active' ? 'inactive' : 'active'
+                        }));
+                      }}
+                    >
+                      <span className="toggle-text">{(envStatus[selectedEnv] || 'active').toUpperCase()}</span>
+                      <span className="toggle-icon">
+                        <svg viewBox="0 0 24 24">
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                          <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                      </span>
+                    </button>
+                  </div>
                 </div>
+
+
 
 
 
@@ -1037,9 +1077,12 @@ export default function ProjectView() {
                 <div className="pc-main-content" style={{ padding: '0' }}>
                   <div className="pc-sidebar-wrapper" style={{ padding: '16px 0 16px 16px' }}>
                     <div className="pc-service-env-info">
-                      <span className="pc-service-label">{activeService}</span>
+
+                      <span>Services</span>
                       <span className="pc-separator-dash">-</span>
-                      <span className="pc-env-label">{selectedEnv}</span>
+                      <span className="pc-service-label">{activeService}</span>
+
+
                     </div>
                     <div className="pc-sidebar">
                       {SERVICE_TYPES.map((service) => (
@@ -1226,329 +1269,358 @@ export default function ProjectView() {
             </div>
           </div>
         </div>
-      )}
+      )
+      }
 
       {/* ===== ALL MODALS ===== */}
       {/* Add Environment Modal */}
-      {showAddEnvModal && (
-        <div className="pc-modal-overlay slide-panel">
-          <div className="pc-modal" onClick={e => e.stopPropagation()}>
-            <div className="pc-modal-header"><h3><Plus size={18} /> Add Environment</h3><button className="pc-modal-close" onClick={() => { setShowAddEnvModal(false); setNewEnvName(""); setIsCustomEnv(false); setCustomEnvInput(""); }}><X size={20} /></button></div>
-            <div className="pc-modal-body">
-              <p className="pc-modal-desc">Select an environment or create a custom one</p>
-              <div className="pc-env-options">
-                {['Local', 'Dev', 'Staging', 'Live'].filter(env => !environments.includes(env)).map(env => (
-                  <div key={env} className={`pc-env-option ${newEnvName === env && !isCustomEnv ? 'selected' : ''}`} onClick={() => { setNewEnvName(env); setIsCustomEnv(false); }}>
-                    <span className="pc-env-option-icon">{getEnvIcon(env)}</span><span>{env}</span>{newEnvName === env && !isCustomEnv && <Check size={18} />}
+      {
+        showAddEnvModal && (
+          <div className="pc-modal-overlay slide-panel">
+            <div className="pc-modal" onClick={e => e.stopPropagation()}>
+              <div className="pc-modal-header"><h3><Plus size={18} /> Add Environment</h3><button className="pc-modal-close" onClick={() => { setShowAddEnvModal(false); setNewEnvName(""); setIsCustomEnv(false); setCustomEnvInput(""); }}><X size={20} /></button></div>
+              <div className="pc-modal-body">
+                <p className="pc-modal-desc">Select an environment or create a custom one</p>
+                <div className="pc-env-options">
+                  {['Local', 'Dev', 'Staging', 'Live'].filter(env => !environments.includes(env)).map(env => (
+                    <div key={env} className={`pc-env-option ${newEnvName === env && !isCustomEnv ? 'selected' : ''}`} onClick={() => { setNewEnvName(env); setIsCustomEnv(false); }}>
+                      <span className="pc-env-option-icon">{getEnvIcon(env)}</span><span>{env}</span>{newEnvName === env && !isCustomEnv && <Check size={18} />}
+                    </div>
+                  ))}
+                  <div className={`pc-env-option custom ${isCustomEnv ? 'selected' : ''}`} onClick={() => { setIsCustomEnv(true); setNewEnvName(""); }}>
+                    <span className="pc-env-option-icon"><Wrench size={18} /></span><span>Custom Environment</span>{isCustomEnv && <Check size={18} />}
                   </div>
-                ))}
-                <div className={`pc-env-option custom ${isCustomEnv ? 'selected' : ''}`} onClick={() => { setIsCustomEnv(true); setNewEnvName(""); }}>
-                  <span className="pc-env-option-icon"><Wrench size={18} /></span><span>Custom Environment</span>{isCustomEnv && <Check size={18} />}
                 </div>
+                {isCustomEnv && <div className="pc-form-group"><label>Environment Name *</label><input type="text" placeholder="e.g., Production" value={customEnvInput} onChange={(e) => setCustomEnvInput(e.target.value)} className="pc-input" autoFocus /></div>}
               </div>
-              {isCustomEnv && <div className="pc-form-group"><label>Environment Name *</label><input type="text" placeholder="e.g., Production" value={customEnvInput} onChange={(e) => setCustomEnvInput(e.target.value)} className="pc-input" autoFocus /></div>}
-            </div>
-            <div className="pc-modal-footer">
-              <button className="pc-btn-cancel" onClick={() => { setShowAddEnvModal(false); setNewEnvName(""); setIsCustomEnv(false); setCustomEnvInput(""); }}>Cancel</button>
-              <button className="pc-btn-primary" onClick={handleAddEnvironment} disabled={(!isCustomEnv && !newEnvName) || (isCustomEnv && !customEnvInput.trim())}>Save Environment</button>
+              <div className="pc-modal-footer">
+                <button className="pc-btn-cancel" onClick={() => { setShowAddEnvModal(false); setNewEnvName(""); setIsCustomEnv(false); setCustomEnvInput(""); }}>Cancel</button>
+                <button className="pc-btn-primary" onClick={handleAddEnvironment} disabled={(!isCustomEnv && !newEnvName) || (isCustomEnv && !customEnvInput.trim())}>Save Environment</button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Edit Environment Modal */}
-      {showEditEnvModal && (
-        <div className="pc-modal-overlay slide-panel">
-          <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}>
-            <div className="pc-modal-header"><h3>Edit Environment</h3><button className="pc-modal-close" onClick={() => { setPendingCloseAction(() => () => setShowEditEnvModal(false)); setShowUnsavedModal(true); }}><X size={18} /></button></div>
-            <div className="pc-modal-body"><div className="pc-form-group"><label>Environment Name</label><input type="text" className="pc-input" value={editEnvName} onChange={(e) => setEditEnvName(e.target.value)} /></div></div>
-            <div className="pc-modal-footer">
-              <button className="pc-btn-cancel" onClick={() => { setPendingCloseAction(() => () => setShowEditEnvModal(false)); setShowUnsavedModal(true); }}>Cancel</button>
-              <button className="pc-btn-primary" onClick={handleEditEnvironment}>Save Changes</button>
+      {
+        showEditEnvModal && (
+          <div className="pc-modal-overlay slide-panel">
+            <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}>
+              <div className="pc-modal-header"><h3>Edit Environment</h3><button className="pc-modal-close" onClick={() => { setPendingCloseAction(() => () => setShowEditEnvModal(false)); setShowUnsavedModal(true); }}><X size={18} /></button></div>
+              <div className="pc-modal-body"><div className="pc-form-group"><label>Environment Name</label><input type="text" className="pc-input" value={editEnvName} onChange={(e) => setEditEnvName(e.target.value)} /></div></div>
+              <div className="pc-modal-footer">
+                <button className="pc-btn-cancel" onClick={() => { setPendingCloseAction(() => () => setShowEditEnvModal(false)); setShowUnsavedModal(true); }}>Cancel</button>
+                <button className="pc-btn-primary" onClick={handleEditEnvironment}>Save Changes</button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Clone Modal */}
-      {showCloneModal && (
-        <div className="pc-modal-overlay slide-panel">
-          <div className="pc-modal" onClick={e => e.stopPropagation()}>
-            <div className="pc-modal-header"><h3><Copy size={18} /> Clone Environment</h3><button className="pc-modal-close" onClick={() => setShowCloneModal(false)}><X size={20} /></button></div>
-            <div className="pc-modal-body">
-              <div className="clone-source-info"><label>Source Environment</label><div className="clone-source-name">{getEnvIcon(selectedEnv)} {selectedEnv}</div></div>
-              <div className="pc-form-group"><label>Select Target Environment</label>
-                <div className="pc-env-options">
-                  {['Local', 'Dev', 'Staging', 'Live'].filter(env => env !== selectedEnv && !environments.includes(env)).map(env => (
-                    <div key={env} className={`pc-env-option ${cloneTarget === env && !cloneCustomMode ? 'selected' : ''}`} onClick={() => { setCloneTarget(env); setCloneCustomMode(false); }}>
-                      <span className="pc-env-option-icon">{getEnvIcon(env)}</span><span>{env}</span>{cloneTarget === env && !cloneCustomMode && <Check size={18} />}
+      {
+        showCloneModal && (
+          <div className="pc-modal-overlay slide-panel">
+            <div className="pc-modal" onClick={e => e.stopPropagation()}>
+              <div className="pc-modal-header"><h3><Copy size={18} /> Clone Environment</h3><button className="pc-modal-close" onClick={() => setShowCloneModal(false)}><X size={20} /></button></div>
+              <div className="pc-modal-body">
+                <div className="clone-source-info"><label>Source Environment</label><div className="clone-source-name">{getEnvIcon(selectedEnv)} {selectedEnv}</div></div>
+                <div className="pc-form-group"><label>Select Target Environment</label>
+                  <div className="pc-env-options">
+                    {['Local', 'Dev', 'Staging', 'Live'].filter(env => env !== selectedEnv && !environments.includes(env)).map(env => (
+                      <div key={env} className={`pc-env-option ${cloneTarget === env && !cloneCustomMode ? 'selected' : ''}`} onClick={() => { setCloneTarget(env); setCloneCustomMode(false); }}>
+                        <span className="pc-env-option-icon">{getEnvIcon(env)}</span><span>{env}</span>{cloneTarget === env && !cloneCustomMode && <Check size={18} />}
+                      </div>
+                    ))}
+                    <div className={`pc-env-option custom ${cloneCustomMode ? 'selected' : ''}`} onClick={() => { setCloneCustomMode(true); setCloneTarget(""); }}>
+                      <span className="pc-env-option-icon"><Wrench size={18} /></span><span>Custom Environment</span>{cloneCustomMode && <Check size={18} />}
                     </div>
-                  ))}
-                  <div className={`pc-env-option custom ${cloneCustomMode ? 'selected' : ''}`} onClick={() => { setCloneCustomMode(true); setCloneTarget(""); }}>
-                    <span className="pc-env-option-icon"><Wrench size={18} /></span><span>Custom Environment</span>{cloneCustomMode && <Check size={18} />}
                   </div>
                 </div>
+                {cloneCustomMode && <div className="pc-form-group"><label>Custom Environment Name *</label><input type="text" placeholder="Enter environment name" value={cloneCustomName} onChange={(e) => setCloneCustomName(e.target.value)} className="pc-input" autoFocus /></div>}
               </div>
-              {cloneCustomMode && <div className="pc-form-group"><label>Custom Environment Name *</label><input type="text" placeholder="Enter environment name" value={cloneCustomName} onChange={(e) => setCloneCustomName(e.target.value)} className="pc-input" autoFocus /></div>}
-            </div>
-            <div className="pc-modal-footer">
-              <button className="pc-btn-cancel" onClick={() => setShowCloneModal(false)}>Cancel</button>
-              <button className="pc-btn-primary" onClick={executeClone} disabled={(!cloneCustomMode && !cloneTarget) || (cloneCustomMode && !cloneCustomName.trim())}>Clone Environment</button>
+              <div className="pc-modal-footer">
+                <button className="pc-btn-cancel" onClick={() => setShowCloneModal(false)}>Cancel</button>
+                <button className="pc-btn-primary" onClick={executeClone} disabled={(!cloneCustomMode && !cloneTarget) || (cloneCustomMode && !cloneCustomName.trim())}>Clone Environment</button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Add/Edit Provider Modal */}
-      {showAddProviderModal && (
-        <div className="pc-modal-overlay slide-panel">
-          <div className="pc-modal pc-modal-provider" onClick={e => e.stopPropagation()}>
-            <div className="pc-modal-header">
-              <div className="pc-modal-header-left">
-                <span className="pc-modal-service-badge" style={{ backgroundColor: `${SERVICE_COLORS[activeService]}15`, color: SERVICE_COLORS[activeService], border: `1px solid ${SERVICE_COLORS[activeService]}40` }}>{SERVICE_ICONS[activeService]}<span>{activeService}</span></span>
-                <h3>{editingProvider ? 'Edit Provider' : 'Add Provider'}</h3>
+      {
+        showAddProviderModal && (
+          <div className="pc-modal-overlay slide-panel">
+            <div className="pc-modal pc-modal-provider" onClick={e => e.stopPropagation()}>
+              <div className="pc-modal-header">
+                <div className="pc-modal-header-left">
+                  <span className="pc-modal-service-badge" style={{ backgroundColor: `${SERVICE_COLORS[activeService]}15`, color: SERVICE_COLORS[activeService], border: `1px solid ${SERVICE_COLORS[activeService]}40` }}>{SERVICE_ICONS[activeService]}<span>{activeService}</span></span>
+                  <h3>{editingProvider ? 'Edit Provider' : 'Add Provider'}</h3>
+                </div>
+                <button className="pc-modal-close" onClick={() => { setPendingCloseAction(() => () => { setShowAddProviderModal(false); setEditingProvider(null); }); setShowUnsavedModal(true); }}><X size={20} /></button>
               </div>
-              <button className="pc-modal-close" onClick={() => { setPendingCloseAction(() => () => { setShowAddProviderModal(false); setEditingProvider(null); }); setShowUnsavedModal(true); }}><X size={20} /></button>
-            </div>
-            <div className="pc-modal-env-info"><Globe size={14} /><span>Environment: <strong>{selectedEnv}</strong></span></div>
-            <div className="pc-modal-body">
-              <div className="pc-form-group"><label>Select Provider *</label>
-                <select value={selectedProvider} onChange={handleProviderChange} className="pc-select">
-                  <option value="">-- Choose provider --</option>
-                  {PROVIDERS_BY_SERVICE[activeService]?.filter(p => {
-                    if (editingProvider?.name === p) return true;
-                    const live = providers.some(prov => prov.name === p && prov.fields.mode === 'Live');
-                    const sand = providers.some(prov => prov.name === p && prov.fields.mode === 'Sandbox');
-                    return !(live && sand);
-                  }).map(p => <option key={p} value={p}>{p.replace(/_/g, ' ')}</option>)}
-                </select>
-              </div>
-              {selectedProvider && PROVIDER_FIELDS_MAP[selectedProvider] && (
-                <>
-                  {PROVIDER_FIELDS_MAP[selectedProvider].filter((f: any) => f.type === "select").map((field: any) => (
-                    <div className="pc-form-group" key={field.name}><label>{field.label}{field.required && " *"}</label>
-                      <select value={providerFields[field.name] || ""} onChange={(e) => handleFieldChange(field.name, e.target.value)} className="pc-select">
-                        <option value="">-- Choose mode --</option>
-                        {(() => {
-                          const liveE = providers.some(p => p.name === selectedProvider && p.fields.mode === 'Live');
-                          const sandE = providers.some(p => p.name === selectedProvider && p.fields.mode === 'Sandbox');
-                          if (editingProvider) return (<><option value="Sandbox">Sandbox</option><option value="Live">Live</option></>);
-                          return (<>{!sandE && <option value="Sandbox">Sandbox</option>}{!liveE && <option value="Live">Live</option>}</>);
-                        })()}
-                      </select>
-                    </div>
-                  ))}
-                  <div className="pc-credentials-section"><h4><Lock size={14} /> Credentials</h4>
-                    {PROVIDER_FIELDS_MAP[selectedProvider].filter((f: any) => f.type !== "select").map((field: any) => (
+              <div className="pc-modal-env-info"><Globe size={14} /><span>Environment: <strong>{selectedEnv}</strong></span></div>
+              <div className="pc-modal-body">
+                <div className="pc-form-group"><label>Select Provider *</label>
+                  <select value={selectedProvider} onChange={handleProviderChange} className="pc-select">
+                    <option value="">-- Choose provider --</option>
+                    {PROVIDERS_BY_SERVICE[activeService]?.filter(p => {
+                      if (editingProvider?.name === p) return true;
+                      const live = providers.some(prov => prov.name === p && prov.fields.mode === 'Live');
+                      const sand = providers.some(prov => prov.name === p && prov.fields.mode === 'Sandbox');
+                      return !(live && sand);
+                    }).map(p => <option key={p} value={p}>{p.replace(/_/g, ' ')}</option>)}
+                  </select>
+                </div>
+                {selectedProvider && PROVIDER_FIELDS_MAP[selectedProvider] && (
+                  <>
+                    {PROVIDER_FIELDS_MAP[selectedProvider].filter((f: any) => f.type === "select").map((field: any) => (
                       <div className="pc-form-group" key={field.name}><label>{field.label}{field.required && " *"}</label>
-                        <div className="pc-input-wrapper">
-                          <input type={field.type === "password" && !showPasswords[field.name] ? "password" : "text"} value={providerFields[field.name] || ""} onChange={(e) => handleFieldChange(field.name, e.target.value)} placeholder={`Enter ${field.label}`} className="pc-input" readOnly={field.readOnly && editingProvider && providerFields[field.name]} style={field.readOnly && editingProvider && providerFields[field.name] ? { background: '#f1f5f9', cursor: 'not-allowed' } : {}} />
-                          {field.type === "password" && <button type="button" className="pc-eye-btn" onClick={() => togglePasswordVisibility(field.name)}>{showPasswords[field.name] ? <FaEyeSlash /> : <FaEye />}</button>}
+                        <select value={providerFields[field.name] || ""} onChange={(e) => handleFieldChange(field.name, e.target.value)} className="pc-select">
+                          <option value="">-- Choose mode --</option>
+                          {(() => {
+                            const liveE = providers.some(p => p.name === selectedProvider && p.fields.mode === 'Live');
+                            const sandE = providers.some(p => p.name === selectedProvider && p.fields.mode === 'Sandbox');
+                            if (editingProvider) return (<><option value="Sandbox">Sandbox</option><option value="Live">Live</option></>);
+                            return (<>{!sandE && <option value="Sandbox">Sandbox</option>}{!liveE && <option value="Live">Live</option>}</>);
+                          })()}
+                        </select>
+                      </div>
+                    ))}
+                    <div className="pc-credentials-section"><h4><Lock size={14} /> Credentials</h4>
+                      {PROVIDER_FIELDS_MAP[selectedProvider].filter((f: any) => f.type !== "select").map((field: any) => (
+                        <div className="pc-form-group" key={field.name}><label>{field.label}{field.required && " *"}</label>
+                          <div className="pc-input-wrapper">
+                            <input type={field.type === "password" && !showPasswords[field.name] ? "password" : "text"} value={providerFields[field.name] || ""} onChange={(e) => handleFieldChange(field.name, e.target.value)} placeholder={`Enter ${field.label}`} className="pc-input" readOnly={field.readOnly && editingProvider && providerFields[field.name]} style={field.readOnly && editingProvider && providerFields[field.name] ? { background: '#f1f5f9', cursor: 'not-allowed' } : {}} />
+                            {field.type === "password" && <button type="button" className="pc-eye-btn" onClick={() => togglePasswordVisibility(field.name)}>{showPasswords[field.name] ? <FaEyeSlash /> : <FaEye />}</button>}
+                          </div>
                         </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+              <div className="pc-modal-footer">
+                <button className="pc-btn-cancel" onClick={() => { setPendingCloseAction(() => () => { setShowAddProviderModal(false); setEditingProvider(null); }); setShowUnsavedModal(true); }}>Cancel</button>
+                <button className="pc-btn-primary" onClick={saveProvider} disabled={saving} style={{ backgroundColor: SERVICE_COLORS[activeService] }}>{saving ? 'Saving...' : editingProvider ? 'Update Provider' : 'Add Provider'}</button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {/* Delete Environment Modal */}
+      {
+        showDeleteEnvModal && (
+          <div className="pc-modal-overlay" onClick={() => setShowDeleteEnvModal(false)}>
+            <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}><div className="pc-modal-header"><h3>Delete Environment</h3><button className="pc-modal-close" onClick={() => setShowDeleteEnvModal(false)}><X size={18} /></button></div><div className="pc-modal-body"><p>Are you sure you want to delete <strong>{deletingEnvName}</strong> environment?</p><div className="warning-text">This action cannot be undone.</div></div><div className="pc-modal-footer"><button className="pc-btn-cancel" onClick={() => setShowDeleteEnvModal(false)}>Cancel</button><button className="pc-btn-danger" onClick={handleDeleteEnvironment}>Delete</button></div></div>
+          </div>
+        )
+      }
+
+      {/* Cannot Delete Modal */}
+      {
+        deletingEnvName && (blockedDeleteCounts.sms > 0 || blockedDeleteCounts.email > 0 || blockedDeleteCounts.whatsapp > 0) && (
+          <div className="pc-modal-overlay" onClick={() => { setDeletingEnvName(""); setBlockedDeleteCounts({ sms: 0, email: 0, whatsapp: 0 }); }}>
+            <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}><div className="pc-modal-header"><h3><AlertTriangle size={18} /> Cannot Delete</h3><button className="pc-modal-close" onClick={() => { setDeletingEnvName(""); setBlockedDeleteCounts({ sms: 0, email: 0, whatsapp: 0 }); }}><X size={18} /></button></div><div className="pc-modal-body"><p>Environment <strong>"{deletingEnvName}"</strong> cannot be deleted because providers are still configured.</p><div className="provider-summary">{blockedDeleteCounts.sms > 0 && <div className="summary-item">SMS: {blockedDeleteCounts.sms}</div>}{blockedDeleteCounts.email > 0 && <div className="summary-item">Email: {blockedDeleteCounts.email}</div>}{blockedDeleteCounts.whatsapp > 0 && <div className="summary-item">WhatsApp: {blockedDeleteCounts.whatsapp}</div>}</div><p className="warning-text">Remove all providers before deleting this environment.</p></div><div className="pc-modal-footer"><button className="pc-btn-cancel" onClick={() => { setDeletingEnvName(""); setBlockedDeleteCounts({ sms: 0, email: 0, whatsapp: 0 }); }}>Close</button></div></div>
+          </div>
+        )
+      }
+
+      {/* Delete Provider Modal */}
+      {
+        showDeleteProviderModal && (
+          <div className="pc-modal-overlay" onClick={() => setShowDeleteProviderModal(null)}>
+            <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}><div className="pc-modal-header"><h3><Trash2 size={18} /> Delete Provider</h3><button className="pc-modal-close" onClick={() => setShowDeleteProviderModal(null)}><X size={20} /></button></div><div className="pc-modal-body"><p>Are you sure you want to delete <strong>{showDeleteProviderModal.name.replace(/_/g, ' ')}</strong>?</p><p className="pc-warning-text">This action cannot be undone.</p></div><div className="pc-modal-footer"><button className="pc-btn-cancel" onClick={() => setShowDeleteProviderModal(null)}>Cancel</button><button className="pc-btn-danger" onClick={deleteProvider}>Delete</button></div></div>
+          </div>
+        )
+      }
+
+      {/* Unsaved Changes Modal */}
+      {
+        showUnsavedModal && (
+          <div className="pc-modal-overlay" onClick={() => setShowUnsavedModal(false)}>
+            <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}>
+              <div className="pc-modal-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <AlertTriangle size={22} color="#f59e0b" />
+                  <h3 style={{ margin: 0 }}>Discard Changes?</h3>
+                </div>
+              </div>
+              <div className="pc-modal-body">
+                <p>You have unsaved changes. If you leave now, your entered credentials will be lost.</p>
+                <div className="warning-text"><AlertTriangle size={14} /> This action cannot be undone.</div>
+              </div>
+              <div className="pc-modal-footer">
+                <button className="pc-btn-cancel" onClick={() => setShowUnsavedModal(false)}>Continue Editing</button>
+                <button className="pc-btn-danger" onClick={() => { setShowUnsavedModal(false); if (pendingCloseAction) pendingCloseAction(); setPendingCloseAction(null); }}><Trash2 size={16} /> Discard Changes</button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {/* Token Generate Form Modal */}
+      {
+        showTokenFormModal && (
+          <div className="pc-modal-overlay slide-panel">
+            <div className="pc-modal token-form-modal" onClick={e => e.stopPropagation()}>
+              <div className="pc-modal-header"><h3>{isRegenerating ? 'Regenerate Token' : 'Generate Token'}</h3><button className="pc-modal-close" onClick={() => setShowTokenFormModal(false)}><X size={20} /></button></div>
+              <div className="pc-modal-body">
+                <div className="modal-token-info">
+                  <div><Globe size={14} /> Environment: <strong>{selectedEnv}</strong></div>
+                  <div>{tokenMode === 'Sandbox' ? <Wrench size={14} /> : <Rocket size={14} />} Mode: <strong>{tokenMode}</strong></div>
+                </div>
+                <div className="pc-form-group"><label>Token Name</label><input type="text" placeholder="e.g., Production API Key" value={tokenName} onChange={(e) => setTokenName(e.target.value)} className="pc-input" autoFocus /></div>
+                <div className="pc-form-group"><label>Expiration</label>
+                  <div className="expiration-options">
+                    {[{ value: "7", label: "7 Days" }, { value: "30", label: "30 Days" }, { value: "60", label: "60 Days" }, { value: "90", label: "90 Days" }, { value: "custom", label: "Custom" }, { value: "never", label: "Never" }].map(opt => (
+                      <div key={opt.value} className={`expiration-option ${tokenExpiration === opt.value ? 'active' : ''}`} onClick={() => setTokenExpiration(opt.value)}>
+                        <div className="expiration-label">{opt.label}</div>
+                        <div className="expiration-date">{opt.value === "never" ? "—" : opt.value === "custom" ? (tokenCustomDate ? formatDate(tokenCustomDate) : "Pick a date") : getExpiryDate(opt.value)}</div>
                       </div>
                     ))}
                   </div>
-                </>
-              )}
-            </div>
-            <div className="pc-modal-footer">
-              <button className="pc-btn-cancel" onClick={() => { setPendingCloseAction(() => () => { setShowAddProviderModal(false); setEditingProvider(null); }); setShowUnsavedModal(true); }}>Cancel</button>
-              <button className="pc-btn-primary" onClick={saveProvider} disabled={saving} style={{ backgroundColor: SERVICE_COLORS[activeService] }}>{saving ? 'Saving...' : editingProvider ? 'Update Provider' : 'Add Provider'}</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Environment Modal */}
-      {showDeleteEnvModal && (
-        <div className="pc-modal-overlay" onClick={() => setShowDeleteEnvModal(false)}>
-          <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}><div className="pc-modal-header"><h3>Delete Environment</h3><button className="pc-modal-close" onClick={() => setShowDeleteEnvModal(false)}><X size={18} /></button></div><div className="pc-modal-body"><p>Are you sure you want to delete <strong>{deletingEnvName}</strong> environment?</p><div className="warning-text">This action cannot be undone.</div></div><div className="pc-modal-footer"><button className="pc-btn-cancel" onClick={() => setShowDeleteEnvModal(false)}>Cancel</button><button className="pc-btn-danger" onClick={handleDeleteEnvironment}>Delete</button></div></div>
-        </div>
-      )}
-
-      {/* Cannot Delete Modal */}
-      {deletingEnvName && (blockedDeleteCounts.sms > 0 || blockedDeleteCounts.email > 0 || blockedDeleteCounts.whatsapp > 0) && (
-        <div className="pc-modal-overlay" onClick={() => { setDeletingEnvName(""); setBlockedDeleteCounts({ sms: 0, email: 0, whatsapp: 0 }); }}>
-          <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}><div className="pc-modal-header"><h3><AlertTriangle size={18} /> Cannot Delete</h3><button className="pc-modal-close" onClick={() => { setDeletingEnvName(""); setBlockedDeleteCounts({ sms: 0, email: 0, whatsapp: 0 }); }}><X size={18} /></button></div><div className="pc-modal-body"><p>Environment <strong>"{deletingEnvName}"</strong> cannot be deleted because providers are still configured.</p><div className="provider-summary">{blockedDeleteCounts.sms > 0 && <div className="summary-item">SMS: {blockedDeleteCounts.sms}</div>}{blockedDeleteCounts.email > 0 && <div className="summary-item">Email: {blockedDeleteCounts.email}</div>}{blockedDeleteCounts.whatsapp > 0 && <div className="summary-item">WhatsApp: {blockedDeleteCounts.whatsapp}</div>}</div><p className="warning-text">Remove all providers before deleting this environment.</p></div><div className="pc-modal-footer"><button className="pc-btn-cancel" onClick={() => { setDeletingEnvName(""); setBlockedDeleteCounts({ sms: 0, email: 0, whatsapp: 0 }); }}>Close</button></div></div>
-        </div>
-      )}
-
-      {/* Delete Provider Modal */}
-      {showDeleteProviderModal && (
-        <div className="pc-modal-overlay" onClick={() => setShowDeleteProviderModal(null)}>
-          <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}><div className="pc-modal-header"><h3><Trash2 size={18} /> Delete Provider</h3><button className="pc-modal-close" onClick={() => setShowDeleteProviderModal(null)}><X size={20} /></button></div><div className="pc-modal-body"><p>Are you sure you want to delete <strong>{showDeleteProviderModal.name.replace(/_/g, ' ')}</strong>?</p><p className="pc-warning-text">This action cannot be undone.</p></div><div className="pc-modal-footer"><button className="pc-btn-cancel" onClick={() => setShowDeleteProviderModal(null)}>Cancel</button><button className="pc-btn-danger" onClick={deleteProvider}>Delete</button></div></div>
-        </div>
-      )}
-
-      {/* Unsaved Changes Modal */}
-      {showUnsavedModal && (
-        <div className="pc-modal-overlay" onClick={() => setShowUnsavedModal(false)}>
-          <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}>
-            <div className="pc-modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <AlertTriangle size={22} color="#f59e0b" />
-                <h3 style={{ margin: 0 }}>Discard Changes?</h3>
-              </div>
-            </div>
-            <div className="pc-modal-body">
-              <p>You have unsaved changes. If you leave now, your entered credentials will be lost.</p>
-              <div className="warning-text"><AlertTriangle size={14} /> This action cannot be undone.</div>
-            </div>
-            <div className="pc-modal-footer">
-              <button className="pc-btn-cancel" onClick={() => setShowUnsavedModal(false)}>Continue Editing</button>
-              <button className="pc-btn-danger" onClick={() => { setShowUnsavedModal(false); if (pendingCloseAction) pendingCloseAction(); setPendingCloseAction(null); }}><Trash2 size={16} /> Discard Changes</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Token Generate Form Modal */}
-      {showTokenFormModal && (
-        <div className="pc-modal-overlay slide-panel">
-          <div className="pc-modal token-form-modal" onClick={e => e.stopPropagation()}>
-            <div className="pc-modal-header"><h3>{isRegenerating ? 'Regenerate Token' : 'Generate Token'}</h3><button className="pc-modal-close" onClick={() => setShowTokenFormModal(false)}><X size={20} /></button></div>
-            <div className="pc-modal-body">
-              <div className="modal-token-info">
-                <div><Globe size={14} /> Environment: <strong>{selectedEnv}</strong></div>
-                <div>{tokenMode === 'Sandbox' ? <Wrench size={14} /> : <Rocket size={14} />} Mode: <strong>{tokenMode}</strong></div>
-              </div>
-              <div className="pc-form-group"><label>Token Name</label><input type="text" placeholder="e.g., Production API Key" value={tokenName} onChange={(e) => setTokenName(e.target.value)} className="pc-input" autoFocus /></div>
-              <div className="pc-form-group"><label>Expiration</label>
-                <div className="expiration-options">
-                  {[{ value: "7", label: "7 Days" }, { value: "30", label: "30 Days" }, { value: "60", label: "60 Days" }, { value: "90", label: "90 Days" }, { value: "custom", label: "Custom" }, { value: "never", label: "Never" }].map(opt => (
-                    <div key={opt.value} className={`expiration-option ${tokenExpiration === opt.value ? 'active' : ''}`} onClick={() => setTokenExpiration(opt.value)}>
-                      <div className="expiration-label">{opt.label}</div>
-                      <div className="expiration-date">{opt.value === "never" ? "—" : opt.value === "custom" ? (tokenCustomDate ? formatDate(tokenCustomDate) : "Pick a date") : getExpiryDate(opt.value)}</div>
+                </div>
+                {tokenExpiration === "custom" && (
+                  <div className="pc-form-group"><label>Select Expiry Date</label>
+                    <div className="token-date-wrapper" onClick={() => { const input = document.querySelector('.token-date-input') as HTMLInputElement; if (input) input.showPicker(); }}>
+                      <input type="date" value={tokenCustomDate} onChange={(e) => { setTokenCustomDate(e.target.value); const now = new Date(); const expiry = new Date(e.target.value); const diffDays = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)); setTokenCustomDays(String(diffDays > 0 ? diffDays : 1)); }} className="pc-input token-date-input" min={new Date().toISOString().split('T')[0]} />
+                      <Calendar className="token-date-icon" size={16} />
                     </div>
-                  ))}
-                </div>
-              </div>
-              {tokenExpiration === "custom" && (
-                <div className="pc-form-group"><label>Select Expiry Date</label>
-                  <div className="token-date-wrapper" onClick={() => { const input = document.querySelector('.token-date-input') as HTMLInputElement; if (input) input.showPicker(); }}>
-                    <input type="date" value={tokenCustomDate} onChange={(e) => { setTokenCustomDate(e.target.value); const now = new Date(); const expiry = new Date(e.target.value); const diffDays = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)); setTokenCustomDays(String(diffDays > 0 ? diffDays : 1)); }} className="pc-input token-date-input" min={new Date().toISOString().split('T')[0]} />
-                    <Calendar className="token-date-icon" size={16} />
                   </div>
-                </div>
-              )}
-              <div className="token-warning"><AlertTriangle size={16} /><span>The token will only be shown once after creation.</span></div>
-            </div>
-            <div className="pc-modal-footer">
-              <button className="pc-btn-cancel" onClick={() => setShowTokenFormModal(false)}>Cancel</button>
-              <button className="pc-btn-primary" onClick={handleTokenGenerate} disabled={!tokenName.trim() || !tokenMode}>{isRegenerating ? 'Regenerate Token' : 'Generate Token'}</button>
+                )}
+                <div className="token-warning"><AlertTriangle size={16} /><span>The token will only be shown once after creation.</span></div>
+              </div>
+              <div className="pc-modal-footer">
+                <button className="pc-btn-cancel" onClick={() => setShowTokenFormModal(false)}>Cancel</button>
+                <button className="pc-btn-primary" onClick={handleTokenGenerate} disabled={!tokenName.trim() || !tokenMode}>{isRegenerating ? 'Regenerate Token' : 'Generate Token'}</button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Token Reveal Modal */}
-      {generatedToken && (
-        <div className="pc-modal-overlay">
-          <div className="pc-modal token-reveal-modal" onClick={e => e.stopPropagation()}>
-            <div className="reveal-success"><Check size={20} /> Token Generated!</div>
-            <div className="reveal-warning-box"><AlertTriangle size={18} /><div><strong>SAVE THIS TOKEN NOW</strong><p>This token will NOT be shown again.</p></div></div>
-            <div className="reveal-token-box">
-              <div className="reveal-token-row">
-                <div className="reveal-token-value">{generatedToken.token}</div>
-                <button className={`btn-copy-inline ${copied ? 'copied' : ''}`} onClick={() => { navigator.clipboard.writeText(generatedToken.token); setCopied(true); setTimeout(() => setCopied(false), 3000); }}>
-                  {copied ? <><Check size={14} />Copied!</> : <><Copy size={14} />Copy</>}
+      {
+        generatedToken && (
+          <div className="pc-modal-overlay">
+            <div className="pc-modal token-reveal-modal" onClick={e => e.stopPropagation()}>
+              <div className="reveal-success"><Check size={20} /> Token Generated!</div>
+              <div className="reveal-warning-box"><AlertTriangle size={18} /><div><strong>SAVE THIS TOKEN NOW</strong><p>This token will NOT be shown again.</p></div></div>
+              <div className="reveal-token-box">
+                <div className="reveal-token-row">
+                  <div className="reveal-token-value">{generatedToken.token}</div>
+                  <button className={`btn-copy-inline ${copied ? 'copied' : ''}`} onClick={() => { navigator.clipboard.writeText(generatedToken.token); setCopied(true); setTimeout(() => setCopied(false), 3000); }}>
+                    {copied ? <><Check size={14} />Copied!</> : <><Copy size={14} />Copy</>}
+                  </button>
+                </div>
+                <div className="reveal-token-meta">
+                  <div><Globe size={14} />{generatedToken.environmentName}</div>
+                  <div><Calendar size={14} />{generatedToken.name} · {formatDate(generatedToken.created)}</div>
+                  <div><Clock size={14} />Expires: {formatDate(generatedToken.expires)}</div>
+                </div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <button className="pc-btn-primary" onClick={() => setShowTokenLeaveModal(true)}>
+                  <Check size={16} /> I've Saved the Token, Go Back
                 </button>
               </div>
-              <div className="reveal-token-meta">
-                <div><Globe size={14} />{generatedToken.environmentName}</div>
-                <div><Calendar size={14} />{generatedToken.name} · {formatDate(generatedToken.created)}</div>
-                <div><Clock size={14} />Expires: {formatDate(generatedToken.expires)}</div>
-              </div>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <button className="pc-btn-primary" onClick={() => setShowTokenLeaveModal(true)}>
-                <Check size={16} /> I've Saved the Token, Go Back
-              </button>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Regenerate Token Confirm Modal */}
-      {showRegenModal && (
-        <div className="pc-modal-overlay" onClick={() => setShowRegenModal(false)}>
-          <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}><div className="pc-modal-header"><RefreshCw size={22} color="#6366f1" /><h3>Regenerate Token?</h3></div><div className="pc-modal-body"><div className="modal-token-info"><div><Globe size={14} /> Environment: <strong>{selectedEnv}</strong></div>{currentToken && <><div><Key size={14} /> Token: <strong>{currentToken.name}</strong></div><div><Calendar size={14} /> Created: {formatDate(currentToken.created)}</div></>}</div><p className="warning-text">Regenerating will revoke the old token.</p></div><div className="pc-modal-footer"><button className="pc-btn-cancel" onClick={() => setShowRegenModal(false)}>Cancel</button><button className="pc-btn-primary" onClick={() => { setShowRegenModal(false); setTokenMode(currentToken?.mode || ''); setIsRegenerating(true); setShowTokenFormModal(true); }}>Continue</button></div></div>
-        </div>
-      )}
+      {
+        showRegenModal && (
+          <div className="pc-modal-overlay" onClick={() => setShowRegenModal(false)}>
+            <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}><div className="pc-modal-header"><RefreshCw size={22} color="#6366f1" /><h3>Regenerate Token?</h3></div><div className="pc-modal-body"><div className="modal-token-info"><div><Globe size={14} /> Environment: <strong>{selectedEnv}</strong></div>{currentToken && <><div><Key size={14} /> Token: <strong>{currentToken.name}</strong></div><div><Calendar size={14} /> Created: {formatDate(currentToken.created)}</div></>}</div><p className="warning-text">Regenerating will revoke the old token.</p></div><div className="pc-modal-footer"><button className="pc-btn-cancel" onClick={() => setShowRegenModal(false)}>Cancel</button><button className="pc-btn-primary" onClick={() => { setShowRegenModal(false); setTokenMode(currentToken?.mode || ''); setIsRegenerating(true); setShowTokenFormModal(true); }}>Continue</button></div></div>
+          </div>
+        )
+      }
 
       {/* Delete Token Confirm Modal */}
-      {showTokenDeleteModal && (
-        <div className="pc-modal-overlay" onClick={() => setShowTokenDeleteModal(false)}>
-          <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}><div className="pc-modal-header"><Trash2 size={22} color="#ef4444" /><h3>Delete Token?</h3></div><div className="pc-modal-body"><div className="modal-token-info"><div><Globe size={14} /> Environment: <strong>{selectedEnv}</strong></div>{currentToken && <><div><Key size={14} /> Token: <strong>{currentToken.name}</strong></div><div><Calendar size={14} /> Created: {formatDate(currentToken.created)}</div></>}</div><p className="warning-text">This will permanently revoke API access.</p></div><div className="pc-modal-footer"><button className="pc-btn-cancel" onClick={() => setShowTokenDeleteModal(false)}>Cancel</button><button className="pc-btn-primary" onClick={handleTokenDelete} style={{ background: '#ef4444' }}>Delete Token</button></div></div>
-        </div>
-      )}
+      {
+        showTokenDeleteModal && (
+          <div className="pc-modal-overlay" onClick={() => setShowTokenDeleteModal(false)}>
+            <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}><div className="pc-modal-header"><Trash2 size={22} color="#ef4444" /><h3>Delete Token?</h3></div><div className="pc-modal-body"><div className="modal-token-info"><div><Globe size={14} /> Environment: <strong>{selectedEnv}</strong></div>{currentToken && <><div><Key size={14} /> Token: <strong>{currentToken.name}</strong></div><div><Calendar size={14} /> Created: {formatDate(currentToken.created)}</div></>}</div><p className="warning-text">This will permanently revoke API access.</p></div><div className="pc-modal-footer"><button className="pc-btn-cancel" onClick={() => setShowTokenDeleteModal(false)}>Cancel</button><button className="pc-btn-primary" onClick={handleTokenDelete} style={{ background: '#ef4444' }}>Delete Token</button></div></div>
+          </div>
+        )
+      }
 
       {/* User Assignment Panel */}
-      {showUserPanel && (
-        <div className="user-panel-overlay" onClick={() => setShowUserPanel(false)}>
-          <div className="user-panel" onClick={e => e.stopPropagation()}>
-            <div className="user-panel-header"><div className="user-panel-header-left"><User size={20} /><h3>Manage Users - {selectedEnv}</h3></div><button className="user-panel-close" onClick={() => setShowUserPanel(false)}><X size={20} /></button></div>
-            <div className="user-panel-tabs">
-              <button className={`user-panel-tab ${userActiveTab === 'assign' ? 'active' : ''}`} onClick={() => { setUserActiveTab('assign'); setSelectedUsers(new Set()); setSelectAll(false); }}><UserPlus size={14} /> Assign User</button>
-              <button className={`user-panel-tab ${userActiveTab === 'unassign' ? 'active' : ''}`} onClick={() => { setUserActiveTab('unassign'); setSelectedUsers(new Set()); setSelectAll(false); }}><UserMinus size={14} /> Unassign User</button>
-            </div>
-            <div className="user-panel-search-row">
-              <div className="user-panel-search"><Search size={16} className="user-panel-search-icon" /><input type="text" placeholder="Search users..." value={userSearchTerm} onChange={(e) => setUserSearchTerm(e.target.value)} className="user-panel-search-input" />{userSearchTerm && <button className="user-panel-search-clear" onClick={() => setUserSearchTerm("")}><X size={14} /></button>}</div>
-              <select className="user-panel-filter" value={userFilter} onChange={(e) => setUserFilter(e.target.value)}><option value="all">All Status</option><option value="active">Active</option><option value="inactive">Inactive</option></select>
-            </div>
-            <div className="user-panel-table-wrapper">
-              <table className="user-panel-table"><thead><tr><th className="col-checkbox"><input type="checkbox" checked={selectAll} onChange={handleSelectAll} className="user-checkbox" /></th><th className="col-user">User</th><th className="col-status">Status</th></tr></thead>
-                <tbody>
-                  {filteredUserList.length === 0 ? <tr><td colSpan={3} className="user-empty-state">{userSearchTerm.trim() ? 'No users match your search' : userActiveTab === 'assign' ? 'No users available to assign' : 'No users assigned yet'}</td></tr> :
-                    filteredUserList.map(user => (
-                      <tr key={user.id} className={selectedUsers.has(user.id) ? 'selected' : ''}>
-                        <td className="col-checkbox"><input type="checkbox" checked={selectedUsers.has(user.id)} onChange={() => handleUserSelect(user.id)} className="user-checkbox" /></td>
-                        <td className="col-user"><div className="user-cell"><span className="user-name">{user.name}</span><span className="user-email">{user.email}</span></div></td>
-                        <td className="col-status"><span className={`user-status-badge ${user.status}`}>{user.status === 'active' ? <Check size={12} /> : <AlertCircle size={12} />}{user.status}</span></td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="user-panel-footer">
-              <button className="user-panel-action-btn" onClick={userActiveTab === 'assign' ? handleAssignUsers : handleUnassignUsers} disabled={selectedUsers.size === 0} style={{ background: userActiveTab === 'assign' ? '#6366f1' : '#ef4444' }}>
-                {userActiveTab === 'assign' ? <><UserPlus size={16} /> Unassign Selected ({selectedUsers.size})</> : <><UserMinus size={16} /> Assign Selected ({selectedUsers.size})</>}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Token Leave Confirmation Modal */}
-      {showTokenLeaveModal && (
-        <div className="pc-modal-overlay" onClick={() => setShowTokenLeaveModal(false)}>
-          <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}>
-            <div className="pc-modal-header">
-              <AlertTriangle size={22} color="#f59e0b" />
-              <h3>Leave Token Page?</h3>
-            </div>
-            <div className="pc-modal-body">
-              <p>Have you copied and saved this token?</p>
-              <div className="warning-text">
-                <AlertTriangle size={14} /> This token will not be shown again after leaving this page.
+      {
+        showUserPanel && (
+          <div className="user-panel-overlay" onClick={() => setShowUserPanel(false)}>
+            <div className="user-panel" onClick={e => e.stopPropagation()}>
+              <div className="user-panel-header"><div className="user-panel-header-left"><User size={20} /><h3>Manage Users - {selectedEnv}</h3></div><button className="user-panel-close" onClick={() => setShowUserPanel(false)}><X size={20} /></button></div>
+              <div className="user-panel-tabs">
+                <button className={`user-panel-tab ${userActiveTab === 'assign' ? 'active' : ''}`} onClick={() => { setUserActiveTab('assign'); setSelectedUsers(new Set()); setSelectAll(false); }}><UserPlus size={14} /> Assign User</button>
+                <button className={`user-panel-tab ${userActiveTab === 'unassign' ? 'active' : ''}`} onClick={() => { setUserActiveTab('unassign'); setSelectedUsers(new Set()); setSelectAll(false); }}><UserMinus size={14} /> Unassign User</button>
+              </div>
+              <div className="user-panel-search-row">
+                <div className="user-panel-search"><Search size={16} className="user-panel-search-icon" /><input type="text" placeholder="Search users..." value={userSearchTerm} onChange={(e) => setUserSearchTerm(e.target.value)} className="user-panel-search-input" />{userSearchTerm && <button className="user-panel-search-clear" onClick={() => setUserSearchTerm("")}><X size={14} /></button>}</div>
+                <select className="user-panel-filter" value={userFilter} onChange={(e) => setUserFilter(e.target.value)}><option value="all">All Status</option><option value="active">Active</option><option value="inactive">Inactive</option></select>
+              </div>
+              <div className="user-panel-table-wrapper">
+                <table className="user-panel-table"><thead><tr><th className="col-checkbox"><input type="checkbox" checked={selectAll} onChange={handleSelectAll} className="user-checkbox" /></th><th className="col-user">User</th><th className="col-status">Status</th></tr></thead>
+                  <tbody>
+                    {filteredUserList.length === 0 ? <tr><td colSpan={3} className="user-empty-state">{userSearchTerm.trim() ? 'No users match your search' : userActiveTab === 'assign' ? 'No users available to assign' : 'No users assigned yet'}</td></tr> :
+                      filteredUserList.map(user => (
+                        <tr key={user.id} className={selectedUsers.has(user.id) ? 'selected' : ''}>
+                          <td className="col-checkbox"><input type="checkbox" checked={selectedUsers.has(user.id)} onChange={() => handleUserSelect(user.id)} className="user-checkbox" /></td>
+                          <td className="col-user"><div className="user-cell"><span className="user-name">{user.name}</span><span className="user-email">{user.email}</span></div></td>
+                          <td className="col-status"><span className={`user-status-badge ${user.status}`}>{user.status === 'active' ? <Check size={12} /> : <AlertCircle size={12} />}{user.status}</span></td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="user-panel-footer">
+                <button className="user-panel-action-btn" onClick={userActiveTab === 'assign' ? handleAssignUsers : handleUnassignUsers} disabled={selectedUsers.size === 0} style={{ background: userActiveTab === 'assign' ? '#6366f1' : '#ef4444' }}>
+                  {userActiveTab === 'assign' ? <><UserPlus size={16} /> Unassign Selected ({selectedUsers.size})</> : <><UserMinus size={16} /> Assign Selected ({selectedUsers.size})</>}
+                </button>
               </div>
             </div>
-            <div className="pc-modal-footer">
-              <button className="pc-btn-cancel" onClick={() => setShowTokenLeaveModal(false)}>Stay Here</button>
-              <button className="pc-btn-danger" onClick={() => {
-                setShowTokenLeaveModal(false);
-                setGeneratedToken(null);
-                setCopied(false);
-              }}>
-                <Check size={16} /> Yes, I've Saved It
-              </button>
+          </div>
+        )
+      }
+
+      {/* Token Leave Confirmation Modal */}
+      {
+        showTokenLeaveModal && (
+          <div className="pc-modal-overlay" onClick={() => setShowTokenLeaveModal(false)}>
+            <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}>
+              <div className="pc-modal-header">
+                <AlertTriangle size={22} color="#f59e0b" />
+                <h3>Leave Token Page?</h3>
+              </div>
+              <div className="pc-modal-body">
+                <p>Have you copied and saved this token?</p>
+                <div className="warning-text">
+                  <AlertTriangle size={14} /> This token will not be shown again after leaving this page.
+                </div>
+              </div>
+              <div className="pc-modal-footer">
+                <button className="pc-btn-cancel" onClick={() => setShowTokenLeaveModal(false)}>Stay Here</button>
+                <button className="pc-btn-danger" onClick={() => {
+                  setShowTokenLeaveModal(false);
+                  setGeneratedToken(null);
+                  setCopied(false);
+                }}>
+                  <Check size={16} /> Yes, I've Saved It
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Toast */}
       {toastMessage && <div className="pc-toast"><Check size={16} />{toastMessage}</div>}
-    </div>
+    </div >
   );
 }
