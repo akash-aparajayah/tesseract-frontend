@@ -1,7 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/ProjectDashboard.css";
-import { Eye, Pencil, Trash2, Plus, Settings, Search, FileText } from 'lucide-react';
+import {
+  Eye, Pencil, Trash2, Plus, Settings, Search, FileText,
+  Users, CheckCircle, XCircle, AlertCircle, X, Lock
+} from 'lucide-react';
+import noDataImg from "../assets/illustration/No data.gif";
+import errorImg from "../assets/illustration/error.svg";
 
 interface Project {
   id: number;
@@ -33,7 +38,6 @@ const mockProjects: Project[] = [
 export default function ProjectDashboard() {
   const navigate = useNavigate();
 
-  // Initialize projects from localStorage or mock data
   const [projects, setProjects] = useState<Project[]>(() => {
     const savedProjects = localStorage.getItem('allProjects');
     if (savedProjects) {
@@ -44,7 +48,6 @@ export default function ProjectDashboard() {
         return mockProjects;
       }
     }
-    // Save initial mock data to localStorage
     localStorage.setItem('allProjects', JSON.stringify(mockProjects));
     return mockProjects;
   });
@@ -57,18 +60,17 @@ export default function ProjectDashboard() {
   const [showEditModal, setShowEditModal] = useState<boolean>(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null);
   const [editForm, setEditForm] = useState({ name: "", description: "", status: "", services: [] as string[] });
+  const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // Save projects to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('allProjects', JSON.stringify(projects));
   }, [projects]);
 
-  // Listen for project updates from other pages
   useEffect(() => {
     const handleProjectUpdate = (event: Event) => {
       const customEvent = event as CustomEvent;
       const updatedProject = customEvent.detail;
-
       setProjects(prevProjects =>
         prevProjects.map(p =>
           p.id === updatedProject.id
@@ -86,16 +88,35 @@ export default function ProjectDashboard() {
         )
       );
     };
-
     window.addEventListener('projectUpdated', handleProjectUpdate);
     return () => window.removeEventListener('projectUpdated', handleProjectUpdate);
   }, []);
 
-  // Filter & Pagination
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (openDropdownId !== null) {
+        // Check if click is outside the actionMenu
+        const target = e.target as Element;
+        if (!target.closest('.actionMenu')) {
+          setOpenDropdownId(null);
+        }
+      }
+    };
+
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [openDropdownId]);
+
+  const toggleDropdown = (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOpenDropdownId((prev) => (prev === id ? null : id));
+  };
+
   const filteredProjects = projects.filter(p =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (p.description && p.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
   const totalPages = Math.ceil(filteredProjects.length / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
   const paginatedProjects = filteredProjects.slice(startIndex, startIndex + rowsPerPage);
@@ -118,8 +139,6 @@ export default function ProjectDashboard() {
             status: p.status === "active" ? "inactive" as const : "active" as const,
             updatedAt: new Date().toISOString().split('T')[0],
           };
-
-          // Update currentProject if it's the same
           const currentProject = localStorage.getItem('currentProject');
           if (currentProject) {
             try {
@@ -129,11 +148,7 @@ export default function ProjectDashboard() {
               }
             } catch { }
           }
-
-          window.dispatchEvent(new CustomEvent('projectUpdated', {
-            detail: updatedProject
-          }));
-
+          window.dispatchEvent(new CustomEvent('projectUpdated', { detail: updatedProject }));
           return updatedProject;
         }
         return p;
@@ -143,10 +158,7 @@ export default function ProjectDashboard() {
   };
 
   const handleDelete = (id: number) => {
-    setProjects(prev => {
-      const updated = prev.filter(p => p.id !== id);
-      return updated;
-    });
+    setProjects(prev => prev.filter(p => p.id !== id));
     setShowDeleteConfirm(null);
   };
 
@@ -177,17 +189,10 @@ export default function ProjectDashboard() {
         status: editForm.status as "active" | "inactive",
         services: editForm.services,
       };
-
-      setProjects(prev => prev.map(p =>
-        p.id === selectedProject.id ? updatedProject : p
-      ));
+      setProjects(prev => prev.map(p => p.id === selectedProject.id ? updatedProject : p));
       setSelectedProject(updatedProject);
       setShowEditModal(false);
-
-      window.dispatchEvent(new CustomEvent('projectUpdated', {
-        detail: updatedProject
-      }));
-
+      window.dispatchEvent(new CustomEvent('projectUpdated', { detail: updatedProject }));
       localStorage.setItem('currentProject', JSON.stringify(updatedProject));
     }
   };
@@ -197,164 +202,226 @@ export default function ProjectDashboard() {
 
   return (
     <div className="project-dashboard">
-      <div className="dashboard-header">
-        <div>
-          <h1>Project Management</h1>
-          {/* <p className="subtitle">Manage and monitor all your projects</p> */}
+      {fetchError && (
+        <div className="errorBanner">
+          <AlertCircle size={16} />
+          <span>{fetchError}</span>
+          <button onClick={() => setFetchError(null)}>
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+
+
+      {/* Abstract Cards */}
+      <div className="statsGrid">
+        <div className={`statCard cardTotal`}>
+          <div className="leftArt"></div>
+          <div className="leftDots"></div>
+          <div className="leftLine"></div>
+          <div className="lineOverlay"></div>
+          <div className="statLeft">
+            <div className="statLabel">Total Projects</div>
+            <div className="statNumber">{projects.length}</div>
+          </div>
+          <div className="centerGem"></div>
+          <div className="statIcon">
+            <Users size={26} />
+          </div>
         </div>
 
+        <div className={`statCard cardActive`}>
+          <div className="leftArt"></div>
+          <div className="leftDots"></div>
+          <div className="leftLine"></div>
+          <div className="lineOverlay"></div>
+          <div className="statLeft">
+            <div className="statLabel">Active</div>
+            <div className="statNumber">{activeCount}</div>
+          </div>
+          <div className="centerGem"></div>
+          <div className="statIcon">
+            <CheckCircle size={26} />
+          </div>
+        </div>
+
+        <div className={`statCard cardInactive`}>
+          <div className="leftArt"></div>
+          <div className="leftDots"></div>
+          <div className="leftLine"></div>
+          <div className="lineOverlay"></div>
+          <div className="statLeft">
+            <div className="statLabel">Inactive</div>
+            <div className="statNumber">{inactiveCount}</div>
+          </div>
+          <div className="centerGem"></div>
+          <div className="statIcon">
+            <XCircle size={26} />
+          </div>
+        </div>
       </div>
 
-      {/* Stat Cards */}
-      <div className="stats-container">
-        <div className="stat-card total">
-          <div className="stat-icon total-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-              <line x1="3" y1="9" x2="21" y2="9" />
-              <line x1="9" y1="21" x2="9" y2="9" />
-            </svg>
-          </div>
-          <div className="stat-info">
-            <div className="stat-number">{projects.length}</div>
-            <div className="stat-label">Total Projects</div>
-          </div>
-        </div>
-        <div className="stat-card active">
-          <div className="stat-icon active-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-              <polyline points="22 4 12 14.01 9 11.01" />
-            </svg>
-          </div>
-          <div className="stat-info">
-            <div className="stat-number">{activeCount}</div>
-            <div className="stat-label">Active Projects</div>
-          </div>
-        </div>
-        <div className="stat-card inactive">
-          <div className="stat-icon inactive-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="8" y1="12" x2="16" y2="12" />
-            </svg>
-          </div>
-          <div className="stat-info">
-            <div className="stat-number">{inactiveCount}</div>
-            <div className="stat-label">Inactive Projects</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="search-create-row">
-        <div className="search-bar">
-          <Search size={16} className="search-icon" />
+      {/* Toolbar */}
+      <div className="toolbar">
+        <div className="searchBox">
+          <Search size={16} className="searchIcon" />
           <input
             type="text"
-            placeholder="Search by project name or description..."
+            placeholder="Search projects..."
             value={searchTerm}
             onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+            className="searchInput"
           />
         </div>
-        <button className="create-project-btn" onClick={() => navigate("/dashboard/project-create")}>
-          <Plus size={16} /> Create Project
-        </button>
+        <div className="actionsGroup">
+          <button className="addBtn" onClick={() => navigate("/dashboard/project-create")}>
+            <Plus size={16} /> Create Project
+          </button>
+        </div>
       </div>
 
-      <div className="table-wrapper">
-        <table className="projects-table">
+      {/* Table */}
+      <div className="tableWrapper">
+        <table className="table">
           <thead>
             <tr>
-              <th>S.No</th>
-              <th>Project Name</th>
-              <th>Status</th>
-              <th>Created</th>
-              <th>Logs</th>
-              <th>Actions</th>
+              <th className="colNo">S.No</th>
+              <th className="colProject">Project Name</th>
+              <th className="colStatus">Status</th>
+              <th className="colCreated">Created</th>
+              <th className="colLogs">Logs</th>
+              <th className="colActions">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {paginatedProjects.length === 0 ? (
-              <tr><td colSpan={6} className="empty-row">No projects found.</td></tr>
-            ) : (
-              paginatedProjects.map((project, idx) => (
-                <tr key={project.id} className={project.status === "inactive" ? "inactive-row" : ""}>
-                  <td>{(currentPage - 1) * rowsPerPage + idx + 1}</td>
-                  <td className="project-name">{project.name}</td>
-                  <td>
-                    <label className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={project.status === "active"}
-                        onChange={() => toggleStatus(project.id)}
-                      />
-                      <span className="slider round"></span>
-                    </label>
-                    <span className={`status-text ${project.status}`}>
-                      {project.status === "active" ? "Active" : "Inactive"}
-                    </span>
-                  </td>
-                  <td>{project.created}</td>
-                  <td>
-                    <button className="logs-btn" onClick={() => navigate(`/dashboard/project/${project.id}/logs`)}>
-                      <FileText size={14} /> View Logs
-                    </button>
-                  </td>
-                  <td>
-                    <div className="actions-dropdown">
-                      <button className="three-dots">
-                        <Settings size={18} />
-                      </button>
-                      <div className="dropdown-menu">
-                        <div className="dropdown-item" onClick={() => handleView(project)}>
-                          <Eye size={14} /> View
+            {paginatedProjects.length > 0 ? (
+              paginatedProjects.map((project, index) => {
+                const serialNumber = (currentPage - 1) * rowsPerPage + index + 1;
+                return (
+                  <tr key={project.id}>
+                    <td className="colNo">{serialNumber}</td>
+                    <td className="colProject">
+                      <div className="projectCell">
+                        <div className="projectAvatar">
+                          {project.name.charAt(0).toUpperCase()}
                         </div>
-                        <div className="dropdown-item" onClick={() => navigate(`/dashboard/project-edit-basic/${project.id}`, { state: { project } })}>
-                          <Pencil size={14} /> Edit
-                        </div>
-                        {/* <div className="dropdown-item" onClick={() => {
-                          localStorage.setItem('currentProject', JSON.stringify(project));
-
-
-                          navigate(
-                            "/dashboard/provider-config",
-                            {
-                              state: {
-                                project
-                              }
-                            }
-                          );
-                        }}>
-                          <Globe size={14} /> Environments
-                        </div> */}
-                        <div className="dropdown-item delete" onClick={() => setShowDeleteConfirm(project.id)}>
-                          <Trash2 size={14} /> Delete
-                        </div>
+                        <span className="projectName">{project.name}</span>
                       </div>
-                    </div>
-                  </td>
-                </tr>
-              ))
+                    </td>
+                    <td className="colStatus">
+                      <div
+                        className={`toggleCompact ${project.status === "active" ? "active" : ""}`}
+                        onClick={() => toggleStatus(project.id)}
+                      >
+                        <div className="knob">
+                          <svg viewBox="0 0 24 24" stroke="currentColor">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
+                          </svg>
+                        </div>
+                        <span className={`statusText textInactive`}>Inactive</span>
+                        <span className={`statusText textActive`}>Active</span>
+                      </div>
+                    </td>
+                    <td className="colCreated">{project.created}</td>
+                    <td className="colLogs">
+                      <button className="logsBtn" onClick={() => navigate(`/dashboard/project/${project.id}/logs`)}>
+                        <FileText size={14} /> View Logs
+                      </button>
+                    </td>
+                    <td className="colActions">
+                      <div className="actionMenu">
+                        <button
+                          className="dotsBtn"
+                          onClick={(e) => toggleDropdown(project.id, e)}
+                        >
+                          <Settings size={16} />
+                        </button>
+                      </div>
+
+                      {openDropdownId === project.id && (
+                        <div className="dropdown show">
+                          <button onClick={() => handleView(project)}>
+                            <Eye size={14} /> View
+                          </button>
+
+                          <button
+                            onClick={() =>
+                              navigate(`/dashboard/project-edit-basic/${project.id}`, {
+                                state: { project }
+                              })
+                            }
+                          >
+                            <Pencil size={14} /> Edit
+                          </button>
+
+                          <button
+                            className="deleteBtn"
+                            onClick={() => setShowDeleteConfirm(project.id)}
+                          >
+                            <Trash2 size={14} /> Delete
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
+              <tr>
+                <td colSpan={6} className="noData">
+                  <img
+                    src={fetchError ? errorImg : noDataImg}
+                    alt="No data"
+                    className="noDataImg"
+                  />
+                  <p>
+                    {fetchError
+                      ? "Unable to load projects. Please try again."
+                      : "No projects found"}
+                  </p>
+                  {!fetchError && (
+                    <button onClick={() => navigate("/dashboard/project-create")} className="retryBtn">
+                      Create Project
+                    </button>
+                  )}
+                </td>
+              </tr>
             )}
           </tbody>
         </table>
       </div>
 
-      {filteredProjects.length > 0 && (
-        <div className="pagination-container">
-          <div className="rows-selector">
-            <span>Rows per page:</span>
-            <select value={rowsPerPage} onChange={handleRowsChange}>
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-              <option value={15}>15</option>
-            </select>
-          </div>
-          <div className="pagination">
-            <button onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1}>← Previous</button>
-            <span className="page-info">Page {currentPage} of {totalPages}</span>
-            <button onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages}>Next →</button>
-          </div>
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="pagination">
+          <button
+            className="pageBtn"
+            disabled={currentPage === 1}
+            onClick={() => goToPage(currentPage - 1)}
+          >
+            ← Prev
+          </button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+            <button
+              key={page}
+              className={`pageBtn ${currentPage === page ? "activePage" : ""}`}
+              onClick={() => goToPage(page)}
+            >
+              {page}
+            </button>
+          ))}
+          <button
+            className="pageBtn"
+            disabled={currentPage === totalPages}
+            onClick={() => goToPage(currentPage + 1)}
+          >
+            Next →
+          </button>
+          <span className="pageInfo">
+            Page {currentPage} of {totalPages}
+          </span>
         </div>
       )}
 

@@ -246,7 +246,7 @@ export default function ProjectCreateForm() {
   return (
     <>
       <div className="create-project-container">
-        <h1 className="page-main-title">Create Project</h1>
+
         <div className="full-page-bg">
 
           <div className="form-card">

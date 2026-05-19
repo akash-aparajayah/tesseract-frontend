@@ -1,27 +1,41 @@
-import React, { useEffect } from "react";
-import "../../styles/Toast.css"; // import the CSS
+import { useEffect, useState, useRef } from "react";
+import { Check, X } from "lucide-react";
 
 interface ToastProps {
   message: string;
   type: "success" | "error";
   onClose: () => void;
-  duration?: number; // auto-close after ms
 }
 
-const Toast: React.FC<ToastProps> = ({ message, type, onClose, duration = 1200 }) => {
+export default function Toast({ message, type, onClose }: ToastProps) {
+  const [isHovered, setIsHovered] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
-    const timer = setTimeout(() => {
-      onClose();
-    }, duration);
-    return () => clearTimeout(timer);
-  }, [duration, onClose]);
+    if (!isHovered) {
+      timerRef.current = setTimeout(() => {
+        onClose();
+      }, 2000);
+    }
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [isHovered, onClose]);
+
+  const Icon = type === "success" ? Check : X;
 
   return (
-    <div className={`toast ${type}`}>
-      <span>{message}</span>
-      <button onClick={onClose}>×</button>
+    <div
+      className={`toast ${type}`}
+      onMouseEnter={() => {
+        setIsHovered(true);
+        if (timerRef.current) clearTimeout(timerRef.current);
+      }}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <Icon size={16} style={{ flexShrink: 0 }} />
+      <span style={{ flex: 1, padding: '0 12px' }}>{message}</span>
+
     </div>
   );
-};
-
-export default Toast;
+}

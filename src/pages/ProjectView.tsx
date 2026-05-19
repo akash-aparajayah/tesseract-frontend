@@ -6,8 +6,12 @@ import {
   Pencil, FolderOpen, Plus, MessageSquare, Mail, MessageCircle, Plug, Check,
   Save, X, ChevronDown, Server, Copy, Trash2, Globe, Rocket, Wrench,
   Search, Lock, AlertTriangle, Home, Monitor, Key,
-  User, UserMinus, UserPlus, AlertCircle, Calendar, Clock, RefreshCw, Settings
+  User, UserMinus, UserPlus, AlertCircle, Calendar, Clock, RefreshCw, Filter, Settings
 } from 'lucide-react';
+import { Link as LinkIcon } from 'lucide-react';
+import { useToast } from "../hooks/useToast";
+import "../styles/Toast.css"
+import noDataIllustration from '../assets/illustration/No data.gif';
 
 interface Project {
   id: string;
@@ -44,55 +48,63 @@ interface ApiToken {
 
 const PROVIDER_FIELDS_MAP: Record<string, { name: string; label: string; type: string; required?: boolean; readOnly?: boolean }[]> = {
   MSG91: [
-    { name: "mode", label: "Select Mode", type: "select", required: true },
+    { name: "mode", label: "Selected Mode", type: "select", required: true },
+    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
     { name: "apiKey", label: "MSG91 API Key", type: "password", required: true },
-    { name: "endpoint", label: "Endpoint URL", type: "text", required: false, readOnly: true },
     { name: "senderId", label: "MSG91 Sender ID", type: "text", required: true },
     { name: "templateId", label: "MSG91 Template ID (DLT)", type: "text", required: true },
   ],
   Twilio: [
-    { name: "mode", label: "Select Mode", type: "select", required: true },
+    { name: "mode", label: "Selected Mode", type: "select", required: true },
+    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
     { name: "accountSid", label: "Twilio Account SID", type: "text", required: true },
     { name: "authToken", label: "Twilio Auth Token", type: "password", required: true },
     { name: "phoneNumber", label: "Twilio Phone Number", type: "text", required: true },
   ],
   Gupshup: [
-    { name: "mode", label: "Select Mode", type: "select", required: true },
+    { name: "mode", label: "Selected Mode", type: "select", required: true },
+    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
     { name: "apiKey", label: "Gupshup API Key", type: "password", required: true },
     { name: "appName", label: "Gupshup App Name", type: "text", required: true },
     { name: "sourceNumber", label: "Gupshup Source Number", type: "text", required: true },
   ],
   Vonage: [
-    { name: "mode", label: "Select Mode", type: "select", required: true },
+    { name: "mode", label: "Selected Mode", type: "select", required: true },
+    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
     { name: "apiKey", label: "Vonage API Key", type: "text", required: true },
     { name: "apiSecret", label: "Vonage API Secret", type: "password", required: true },
     { name: "fromNumber", label: "Vonage From Number", type: "text", required: true },
   ],
   Kaleyra: [
-    { name: "mode", label: "Select Mode", type: "select", required: true },
+    { name: "mode", label: "Selected Mode", type: "select", required: true },
+    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
     { name: "apiKey", label: "Kaleyra API Key", type: "password", required: true },
     { name: "sid", label: "Kaleyra SID", type: "text", required: true },
     { name: "senderId", label: "Kaleyra Sender ID", type: "text", required: true },
   ],
   Textlocal: [
-    { name: "mode", label: "Select Mode", type: "select", required: true },
+    { name: "mode", label: "Selected Mode", type: "select", required: true },
+    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
     { name: "apiKey", label: "Textlocal API Key", type: "password", required: true },
     { name: "senderId", label: "Textlocal Sender ID", type: "text", required: true },
   ],
   TrueDialog: [
-    { name: "mode", label: "Select Mode", type: "select", required: true },
+    { name: "mode", label: "Selected Mode", type: "select", required: true },
+    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
     { name: "apiKey", label: "TrueDialog API Key", type: "password", required: true },
     { name: "accountId", label: "TrueDialog Account ID", type: "text", required: true },
     { name: "fromNumber", label: "TrueDialog From Number", type: "text", required: true },
   ],
   SendGrid: [
-    { name: "mode", label: "Select Mode", type: "select", required: true },
+    { name: "mode", label: "Selected Mode", type: "select", required: true },
+    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
     { name: "apiKey", label: "SendGrid API Key", type: "password", required: true },
     { name: "fromEmail", label: "From Email", type: "email", required: true },
     { name: "fromName", label: "From Name", type: "text", required: false },
   ],
   AWS_SES: [
-    { name: "mode", label: "Select Mode", type: "select", required: true },
+    { name: "mode", label: "Selected Mode", type: "select", required: true },
+    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
     { name: "accessKeyId", label: "AWS Access Key ID", type: "text", required: true },
     { name: "secretAccessKey", label: "AWS Secret Access Key", type: "password", required: true },
     { name: "region", label: "AWS Region", type: "text", required: true },
@@ -100,13 +112,15 @@ const PROVIDER_FIELDS_MAP: Record<string, { name: string; label: string; type: s
     { name: "fromName", label: "From Name", type: "text", required: false },
   ],
   Mailgun: [
-    { name: "mode", label: "Select Mode", type: "select", required: true },
+    { name: "mode", label: "Selected Mode", type: "select", required: true },
+    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
     { name: "apiKey", label: "Mailgun API Key", type: "password", required: true },
     { name: "domain", label: "Mailgun Domain", type: "text", required: true },
     { name: "fromEmail", label: "From Email", type: "email", required: true },
   ],
   SMTP: [
-    { name: "mode", label: "Select Mode", type: "select", required: true },
+    { name: "mode", label: "Selected Mode", type: "select", required: true },
+    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
     { name: "host", label: "SMTP Host", type: "text", required: true },
     { name: "port", label: "SMTP Port", type: "text", required: true },
     { name: "username", label: "SMTP Username", type: "text", required: true },
@@ -116,37 +130,43 @@ const PROVIDER_FIELDS_MAP: Record<string, { name: string; label: string; type: s
     { name: "encryption", label: "Encryption", type: "text", required: false },
   ],
   Postmark: [
-    { name: "mode", label: "Select Mode", type: "select", required: true },
+    { name: "mode", label: "Selected Mode", type: "select", required: true },
+    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
     { name: "serverToken", label: "Postmark Server Token", type: "password", required: true },
     { name: "fromEmail", label: "From Email", type: "email", required: true },
     { name: "fromName", label: "From Name", type: "text", required: false },
   ],
   WhatsApp_Twilio: [
-    { name: "mode", label: "Select Mode", type: "select", required: true },
+    { name: "mode", label: "Selected Mode", type: "select", required: true },
+    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
     { name: "accountSid", label: "Twilio Account SID", type: "text", required: true },
     { name: "authToken", label: "Twilio Auth Token", type: "password", required: true },
     { name: "phoneNumber", label: "Twilio WhatsApp Number", type: "text", required: true },
   ],
   WhatsApp_Gupshup: [
-    { name: "mode", label: "Select Mode", type: "select", required: true },
+    { name: "mode", label: "Selected Mode", type: "select", required: true },
+    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
     { name: "apiKey", label: "Gupshup API Key", type: "password", required: true },
     { name: "appName", label: "Gupshup App Name", type: "text", required: true },
     { name: "phoneNumber", label: "Gupshup WhatsApp Number", type: "text", required: true },
   ],
   Meta_Cloud: [
-    { name: "mode", label: "Select Mode", type: "select", required: true },
+    { name: "mode", label: "Selected Mode", type: "select", required: true },
+    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
     { name: "phoneNumberId", label: "Meta Phone Number ID", type: "text", required: true },
     { name: "accessToken", label: "Meta Access Token", type: "password", required: true },
     { name: "businessAccountId", label: "Meta Business Account ID", type: "text", required: true },
   ],
   WhatsApp_Kaleyra: [
-    { name: "mode", label: "Select Mode", type: "select", required: true },
+    { name: "mode", label: "Selected Mode", type: "select", required: true },
+    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
     { name: "apiKey", label: "Kaleyra API Key", type: "password", required: true },
     { name: "sid", label: "Kaleyra SID", type: "text", required: true },
     { name: "phoneNumber", label: "Kaleyra WhatsApp Number", type: "text", required: true },
   ],
   WhatsApp_Vonage: [
-    { name: "mode", label: "Select Mode", type: "select", required: true },
+    { name: "mode", label: "Selected Mode", type: "select", required: true },
+    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
     { name: "apiKey", label: "Vonage API Key", type: "text", required: true },
     { name: "apiSecret", label: "Vonage API Secret", type: "password", required: true },
     { name: "phoneNumber", label: "Vonage WhatsApp Number", type: "text", required: true },
@@ -225,7 +245,7 @@ export default function ProjectView() {
 
   const [showAddEnvModal, setShowAddEnvModal] = useState(false);
   const [showEditEnvModal, setShowEditEnvModal] = useState(false);
-  const [editingEnvName, setEditingEnvName] = useState("");
+  const [editingEnvName] = useState("");
   const [editEnvName, setEditEnvName] = useState("");
   const [showDeleteEnvModal, setShowDeleteEnvModal] = useState(false);
   const [deletingEnvName, setDeletingEnvName] = useState("");
@@ -237,7 +257,7 @@ export default function ProjectView() {
 
   const [modeFilter, setmodeFilter] = useState<string>("Sandbox");
   const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const [toastMessage, setToastMessage] = useState("");
+  const { showToast, ToastContainer } = useToast();
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const [pendingCloseAction, setPendingCloseAction] = useState<(() => void) | null>(null);
 
@@ -267,13 +287,14 @@ export default function ProjectView() {
   const [showRegenModal, setShowRegenModal] = useState(false);
   const [showTokenDeleteModal, setShowTokenDeleteModal] = useState(false);
   const [showTokenLeaveModal, setShowTokenLeaveModal] = useState(false);
-  const [leaveAction, setLeaveAction] = useState<(() => void) | null>(null);
-  const [leaveModalType, setLeaveModalType] = useState<"form" | "token" | null>(null);
 
   const [editingTabEnv, setEditingTabEnv] = useState<string | null>(null);
   const [editingTabName, setEditingTabName] = useState("");
-
+  const [userFilterDropdownOpen, setUserFilterDropdownOpen] = useState(false);
   const [envStatus, setEnvStatus] = useState<Record<string, "active" | "inactive">>({});
+
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [pendingStatusChange, setPendingStatusChange] = useState<{ env: string; newStatus: "active" | "inactive" } | null>(null);
 
 
 
@@ -301,55 +322,33 @@ export default function ProjectView() {
 
   const handleEditEnvironmentInline = (oldName: string, newName: string) => {
     if (!projectId) return;
-
-    // Rename provider storage keys
     ['sms', 'email', 'whatsapp'].forEach(s => {
       const oldKey = `env_${projectId}_${oldName}_${s}_providers`;
       const newKey = `env_${projectId}_${newName}_${s}_providers`;
-
       const data = localStorage.getItem(oldKey);
-
-      if (data) {
-        localStorage.setItem(newKey, data);
-        localStorage.removeItem(oldKey);
-      }
+      if (data) { localStorage.setItem(newKey, data); localStorage.removeItem(oldKey); }
     });
-
-    // Update saved environment order
-    const savedOrder = JSON.parse(
-      localStorage.getItem(`env_order_${projectId}`) || "[]"
-    );
-
-    const updatedOrder = savedOrder.map((env: string) =>
-      env === oldName ? newName : env
-    );
-
-    localStorage.setItem(
-      `env_order_${projectId}`,
-      JSON.stringify(updatedOrder)
-    );
-
-    // Update state instantly
+    const savedOrder = JSON.parse(localStorage.getItem(`env_order_${projectId}`) || "[]");
+    const updatedOrder = savedOrder.map((env: string) => env === oldName ? newName : env);
+    localStorage.setItem(`env_order_${projectId}`, JSON.stringify(updatedOrder));
     setEnvironments(updatedOrder);
+    if (selectedEnv === oldName) setSelectedEnv(newName);
 
-    // Keep selected environment
-    if (selectedEnv === oldName) {
-      setSelectedEnv(newName);
-    }
+    showToast(`Environment renamed to "${newName}"`, "success"); // Add this
   };
-  const confirmLeave = () => {
-    if (leaveAction) {
-      leaveAction();
-    }
-    setShowTokenLeaveModal(false);
-    setLeaveAction(null);
 
-    // If leaving token page, close the reveal modal
-    if (leaveModalType === "token") {
-      setGeneratedToken(null);
-      setCopied(false);
-    }
-  };
+  // Close filter dropdown when clicking outside
+  useEffect(() => {
+    if (!userFilterDropdownOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.user-panel-filter-wrapper')) {
+        setUserFilterDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [userFilterDropdownOpen]);
 
   useEffect(() => {
     if (!generatedToken) return;
@@ -498,56 +497,35 @@ export default function ProjectView() {
         localStorage.setItem(`env_${projectId}_${name}_${s}_providers`, JSON.stringify({ providers: [], timestamp: Date.now() }));
     });
     const updatedEnvs = [...environments, name];
-
     setEnvironments(updatedEnvs);
+    localStorage.setItem(`env_order_${projectId}`, JSON.stringify(updatedEnvs));
+    setSelectedEnv(name);
+    setProviders([]);
+    setServiceProviderCounts({ SMS: 0, EMAIL: 0, WHATSAPP: 0 });
+    setShowAddEnvModal(false);
+    setNewEnvName("");
+    setIsCustomEnv(false);
+    setCustomEnvInput("");
 
-    localStorage.setItem(
-      `env_order_${projectId}`,
-      JSON.stringify(updatedEnvs)
-    );
-    setSelectedEnv(name); setProviders([]); setServiceProviderCounts({ SMS: 0, EMAIL: 0, WHATSAPP: 0 });
-    setShowAddEnvModal(false); setNewEnvName(""); setIsCustomEnv(false); setCustomEnvInput("");
+    showToast(`Environment "${name}" created successfully`, "success"); // <-- After everything
   };
 
   const handleEditEnvironment = () => {
     if (!projectId || !editEnvName.trim()) return;
-
-    // Rename provider storage keys
     ['sms', 'email', 'whatsapp'].forEach(s => {
       const oldKey = `env_${projectId}_${editingEnvName}_${s}_providers`;
       const newKey = `env_${projectId}_${editEnvName}_${s}_providers`;
-
       const data = localStorage.getItem(oldKey);
-
-      if (data) {
-        localStorage.setItem(newKey, data);
-        localStorage.removeItem(oldKey);
-      }
+      if (data) { localStorage.setItem(newKey, data); localStorage.removeItem(oldKey); }
     });
-
-    // Update saved environment order
-    const savedOrder = JSON.parse(
-      localStorage.getItem(`env_order_${projectId}`) || "[]"
-    );
-
-    const updatedOrder = savedOrder.map((env: string) =>
-      env === editingEnvName ? editEnvName : env
-    );
-
-    localStorage.setItem(
-      `env_order_${projectId}`,
-      JSON.stringify(updatedOrder)
-    );
-
-    // Update UI state
+    const savedOrder = JSON.parse(localStorage.getItem(`env_order_${projectId}`) || "[]");
+    const updatedOrder = savedOrder.map((env: string) => env === editingEnvName ? editEnvName : env);
+    localStorage.setItem(`env_order_${projectId}`, JSON.stringify(updatedOrder));
     setEnvironments(updatedOrder);
-
-    // Keep selected environment active
-    if (selectedEnv === editingEnvName) {
-      setSelectedEnv(editEnvName);
-    }
-
+    if (selectedEnv === editingEnvName) setSelectedEnv(editEnvName);
     setShowEditEnvModal(false);
+
+    showToast(`Environment renamed to "${editEnvName}"`, "success"); // Add this
   };
 
   const handleDeleteEnvironment = () => {
@@ -571,18 +549,31 @@ export default function ProjectView() {
     setEnvironments(updated);
     if (selectedEnv === deletingEnvName) setSelectedEnv(updated[0] || "");
     setShowDeleteEnvModal(false);
+    showToast(`Environment "${deletingEnvName}" deleted`, "error");
   };
 
   const executeClone = () => {
     if (!projectId) return;
     let target = cloneCustomMode && cloneCustomName.trim() ? cloneCustomName.trim() : cloneTarget;
     if (!target) return;
+
     ['sms', 'email', 'whatsapp'].forEach(s => {
       const src = localStorage.getItem(`env_${projectId}_${selectedEnv}_${s}_providers`);
       if (src) localStorage.setItem(`env_${projectId}_${target}_${s}_providers`, JSON.stringify({ ...JSON.parse(src), timestamp: Date.now() }));
     });
-    loadEnvironments(); setSelectedEnv(target); loadProviders();
+
+    // Add the cloned environment to the order list
+    const savedOrder = JSON.parse(localStorage.getItem(`env_order_${projectId}`) || "[]");
+    if (!savedOrder.includes(target)) {
+      const updatedOrder = [...savedOrder, target];
+      localStorage.setItem(`env_order_${projectId}`, JSON.stringify(updatedOrder));
+    }
+
+    loadEnvironments();
+    setSelectedEnv(target);
+    loadProviders();
     setShowCloneModal(false);
+    showToast(`Environment cloned to "${target}"`, "success");
   };
 
   const saveProvider = () => {
@@ -597,10 +588,19 @@ export default function ProjectView() {
       } else {
         updated = [...providers, { id: Date.now(), name: selectedProvider, fields: { ...providerFields } }];
       }
-      setProviders(updated); saveToLocalStorage(updated); updateAllServiceCounts();
+      setProviders(updated);
+      saveToLocalStorage(updated);
+      updateAllServiceCounts();
       const savedMode = providerFields.mode;
       if (savedMode) setmodeFilter(savedMode);
-      setShowAddProviderModal(false); setEditingProvider(null); setSelectedProvider(""); setProviderFields({}); setSaving(false);
+      setShowAddProviderModal(false);
+      setEditingProvider(null);
+      setSelectedProvider("");
+      setProviderFields({});
+      setSaving(false);
+
+      // Toast after modal closes
+      showToast(editingProvider ? "Provider updated successfully" : "Provider added successfully", "success");
     }, 500);
   };
 
@@ -609,13 +609,23 @@ export default function ProjectView() {
     const updated = providers.filter(p => p.id !== showDeleteProviderModal.id);
     setProviders(updated); saveToLocalStorage(updated); updateAllServiceCounts();
     setShowDeleteProviderModal(null);
+    showToast("Provider deleted", "error");
   };
 
   const handleProviderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedProvider(e.target.value);
     const defs = PROVIDER_FIELDS_MAP[e.target.value] || [];
     const nf: Record<string, string> = {};
-    defs.forEach(f => { if (f.type !== "select") nf[f.name] = ""; });
+    defs.forEach(f => {
+      if (f.type === "select") {
+        // Auto-set mode to current modeFilter when adding
+        if (!editingProvider) {
+          nf[f.name] = modeFilter; // "Sandbox" or "Live"
+        }
+      } else {
+        nf[f.name] = "";
+      }
+    });
     setProviderFields(nf);
   };
 
@@ -643,6 +653,12 @@ export default function ProjectView() {
 
   const handleTokenGenerate = () => {
     if (!tokenName.trim() || !selectedEnv || !projectId || !tokenMode) return;
+
+    // If regenerating, delete the old token first
+    if (isRegenerating && currentToken?.mode) {
+      deleteToken(projectId, selectedEnv, currentToken.mode);
+    }
+
     const token: ApiToken = {
       id: Date.now().toString(), name: tokenName.trim(), token: generateToken(),
       projectId, environmentName: selectedEnv, mode: tokenMode,
@@ -652,7 +668,9 @@ export default function ProjectView() {
     };
     saveToken(projectId, selectedEnv, tokenMode, token);
     setAllTokens(prev => ({ ...prev, [`${selectedEnv}_${tokenMode}`]: token }));
-    setGeneratedToken(token); setShowTokenFormModal(false);
+    setGeneratedToken(token);
+    setShowTokenFormModal(false);
+    showToast(`Token ${isRegenerating ? 'regenerated' : 'generated'} for ${selectedEnv}`, "success");
   };
 
   const handleTokenDelete = () => {
@@ -660,6 +678,7 @@ export default function ProjectView() {
     deleteToken(projectId, selectedEnv, currentToken.mode);
     setAllTokens(prev => { const updated = { ...prev }; delete updated[`${selectedEnv}_${currentToken.mode}`]; return updated; });
     setShowTokenDeleteModal(false); setSelectedEnv(""); setCurrentToken(null);
+    showToast("Token deleted", "error");
   };
 
   const filteredTokens = environments.filter(env => {
@@ -686,8 +705,7 @@ export default function ProjectView() {
     const draggedItem = newProviders[dragIndex];
     newProviders.splice(dragIndex, 1); newProviders.splice(realDropIndex, 0, draggedItem);
     setProviders(newProviders); setDragIndex(null); saveToLocalStorage(newProviders);
-    setToastMessage("Primary provider updated successfully");
-    setTimeout(() => setToastMessage(""), 2000);
+    showToast("Primary provider updated successfully", "success");
   };
   const handleDragEnd = () => setDragIndex(null);
 
@@ -711,9 +729,22 @@ export default function ProjectView() {
   };
   const handleAssignUsers = () => {
     const usersToAssign = unassignedUsers.filter(u => selectedUsers.has(u.id)).map(u => ({ ...u, assignedAt: new Date().toISOString().split('T')[0] }));
-    setAssignedUsers(prev => [...usersToAssign, ...prev]); setSelectedUsers(new Set()); setSelectAll(false);
+    setAssignedUsers(prev => [...usersToAssign, ...prev]);
+    setSelectedUsers(new Set());
+    setSelectAll(false);
+
+    const count = usersToAssign.length;
+    showToast(`${count} user${count !== 1 ? 's' : ''} Unassigned successfully`, "error");
   };
-  const handleUnassignUsers = () => { setAssignedUsers(prev => prev.filter(u => !selectedUsers.has(u.id))); setSelectedUsers(new Set()); setSelectAll(false); };
+
+  const handleUnassignUsers = () => {
+    const count = selectedUsers.size;
+    setAssignedUsers(prev => prev.filter(u => !selectedUsers.has(u.id)));
+    setSelectedUsers(new Set());
+    setSelectAll(false);
+
+    showToast(`${count} user${count !== 1 ? 's' : ''} Assigned successfully`, "success");
+  };
 
   // ---- EFFECTS ----
   useEffect(() => {
@@ -772,17 +803,6 @@ export default function ProjectView() {
 
   return (
     <div className="project-view-page">
-      {/* Top Bar */}
-      <div className="view-top-bar">
-        <div className="page-header"><h1>View Project</h1></div>
-        <div className="breadcrumbs-row">
-          <button className="breadcrumb-link" onClick={() => navigate("/dashboard")}>Dashboard</button>
-          <span className="breadcrumb-separator">›</span>
-          <button className="breadcrumb-link" onClick={() => navigate("/dashboard/project")}>Projects</button>
-          <span className="breadcrumb-separator">›</span>
-          <span className="breadcrumb-current">{project.name}</span>
-        </div>
-      </div>
 
       {/* Project Details Card */}
       <div className="project-details-card">
@@ -1050,10 +1070,9 @@ export default function ProjectView() {
                     <button
                       className={`env-status-toggle ${(envStatus[selectedEnv] || 'active') === 'active' ? 'status-active' : 'status-inactive'}`}
                       onClick={() => {
-                        setEnvStatus(prev => ({
-                          ...prev,
-                          [selectedEnv]: (prev[selectedEnv] || 'active') === 'active' ? 'inactive' : 'active'
-                        }));
+                        const newStatus = (envStatus[selectedEnv] || 'active') === 'active' ? 'inactive' : 'active';
+                        setPendingStatusChange({ env: selectedEnv, newStatus });
+                        setShowStatusModal(true);
                       }}
                     >
                       <span className="toggle-text">{(envStatus[selectedEnv] || 'active').toUpperCase()}</span>
@@ -1099,7 +1118,7 @@ export default function ProjectView() {
                     <h4 className="pc-column-label pc-column-label-providers">Providers</h4>
                     <div className="pc-providers-panel" style={{ borderTop: `3px solid ${SERVICE_COLORS[activeService]}` }}>
                       <div className="pc-panel-header">
-                        <div className="pc-panel-title">{SERVICE_ICONS[activeService]}<h3>{activeService} Providers</h3><span className="pc-panel-count">{providers.length}</span></div>
+                        <div className="pc-panel-title">{SERVICE_ICONS[activeService]}<h3>{activeService} Providers</h3></div>
                         <button className="pc-add-btn" style={{ backgroundColor: SERVICE_COLORS[activeService] }} onClick={() => { setEditingProvider(null); setSelectedProvider(""); setProviderFields({}); setShowAddProviderModal(true); }}>
                           <Plus size={14} /> Add Provider
                         </button>
@@ -1124,11 +1143,27 @@ export default function ProjectView() {
                                   <Plug size={14} /><span>{provider.name.replace(/_/g, ' ')}</span>
                                   {index === 0 && <span className="pc-primary-badge"><Rocket size={10} /> Primary</span>}
                                   <span className="pc-configured-badge" style={{ background: `${SERVICE_COLORS[activeService]}15`, color: SERVICE_COLORS[activeService] }}><Check size={10} /> Configured</span>
-                                  <span className="pc-usage-badge"><span className="pc-usage-count">{provider.usageCount || 0}</span><span className="pc-usage-label">sent</span></span>
                                 </div>
-                                <div className="pc-provider-actions" onClick={(e) => e.stopPropagation()}>
-                                  <button className="pc-edit-btn" onClick={() => { setEditingProvider(provider); setSelectedProvider(provider.name); setProviderFields({ ...provider.fields }); setShowAddProviderModal(true); }}><Pencil size={14} /></button>
-                                  <button className="pc-delete-btn" onClick={() => setShowDeleteProviderModal({ id: provider.id, name: provider.name })}><Trash2 size={14} /></button>
+                                <div className="pc-provider-header-right">
+                                  {provider.fields.endpoint && (
+                                    <div className="pc-endpoint-inline">
+                                      <code className="pc-endpoint-text">{provider.fields.endpoint}</code>
+                                      <button
+                                        className="pc-endpoint-copy-mini"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          navigator.clipboard.writeText(provider.fields.endpoint);
+                                          showToast("Endpoint copied!", "success");
+                                        }}
+                                      >
+                                        <Copy size={12} />
+                                      </button>
+                                    </div>
+                                  )}
+                                  <div className="pc-provider-actions" onClick={(e) => e.stopPropagation()}>
+                                    <button className="pc-edit-btn" onClick={() => { setEditingProvider(provider); setSelectedProvider(provider.name); setProviderFields({ ...provider.fields }); setShowAddProviderModal(true); }}><Pencil size={14} /></button>
+                                    <button className="pc-delete-btn" onClick={() => setShowDeleteProviderModal({ id: provider.id, name: provider.name })}><Trash2 size={14} /></button>
+                                  </div>
                                 </div>
                               </div>
                               {expandedProviders[provider.id] && (
@@ -1184,18 +1219,25 @@ export default function ProjectView() {
             <div className="token-cards-grid">
               {filteredTokens.length === 0 ? (
                 <div className="token-empty-illustration">
-                  <h4>No environments found</h4>
-                  <p>Create an environment first to get started</p>
-                  <button
-                    className="pc-create-first-env-btn"
-                    onClick={() => {
-                      setActiveMainTab('environments');
-
-                    }}
-                    style={{ marginTop: '16px' }}
-                  >
-                    <Plus size={16} /> Create Environment
-                  </button>
+                  {tokenSearchTerm.trim() ? (
+                    <>
+                      <img src={noDataIllustration} alt="No data" className="empty-illustration-img" />
+                      <h4>No results found</h4>
+                      <p>Try adjusting your search term</p>
+                    </>
+                  ) : (
+                    <>
+                      <h4>No environments found</h4>
+                      <p>Create an environment first to get started</p>
+                      <button
+                        className="pc-create-first-env-btn"
+                        onClick={() => setActiveMainTab('environments')}
+                        style={{ marginTop: '16px' }}
+                      >
+                        <Plus size={16} /> Create Environment
+                      </button>
+                    </>
+                  )}
                 </div>
               ) : (
                 filteredTokens.map(env => {
@@ -1361,36 +1403,50 @@ export default function ProjectView() {
                 </div>
                 <button className="pc-modal-close" onClick={() => { setPendingCloseAction(() => () => { setShowAddProviderModal(false); setEditingProvider(null); }); setShowUnsavedModal(true); }}><X size={20} /></button>
               </div>
-              <div className="pc-modal-env-info"><Globe size={14} /><span>Environment: <strong>{selectedEnv}</strong></span></div>
+              <div className="pc-modal-env-info-row">
+                <div className="pc-modal-env-info">
+                  <Globe size={14} />
+                  <span>Environment: <strong>{selectedEnv}</strong></span>
+                </div>
+                {!editingProvider && (
+                  <div className="pc-modal-mode-info">
+                    <span className={`pc-mode-badge ${modeFilter === 'Live' ? 'live' : 'sandbox'}`}>
+                      {modeFilter === 'Live' ? <Rocket size={14} /> : <Wrench size={14} />}
+                      {modeFilter} Mode
+                    </span>
+                  </div>
+                )}
+              </div>
               <div className="pc-modal-body">
                 <div className="pc-form-group"><label>Select Provider *</label>
                   <select value={selectedProvider} onChange={handleProviderChange} className="pc-select">
                     <option value="">-- Choose provider --</option>
                     {PROVIDERS_BY_SERVICE[activeService]?.filter(p => {
+                      // Always show the provider being edited
                       if (editingProvider?.name === p) return true;
-                      const live = providers.some(prov => prov.name === p && prov.fields.mode === 'Live');
-                      const sand = providers.some(prov => prov.name === p && prov.fields.mode === 'Sandbox');
-                      return !(live && sand);
+
+                      // Get existing providers of this type
+                      const existingOfType = providers.filter(prov => prov.name === p);
+
+                      // If both modes exist, hide this provider
+                      const hasLive = existingOfType.some(prov => prov.fields.mode === 'Live');
+                      const hasSandbox = existingOfType.some(prov => prov.fields.mode === 'Sandbox');
+
+                      if (hasLive && hasSandbox) return false;
+
+                      return true;
                     }).map(p => <option key={p} value={p}>{p.replace(/_/g, ' ')}</option>)}
                   </select>
                 </div>
                 {selectedProvider && PROVIDER_FIELDS_MAP[selectedProvider] && (
                   <>
-                    {PROVIDER_FIELDS_MAP[selectedProvider].filter((f: any) => f.type === "select").map((field: any) => (
-                      <div className="pc-form-group" key={field.name}><label>{field.label}{field.required && " *"}</label>
-                        <select value={providerFields[field.name] || ""} onChange={(e) => handleFieldChange(field.name, e.target.value)} className="pc-select">
-                          <option value="">-- Choose mode --</option>
-                          {(() => {
-                            const liveE = providers.some(p => p.name === selectedProvider && p.fields.mode === 'Live');
-                            const sandE = providers.some(p => p.name === selectedProvider && p.fields.mode === 'Sandbox');
-                            if (editingProvider) return (<><option value="Sandbox">Sandbox</option><option value="Live">Live</option></>);
-                            return (<>{!sandE && <option value="Sandbox">Sandbox</option>}{!liveE && <option value="Live">Live</option>}</>);
-                          })()}
-                        </select>
-                      </div>
-                    ))}
+
+
+
+
+
                     <div className="pc-credentials-section"><h4><Lock size={14} /> Credentials</h4>
-                      {PROVIDER_FIELDS_MAP[selectedProvider].filter((f: any) => f.type !== "select").map((field: any) => (
+                      {PROVIDER_FIELDS_MAP[selectedProvider].filter((f: any) => f.type !== "select" && f.type !== "endpoint").map((field: any) => (
                         <div className="pc-form-group" key={field.name}><label>{field.label}{field.required && " *"}</label>
                           <div className="pc-input-wrapper">
                             <input type={field.type === "password" && !showPasswords[field.name] ? "password" : "text"} value={providerFields[field.name] || ""} onChange={(e) => handleFieldChange(field.name, e.target.value)} placeholder={`Enter ${field.label}`} className="pc-input" readOnly={field.readOnly && editingProvider && providerFields[field.name]} style={field.readOnly && editingProvider && providerFields[field.name] ? { background: '#f1f5f9', cursor: 'not-allowed' } : {}} />
@@ -1473,7 +1529,7 @@ export default function ProjectView() {
                   <div><Globe size={14} /> Environment: <strong>{selectedEnv}</strong></div>
                   <div>{tokenMode === 'Sandbox' ? <Wrench size={14} /> : <Rocket size={14} />} Mode: <strong>{tokenMode}</strong></div>
                 </div>
-                <div className="pc-form-group"><label>Token Name</label><input type="text" placeholder="e.g., Production API Key" value={tokenName} onChange={(e) => setTokenName(e.target.value)} className="pc-input" autoFocus /></div>
+                <div className="pc-form-group"><label>Note</label><input type="text" placeholder="What’s this token for?" value={tokenName} onChange={(e) => setTokenName(e.target.value)} className="pc-input" autoFocus /></div>
                 <div className="pc-form-group"><label>Expiration</label>
                   <div className="expiration-options">
                     {[{ value: "7", label: "7 Days" }, { value: "30", label: "30 Days" }, { value: "60", label: "60 Days" }, { value: "90", label: "90 Days" }, { value: "custom", label: "Custom" }, { value: "never", label: "Never" }].map(opt => (
@@ -1537,7 +1593,16 @@ export default function ProjectView() {
       {
         showRegenModal && (
           <div className="pc-modal-overlay" onClick={() => setShowRegenModal(false)}>
-            <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}><div className="pc-modal-header"><RefreshCw size={22} color="#6366f1" /><h3>Regenerate Token?</h3></div><div className="pc-modal-body"><div className="modal-token-info"><div><Globe size={14} /> Environment: <strong>{selectedEnv}</strong></div>{currentToken && <><div><Key size={14} /> Token: <strong>{currentToken.name}</strong></div><div><Calendar size={14} /> Created: {formatDate(currentToken.created)}</div></>}</div><p className="warning-text">Regenerating will revoke the old token.</p></div><div className="pc-modal-footer"><button className="pc-btn-cancel" onClick={() => setShowRegenModal(false)}>Cancel</button><button className="pc-btn-primary" onClick={() => { setShowRegenModal(false); setTokenMode(currentToken?.mode || ''); setIsRegenerating(true); setShowTokenFormModal(true); }}>Continue</button></div></div>
+            <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}><div className="pc-modal-header"><RefreshCw size={22} color="#6366f1" /><h3>Regenerate Token?</h3></div><div className="pc-modal-body"><div className="modal-token-info"><div><Globe size={14} /> Environment: <strong>{selectedEnv}</strong></div>{currentToken && <><div><Key size={14} /> Token: <strong>{currentToken.name}</strong></div><div><Calendar size={14} /> Created: {formatDate(currentToken.created)}</div></>}</div><p className="warning-text">Regenerating will revoke the old token.</p></div><div className="pc-modal-footer"><button className="pc-btn-cancel" onClick={() => setShowRegenModal(false)}>Cancel</button><button className="pc-btn-primary" onClick={() => {
+              setShowRegenModal(false);
+              setTokenMode(currentToken?.mode || '');
+              setTokenName("");  // Clear the token name
+              setTokenExpiration("30");
+              setTokenCustomDays("");
+              setTokenCustomDate("");
+              setIsRegenerating(true);
+              setShowTokenFormModal(true);
+            }}>Continue</button></div></div>
           </div>
         )
       }
@@ -1562,20 +1627,124 @@ export default function ProjectView() {
                 <button className={`user-panel-tab ${userActiveTab === 'unassign' ? 'active' : ''}`} onClick={() => { setUserActiveTab('unassign'); setSelectedUsers(new Set()); setSelectAll(false); }}><UserMinus size={14} /> Unassign User</button>
               </div>
               <div className="user-panel-search-row">
-                <div className="user-panel-search"><Search size={16} className="user-panel-search-icon" /><input type="text" placeholder="Search users..." value={userSearchTerm} onChange={(e) => setUserSearchTerm(e.target.value)} className="user-panel-search-input" />{userSearchTerm && <button className="user-panel-search-clear" onClick={() => setUserSearchTerm("")}><X size={14} /></button>}</div>
-                <select className="user-panel-filter" value={userFilter} onChange={(e) => setUserFilter(e.target.value)}><option value="all">All Status</option><option value="active">Active</option><option value="inactive">Inactive</option></select>
+                <div className="user-panel-search">
+                  <Search size={16} className="user-panel-search-icon" />
+                  <input
+                    type="text"
+                    placeholder="Search users..."
+                    value={userSearchTerm}
+                    onChange={(e) => setUserSearchTerm(e.target.value)}
+                    className="user-panel-search-input"
+                  />
+                  {userSearchTerm && (
+                    <button className="user-panel-search-clear" onClick={() => setUserSearchTerm("")}>
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Replace the select with this custom dropdown */}
+                <div className="user-panel-filter-wrapper">
+                  <div
+                    className={`user-panel-filter-trigger ${userFilterDropdownOpen ? 'open' : ''}`}
+                    onClick={() => setUserFilterDropdownOpen(!userFilterDropdownOpen)}
+                  >
+                    <div className="filter-trigger-left">
+                      <Filter size={14} className="filter-icon" />
+                      <span className="filter-selected-text">
+                        {userFilter === 'all' ? 'All Status' : userFilter === 'active' ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    <ChevronDown size={16} className="filter-chevron" />
+                  </div>
+                  {userFilterDropdownOpen && (
+                    <div className="user-panel-filter-menu">
+                      <div
+                        className={`user-panel-filter-item ${userFilter === 'all' ? 'selected' : ''}`}
+                        onClick={() => {
+                          setUserFilter('all');
+                          setUserFilterDropdownOpen(false);
+                        }}
+                      >
+                        <span>All Status</span>
+                        {userFilter === 'all' && <Check size={14} />}
+                      </div>
+                      <div
+                        className={`user-panel-filter-item ${userFilter === 'active' ? 'selected' : ''}`}
+                        onClick={() => {
+                          setUserFilter('active');
+                          setUserFilterDropdownOpen(false);
+                        }}
+                      >
+                        <div className="filter-item-dot active"></div>
+                        <span>Active</span>
+                        {userFilter === 'active' && <Check size={14} />}
+                      </div>
+                      <div
+                        className={`user-panel-filter-item ${userFilter === 'inactive' ? 'selected' : ''}`}
+                        onClick={() => {
+                          setUserFilter('inactive');
+                          setUserFilterDropdownOpen(false);
+                        }}
+                      >
+                        <div className="filter-item-dot inactive"></div>
+                        <span>Inactive</span>
+                        {userFilter === 'inactive' && <Check size={14} />}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="user-panel-table-wrapper">
                 <table className="user-panel-table"><thead><tr><th className="col-checkbox"><input type="checkbox" checked={selectAll} onChange={handleSelectAll} className="user-checkbox" /></th><th className="col-user">User</th><th className="col-status">Status</th></tr></thead>
+
                   <tbody>
-                    {filteredUserList.length === 0 ? <tr><td colSpan={3} className="user-empty-state">{userSearchTerm.trim() ? 'No users match your search' : userActiveTab === 'assign' ? 'No users available to assign' : 'No users assigned yet'}</td></tr> :
+                    {filteredUserList.length === 0 ? (
+                      <tr>
+                        <td colSpan={3} className="user-empty-state">
+                          {userSearchTerm.trim() ? (
+                            <>
+                              <img
+                                src={noDataIllustration}
+                                alt="No data"
+                                className="user-empty-illustration-img"
+                              />
+                              <div className="user-empty-message">
+                                <h4>No results found</h4>
+                                <p>Try adjusting your search term</p>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <img
+                                src={noDataIllustration}
+                                alt="No data"
+                                className="user-empty-illustration-img"
+                              />
+                              <div className="user-empty-message">
+                                <h4>
+                                  {userActiveTab === 'assign'
+                                    ? 'No users available to assign'
+                                    : 'No users assigned yet'}
+                                </h4>
+                                <p>
+                                  {userActiveTab === 'assign'
+                                    ? 'All users are already assigned to this environment'
+                                    : 'Assign users to this environment to get started'}
+                                </p>
+                              </div>
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    ) : (
                       filteredUserList.map(user => (
                         <tr key={user.id} className={selectedUsers.has(user.id) ? 'selected' : ''}>
                           <td className="col-checkbox"><input type="checkbox" checked={selectedUsers.has(user.id)} onChange={() => handleUserSelect(user.id)} className="user-checkbox" /></td>
                           <td className="col-user"><div className="user-cell"><span className="user-name">{user.name}</span><span className="user-email">{user.email}</span></div></td>
                           <td className="col-status"><span className={`user-status-badge ${user.status}`}>{user.status === 'active' ? <Check size={12} /> : <AlertCircle size={12} />}{user.status}</span></td>
                         </tr>
-                      ))}
+                      )))}
                   </tbody>
                 </table>
               </div>
@@ -1619,8 +1788,63 @@ export default function ProjectView() {
         )
       }
 
+      {/* Environment Status Change Modal */}
+      {showStatusModal && pendingStatusChange && (
+        <div className="pc-modal-overlay" onClick={() => setShowStatusModal(false)}>
+          <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}>
+            <div className="pc-modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <AlertTriangle size={22} color="#f59e0b" />
+                <h3 style={{ margin: 0 }}>
+                  {pendingStatusChange.newStatus === 'active' ? 'Activate' : 'Deactivate'} Environment?
+                </h3>
+              </div>
+            </div>
+            <div className="pc-modal-body">
+              <p>
+                Are you sure you want to <strong>{pendingStatusChange.newStatus === 'active' ? 'activate' : 'deactivate'}</strong> the <strong>{pendingStatusChange.env}</strong> environment?
+              </p>
+              {pendingStatusChange.newStatus === 'inactive' && (
+                <div className="warning-text">
+                  <AlertTriangle size={14} /> Deactivating this environment may affect running services.
+                </div>
+              )}
+            </div>
+            <div className="pc-modal-footer">
+              <button className="pc-btn-cancel" onClick={() => {
+                setShowStatusModal(false);
+                setPendingStatusChange(null);
+              }}>Cancel</button>
+              <button
+                className={pendingStatusChange.newStatus === 'active' ? 'pc-btn-primary' : 'pc-btn-danger'}
+                onClick={() => {
+                  if (pendingStatusChange) {
+                    setEnvStatus(prev => ({
+                      ...prev,
+                      [pendingStatusChange.env]: pendingStatusChange.newStatus
+                    }));
+                    showToast(
+                      `Environment "${pendingStatusChange.env}" ${pendingStatusChange.newStatus === 'active' ? 'activated' : 'deactivated'}`,
+                      pendingStatusChange.newStatus === 'active' ? 'success' : 'error'
+                    );
+                  }
+                  setShowStatusModal(false);
+                  setPendingStatusChange(null);
+                }}
+              >
+                {pendingStatusChange.newStatus === 'active' ? (
+                  <> Yes, Activate</>
+                ) : (
+                  <><AlertTriangle size={16} /> Yes, Deactivate</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Toast */}
-      {toastMessage && <div className="pc-toast"><Check size={16} />{toastMessage}</div>}
+      <ToastContainer />
     </div >
   );
 }

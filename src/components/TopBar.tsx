@@ -217,9 +217,8 @@ export default function TopBar() {
 
           {/* NOTIFICATION */}
           <div
-            className={`${styles.bell} ${
-              bellActive ? styles.animate : ""
-            }`}
+            className={`${styles.bell} ${bellActive ? styles.animate : ""
+              }`}
             onClick={handleBell}
             title="Notifications"
           >

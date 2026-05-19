@@ -1,0 +1,48 @@
+.workspaceContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+    padding: 2rem;
+}
+
+.workspaceCard {
+    text-align: center;
+    background: var(--pure-white);
+    border-radius: 16px;
+    padding: 3rem 2rem;
+    max-width: 500px;
+    width: 100%;
+    box-shadow: 0 2px 12px rgba(0, 44, 91, 0.06);
+    border: 1px solid var(--soft-border);
+}
+
+.iconWrapper {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1.5rem;
+    background: rgba(27, 114, 232, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.iconWrapper i {
+    font-size: 32px;
+    color: var(--zoho-blue);
+}
+
+.workspaceTitle {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--deep-navy);
+    margin-bottom: 0.75rem;
+}
+
+.workspaceSubtitle {
+    font-size: 1rem;
+    color: var(--slate-gray);
+    line-height: 1.6;
+    margin: 0;
+}

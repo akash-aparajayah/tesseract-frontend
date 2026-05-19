@@ -13,7 +13,7 @@ import ProjectBasicEdit from "@/pages/ProjectBasicEdit";
 import ProviderConfig from "@/pages/ProviderConfig";
 import TokenGenerate from "@/pages/TokenGenerate";
 import UserDetailView from "@/pages/UserDetailView";
-import ProtectedRoute from "@/app/ProtectedRoute";
+import Workspace from "@/pages/Workspace";
 
 const router = createBrowserRouter([
   {
@@ -25,66 +25,64 @@ const router = createBrowserRouter([
     element: <ForgotPassword />,
   },
   {
-    // Protected routes wrapper
-    element: <ProtectedRoute />,
+    path: "/dashboard",
+    element: <Layout />,
     children: [
       {
-        path: "/dashboard",
-        element: <Layout />,
-        children: [
-          {
-            index: true,
-            element: <Dashboard />,
-          },
-          {
-            path: "admin",
-            element: <AdminDashboard />,
-          },
-          {
-            path: "admin-create",
-            element: <AdminCreate />,
-          },
-          {
-            path: "project",
-            element: <ProjectDashboard />,
-          },
-          {
-            path: "project-create",
-            element: <ProjectCreateForm />,
-          },
-          {
-            path: "project/:projectId/view",
-            element: <ProjectView />,
-          },
-          {
-            path: "project-edit/:projectId",
-            element: <ProjectEditForm />,
-          },
-          {
-            path: "project-edit-basic/:projectId",
-            element: <ProjectBasicEdit />,
-          },
-          {
-            path: "project/:projectId/logs",
-            element: <ProjectView />,
-          },
-          {
-            path: "token-generate",
-            element: <TokenGenerate />,
-          },
-          {
-            path: "provider-config",
-            element: <ProviderConfig />,
-          },
-          {
-            path: "provider-config/:environmentName",
-            element: <ProviderConfig />,
-          },
-          {
-            path: "user/:userId",
-            element: <UserDetailView />,
-          },
-        ],
+        index: true,
+        element: <Dashboard />,
+      },
+      {
+        path: "admin",
+        element: <AdminDashboard />,
+      },
+      {
+        path: "admin-create",
+        element: <AdminCreate />,
+      },
+      {
+        path: "project",
+        element: <ProjectDashboard />,
+      },
+      {
+        path: "project-create",
+        element: <ProjectCreateForm />,
+      },
+      {
+        path: "project/:projectId/view",
+        element: <ProjectView />,
+      },
+      {
+        path: "project-edit/:projectId",
+        element: <ProjectEditForm />,
+      },
+      {
+        path: "project-edit-basic/:projectId",
+        element: <ProjectBasicEdit />,
+      },
+      {
+        path: "project/:projectId/logs",
+        element: <ProjectView />,
+      },
+      {
+        path: "token-generate",
+        element: <TokenGenerate />,
+      },
+      {
+        path: "provider-config",
+        element: <ProviderConfig />,
+      },
+      {
+        path: "provider-config/:environmentName",
+        element: <ProviderConfig />,
+      },
+      {
+        path: "workspace",
+        element: <Workspace />, // Empty placeholder component for now
+      },
+      {
+        path: "user/:userId",
+        element: <UserDetailView />,
       },
     ],
   },
