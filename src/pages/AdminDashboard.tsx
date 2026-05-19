@@ -315,10 +315,10 @@ const AdminPanel: React.FC = () => {
           </button>
         </div>
       )}
-
+{/* 
       <div className={styles.header}>
         <h1>User Control Panel</h1>
-      </div>
+      </div> */}
 
       {/* ========= FINAL ABSTRACT CARDS (with diamond center) ========= */}
       <div className={styles.statsGrid}>
