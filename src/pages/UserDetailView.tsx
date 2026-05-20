@@ -1,23 +1,21 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import styles from "../styles/userDetail.module.css";
+import noDataImg from "../assets/illustration/No-data.svg";
+
 import {
   ArrowLeft,
   Mail,
-  Shield,
   Briefcase,
   AlertCircle,
-  Calendar,
   Eye,
   X,
   Server,
-  Globe,
   FolderOpen,
   Search,
-  ToggleLeft,
-  ToggleRight,
+  Trash2,
 } from "lucide-react";
-import { getUserByIdApi } from "../services/adminApi";
+
 import Loader from "@/components/common/Loader";
 
 interface User {
@@ -26,136 +24,101 @@ interface User {
   email: string;
   role: "ADMIN" | "SUPER_ADMIN" | "USER";
   active: boolean;
-  createdAt?: string;
 }
+
+interface EnvironmentItem {
+  public_id: string;
+  env_name: string;
+}
+
+type Environment = EnvironmentItem[];
 
 interface Project {
   id: string;
   name: string;
   description?: string;
-  environment?: {
-    type: string;
-    variables: { key: string; value: string }[];
-    region: string;
-    version: string;
-  };
+  environment?: Environment;
 }
 
-// Mock data – only assigned projects (no available projects)
+const MOCK_USER: User = {
+  id: "1",
+  name: "John Doe",
+  email: "john.doe@example.com",
+  role: "USER",
+  active: true,
+};
+
 const MOCK_ASSIGNED_PROJECTS: Project[] = [
   {
     id: "1",
     name: "E-Commerce Platform",
-    description: "Frontend + Backend integration",
-    environment: {
-      type: "Production",
-      variables: [
-        { key: "API_URL", value: "https://api.ecom.com/v1" },
-        { key: "NODE_ENV", value: "production" },
-      ],
-      region: "us-east-1",
-      version: "2.3.0",
-    },
+    description: "Frontend + Backend Integration",
+    environment: [
+      { public_id: "1", env_name: "Production" },
+      { public_id: "2", env_name: "Staging" },
+      { public_id: "3", env_name: "Development" },
+      { public_id: "10", env_name: "Sandbox" },
+    ],
   },
   {
     id: "2",
-    name: "Mobile App",
-    description: "React Native cross-platform",
-    environment: {
-      type: "Staging",
-      variables: [
-        { key: "API_URL", value: "https://staging-api.mobile.com" },
-        { key: "ENV", value: "staging" },
-      ],
-      region: "eu-west-2",
-      version: "1.7.0",
-    },
+    name: "Analytics Dashboard",
+    description: "Real-time monitoring system",
+    environment: [
+      { public_id: "4", env_name: "UAT" },
+      { public_id: "5", env_name: "Preview" },
+    ],
   },
   {
     id: "3",
-    name: "Analytics Dashboard",
-    description: "Real-time data visualization",
-    environment: {
-      type: "Development",
-      variables: [{ key: "API_KEY", value: "dev-123" }],
-      region: "us-west-2",
-      version: "0.5.0",
-    },
+    name: "Mobile Application",
+    description: "Cross platform mobile app",
+    environment: [
+      { public_id: "7", env_name: "Demo" },
+      { public_id: "8", env_name: "QA" },
+    ],
   },
 ];
 
 const UserDetailView: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams();
   const navigate = useNavigate();
 
+  const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [assignedProjects, setAssignedProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [globalSearch, setGlobalSearch] = useState("");
+  const [drawerOpen, setDrawerOpen] = useState(false); // ✅ Added missing state
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   useEffect(() => {
-    let isMounted = true;
-    const timeoutId = setTimeout(() => {
-      if (isMounted && loading) {
-        setUser({
-          id: id || "1",
-          name: "John Doe",
-          email: "john.doe@example.com",
-          role: "USER",
-          active: true,
-          createdAt: new Date().toISOString(),
-        });
-        setAssignedProjects(MOCK_ASSIGNED_PROJECTS);
-        setLoading(false);
-      }
+    const timer = setTimeout(() => {
+      setUser(MOCK_USER);
+      setAssignedProjects(MOCK_ASSIGNED_PROJECTS);
+      setLoading(false);
     }, 1000);
-
-    const fetchData = async () => {
-      if (!id) return;
-      try {
-        setLoading(true);
-        setError(null);
-        let userData;
-        try {
-          userData = await getUserByIdApi(id);
-          userData = userData?.data?.user || userData?.data || userData;
-        } catch (apiErr) {
-          userData = {
-            id,
-            name: "Demo User",
-            email: "demo@example.com",
-            role: "USER",
-            active: true,
-            createdAt: new Date().toISOString(),
-          };
-        }
-        if (isMounted) {
-          setUser(userData);
-          setAssignedProjects(MOCK_ASSIGNED_PROJECTS);
-          clearTimeout(timeoutId);
-          setLoading(false);
-        }
-      } catch (err: any) {
-        if (isMounted) {
-          setError(err?.message || "Failed to load user");
-          setLoading(false);
-        }
-      }
-    };
-    fetchData();
-    return () => {
-      isMounted = false;
-      clearTimeout(timeoutId);
-    };
+    return () => clearTimeout(timer);
   }, [id]);
 
+  // Optional: Close drawer on ESC key
+  const closeDrawer = () => {
+    setDrawerOpen(false);
+    setSelectedProject(null);
+  };
+
+  useEffect(() => {
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && drawerOpen) {
+        closeDrawer();
+      }
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [drawerOpen]);
+
   const handleToggleUserStatus = () => {
-    if (user) {
-      setUser({ ...user, active: !user.active });
-    }
+    if (!user) return;
+    setUser({ ...user, active: !user.active });
   };
 
   const handleViewEnvironment = (project: Project) => {
@@ -163,9 +126,27 @@ const UserDetailView: React.FC = () => {
     setDrawerOpen(true);
   };
 
-  const closeDrawer = () => {
-    setDrawerOpen(false);
-    setSelectedProject(null);
+  const handleDeleteSingleEnvironment = (envId: string) => {
+    if (!selectedProject) return;
+    const envToDelete = selectedProject.environment?.find(e => e.public_id === envId);
+    const confirmDelete = window.confirm(
+      `Delete environment "${envToDelete?.env_name}" from "${selectedProject.name}"?`
+    );
+    if (!confirmDelete) return;
+
+    const updatedProjects = assignedProjects.map((project) =>
+      project.id === selectedProject.id
+        ? {
+            ...project,
+            environment: project.environment?.filter((env) => env.public_id !== envId),
+          }
+        : project
+    );
+    setAssignedProjects(updatedProjects);
+    setSelectedProject({
+      ...selectedProject,
+      environment: selectedProject.environment?.filter((env) => env.public_id !== envId),
+    });
   };
 
   const getRoleDisplay = () => {
@@ -179,37 +160,24 @@ const UserDetailView: React.FC = () => {
     }
   };
 
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return "—";
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
-
   const filteredAssignedProjects = useMemo(() => {
     if (!globalSearch.trim()) return assignedProjects;
     return assignedProjects.filter(
-      (p) =>
-        p.name.toLowerCase().includes(globalSearch.toLowerCase()) ||
-        (p.description &&
-          p.description.toLowerCase().includes(globalSearch.toLowerCase()))
+      (project) =>
+        project.name.toLowerCase().includes(globalSearch.toLowerCase()) ||
+        project.description?.toLowerCase().includes(globalSearch.toLowerCase())
     );
   }, [assignedProjects, globalSearch]);
 
   if (loading) return <Loader />;
-  if (error || !user) {
+
+  if (!user) {
     return (
       <div className={styles.errorContainer}>
-        <AlertCircle size={48} />
-        <h3>Error loading user</h3>
-        <p>{error || "User not found"}</p>
-        <button
-          onClick={() => navigate("/dashboard/admin")}
-          className={styles.backBtn}
-        >
-          <ArrowLeft size={16} /> Back to Admin Panel
+        <AlertCircle size={40} />
+        <h3>User Not Found</h3>
+        <button className={styles.backBtn} onClick={() => navigate("/dashboard/admin")}>
+          <ArrowLeft size={16} /> Back
         </button>
       </div>
     );
@@ -217,96 +185,104 @@ const UserDetailView: React.FC = () => {
 
   return (
     <div className={styles.container}>
-      <div className={styles.twoColumnLayout}>
-        {/* LEFT COLUMN: User Info Card */}
-        <div className={styles.userInfoCard}>
-          <div className={styles.profileSection}>
-            <div className={styles.profileIconLarge}>
-              {user.name.charAt(0).toUpperCase()}
-            </div>
-            <h2 className={styles.profileName}>{user.name}</h2>
-            <div className={styles.profileEmail}>
-              <Mail size={14} /> {user.email}
-            </div>
-            <div className={styles.profileRole}>
-              <Shield size={14} /> Role: {getRoleDisplay()}
-            </div>
-            <div className={styles.profileJoined}>
-              <Calendar size={14} /> Joined {formatDate(user.createdAt)}
-            </div>
-            <div className={styles.statusToggleRow}>
-              <span className={styles.toggleLabel}>Account Status</span>
-              <button
-                className={styles.toggleButton}
-                onClick={handleToggleUserStatus}
-              >
-                {user.active ? (
-                  <ToggleRight size={28} className={styles.toggleOn} />
-                ) : (
-                  <ToggleLeft size={28} className={styles.toggleOff} />
-                )}
-              </button>
-              <span
-                className={
-                  user.active ? styles.statusActiveText : styles.statusInactiveText
-                }
-              >
+      <div className={styles.singleColumnLayout}>
+        {/* USER CARD */}
+        <div className={styles.userCard}>
+          <div className={styles.avatarPhotoRow}>
+            {user.name.charAt(0).toUpperCase()}
+          </div>
+          <div className={styles.userInfoWrapper}>
+            <div className={styles.userTopRow}>
+              <h2 className={styles.userName}>{user.name}</h2>
+              <span className={user.active ? styles.badgeActive : styles.badgeInactive}>
                 {user.active ? "Active" : "Inactive"}
               </span>
+            </div>
+            <div className={styles.userMeta}>
+              <div className={styles.userEmail}>
+                <Mail size={15} /> {user.email}
+              </div>
+              <div className={styles.userRole}>{getRoleDisplay()}</div>
+            </div>
+          </div>
+          <div className={styles.switchWrapper}>
+            <div
+              className={`${styles.switch} ${user.active ? styles.active : ""}`}
+              onClick={handleToggleUserStatus}
+            >
+              <div className={styles.slider} />
             </div>
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Projects Section (view-only) */}
+        {/* PROJECTS SECTION */}
         <div className={styles.projectsSection}>
           <div className={styles.sectionHeader}>
-            <h3>
-              <Briefcase size={18} /> Assigned Projects
-              <span className={styles.projectCount}>
-                {filteredAssignedProjects.length}
-              </span>
-            </h3>
+            <div className={styles.headerLeft}>
+              <div className={styles.sectionIcon}>
+                <Briefcase size={18} />
+              </div>
+              <div>
+                <h3>Assigned Projects</h3>
+                <p>{filteredAssignedProjects.length} Projects</p>
+              </div>
+            </div>
+            <div className={styles.headerSearch}>
+              <Search size={15} className={styles.headerSearchIcon} />
+              <input
+                type="text"
+                placeholder="Search projects..."
+                value={globalSearch}
+                onChange={(e) => setGlobalSearch(e.target.value)}
+                className={styles.headerSearchInput}
+              />
+            </div>
           </div>
 
-          {/* Global search */}
-          <div className={styles.globalSearchWrapper}>
-            <Search size={16} className={styles.globalSearchIcon} />
-            <input
-              type="text"
-              placeholder="Search assigned projects..."
-              value={globalSearch}
-              onChange={(e) => setGlobalSearch(e.target.value)}
-              className={styles.globalSearchInput}
-            />
-          </div>
-
-          {/* Scrollable project grid */}
           <div className={styles.projectGrid}>
             {filteredAssignedProjects.length === 0 ? (
               <div className={styles.noProjects}>
-                <Briefcase size={32} />
-                <p>No projects assigned.</p>
+                <p>No Projects Found</p>
+                <img src={noDataImg} alt="No data" />
               </div>
             ) : (
               filteredAssignedProjects.map((project) => (
                 <div key={project.id} className={styles.projectCard}>
                   <div className={styles.cardContent}>
                     <div className={styles.folderIcon}>
-                      <FolderOpen size={28} />
+                      <FolderOpen size={24} />
                     </div>
                     <div className={styles.projectInfo}>
                       <strong>{project.name}</strong>
-                      {project.description && <p>{project.description}</p>}
+                      <p>{project.description || "No description available"}</p>
+                      
+                      {/* Environment list as vertical bullet points */}
+                      <div className={styles.envListVertical}>
+                        {project.environment && project.environment.length > 0 ? (
+                          <>
+                            {project.environment.slice(0, 2).map((env) => (
+                              <div key={env.public_id} className={styles.envItem}>
+                                <span className={styles.envBullet}>•</span>
+                                <span className={styles.envName}>{env.env_name}</span>
+                              </div>
+                            ))}
+                            {project.environment.length > 2 && (
+                              <div className={styles.envMore}>
+                                +{project.environment.length - 2} more
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className={styles.noEnvBadge}>No environments</div>
+                        )}
+                      </div>
                     </div>
-                    <div className={styles.cardActions}>
-                      <button
-                        onClick={() => handleViewEnvironment(project)}
-                        className={styles.viewBtn}
-                        title="View environment details"
-                      >
-                        <Eye size={16} />
-                      </button>
-                    </div>
+                    <button
+                      className={styles.viewBtn}
+                      onClick={() => handleViewEnvironment(project)}
+                    >
+                      <Eye size={16} />
+                    </button>
                   </div>
                 </div>
               ))
@@ -315,60 +291,44 @@ const UserDetailView: React.FC = () => {
         </div>
       </div>
 
-      {/* Side Drawer for Environment Details */}
+      {/* DRAWER - list all environments with individual delete */}
       {drawerOpen && selectedProject && (
         <>
           <div className={styles.drawerOverlay} onClick={closeDrawer} />
           <div className={styles.drawer}>
             <div className={styles.drawerHeader}>
-              <h3>Environment Details</h3>
+              <div>
+                <h3>Environment Details</h3>
+                <p className={styles.drawerProjectName}>{selectedProject.name}</p>
+              </div>
               <button onClick={closeDrawer} className={styles.closeDrawerBtn}>
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
             <div className={styles.drawerContent}>
-              <div className={styles.envSummary}>
-                <p>
-                  <strong>{selectedProject.name}</strong> –{" "}
-                  {selectedProject.environment?.type || "No environment"}
-                </p>
-              </div>
-              <div className={styles.envCards}>
-                <div className={styles.envCard}>
-                  <div className={styles.envCardIcon}>
-                    <Server size={20} />
-                  </div>
-                  <h4>Variables</h4>
-                  <div className={styles.envVarList}>
-                    {selectedProject.environment?.variables?.map((v, idx) => (
-                      <div key={idx} className={styles.envVar}>
-                        <span className={styles.envKey}>{v.key}</span>
-                        <span className={styles.envValue}>{v.value}</span>
+              {selectedProject.environment && selectedProject.environment.length > 0 ? (
+                <div className={styles.envList}>
+                  {selectedProject.environment.map((env) => (
+                    <div key={env.public_id} className={styles.envCard}>
+                      <div className={styles.envCardHeader}>
+                        <Server size={18} />
+                        <strong>{env.env_name}</strong>
+                        <button
+                          onClick={() => handleDeleteSingleEnvironment(env.public_id)}
+                          className={styles.deleteEnvBtn}
+                        >
+                          <Trash2 size={15} /> Remove
+                        </button>
                       </div>
-                    )) || <span>No variables</span>}
-                  </div>
+                    </div>
+                  ))}
                 </div>
-                <div className={styles.envCard}>
-                  <div className={styles.envCardIcon}>
-                    <Globe size={20} />
-                  </div>
-                  <h4>System & Region</h4>
-                  <div className={styles.envDetailRow}>
-                    <span>Region:</span>
-                    <strong>{selectedProject.environment?.region || "unknown"}</strong>
-                  </div>
-                  <div className={styles.envDetailRow}>
-                    <span>Version:</span>
-                    <strong>{selectedProject.environment?.version || "—"}</strong>
-                  </div>
-                  <div className={styles.envDetailRow}>
-                    <span>Environment:</span>
-                    <strong className={styles.envTypeBadge}>
-                      {selectedProject.environment?.type || "—"}
-                    </strong>
-                  </div>
+              ) : (
+                <div className={styles.noEnvMessage}>
+                  <img src={noDataImg} alt="No environment" />
+                  <p>No Environments Configured</p>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </>
