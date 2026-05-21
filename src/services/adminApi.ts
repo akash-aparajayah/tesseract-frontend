@@ -41,3 +41,8 @@ export const getUserByIdApi = (id: string) => {
   return api.get(`/users/get-user/${id}`);
 };
 
+export const getUserDetailsWithProjectsAndEnvironments = async (id: string) => {
+  const response = await api.get(`/users/get-user-details-with-projects-env/${id}`);
+  return response?.data;
+}
+

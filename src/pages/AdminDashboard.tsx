@@ -46,7 +46,7 @@ const api = {
       const data = response?.data?.data;
       if (!data || !Array.isArray(data) || data.length === 0) return [];
       return data.map((item: any) => ({
-        id: item.public_id,        // ← FIX: use public_id as id
+        id: item.public_id || item.id,        // ← FIX: use public_id as id
         user_name: item.user_name,
         email: item.email,
         role: item.role,

@@ -20,6 +20,16 @@ export const getProjects = async () => {
   return response.data;
 };
 
+export const getAllProjectsAndEnvironments = async () => {
+  const response = await api.get(`/project/get-all-projects-and-environments`);
+  return response?.data;
+}
+
+export const assignUserToProjectEnv = async (data: any) => {
+  const response = await api.post(`/project/assign-environment-to-user`, data);
+  return response?.data;
+}
+
 /* -------- GET SINGLE PROJECT -------- */
 export const getProjectById = async (projectId: string) => {
   const response = await api.get(`/project/get-project/${projectId}`);
