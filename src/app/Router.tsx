@@ -8,6 +8,7 @@ import AdminDashboard from "../pages/AdminDashboard";
 import ForgotPassword from "@/pages/ForgotPassword";
 import UserDetailView from "@/pages/UserDetailView";
 import Workspace from "@/pages/Workspace";
+import AssignProjectsEnv from "@/pages/AssignProjectsEnv";
 
 const router = createBrowserRouter([
   {
@@ -31,6 +32,14 @@ const router = createBrowserRouter([
         element: <AdminDashboard />,
       },
       {
+        path: "user/:userId/assign-projects",
+        element: <AssignProjectsEnv />,
+      },
+      {
+        path: "user/:userId",
+        element: <UserDetailView />,
+      },
+      {
         path: "project",
         element: <ProjectDashboard />,
       },
@@ -47,10 +56,6 @@ const router = createBrowserRouter([
       {
         path: "workspace",
         element: <Workspace />, // Empty placeholder component for now
-      },
-      {
-        path: "user/:userId",
-        element: <UserDetailView />,
       },
     ],
   },

@@ -45,8 +45,8 @@ const api = {
       const response = await getAllUsersApi();
       const data = response?.data?.data;
       if (!data || !Array.isArray(data) || data.length === 0) return [];
-      return data.map((item: Admin) => ({
-        id: item.id,
+      return data.map((item: any) => ({
+        id: item.public_id,        // ← FIX: use public_id as id
         user_name: item.user_name,
         email: item.email,
         role: item.role,
@@ -59,6 +59,7 @@ const api = {
   },
 
   async toggleStatus(id: string, currentActive: boolean) {
+    // id here is the public_id
     await activateOrDeactivateUserApi(id, !currentActive);
     return true;
   },
@@ -77,7 +78,15 @@ const api = {
       admin.role,
       admin.is_active,
     );
-    return response.data;
+    // Extract the nested user data from response.data.data
+    const userData = response.data.data;
+    return {
+      id: userData.public_id,      // ← FIX: map public_id to id
+      user_name: userData.user_name,
+      email: userData.email,
+      role: userData.role,
+      is_active: userData.is_active,
+    };
   },
 };
 
@@ -204,7 +213,6 @@ const AdminPanel: React.FC = () => {
     }
   };
 
-  // Drawer open/close with slow animation
   const openDrawer = () => {
     setFormData({
       name: "",
@@ -252,11 +260,18 @@ const AdminPanel: React.FC = () => {
         role: formData.role,
         is_active: formData.active,
       });
-      if (newUser) showToast("User created successfully", "success");
-      closeDrawerWithAnimation();
-      await fetchAdmins();
-      navigate(`/dashboard/user/${newUser.id}`);
+
+      console.log("Created user:", newUser); // Debug: should show id as public_id
+      if (newUser && newUser.id) {
+        showToast("User created successfully", "success");
+        closeDrawerWithAnimation();
+        // Navigate to assignment page (make sure route is defined!)
+        navigate(`/dashboard/user/${newUser.id}/assign-projects`);
+      } else {
+        throw new Error("User ID missing from API response");
+      }
     } catch (error) {
+      console.error("Create error:", error);
       showToast(
         error instanceof Error ? error.message : "Failed to create admin",
         "error",
@@ -315,14 +330,8 @@ const AdminPanel: React.FC = () => {
           </button>
         </div>
       )}
-{/* 
-      <div className={styles.header}>
-        <h1>User Control Panel</h1>
-      </div> */}
 
-      {/* ========= FINAL ABSTRACT CARDS (with diamond center) ========= */}
       <div className={styles.statsGrid}>
-        {/* Total Users Card */}
         <div className={`${styles.statCard} ${styles.cardTotal}`}>
           <div className={styles.leftArt}></div>
           <div className={styles.leftDots}></div>
@@ -338,7 +347,6 @@ const AdminPanel: React.FC = () => {
           </div>
         </div>
 
-        {/* Active Card */}
         <div className={`${styles.statCard} ${styles.cardActive}`}>
           <div className={styles.leftArt}></div>
           <div className={styles.leftDots}></div>
@@ -354,7 +362,6 @@ const AdminPanel: React.FC = () => {
           </div>
         </div>
 
-        {/* Inactive Card */}
         <div className={`${styles.statCard} ${styles.cardInactive}`}>
           <div className={styles.leftArt}></div>
           <div className={styles.leftDots}></div>
@@ -371,7 +378,6 @@ const AdminPanel: React.FC = () => {
         </div>
       </div>
 
-      {/* Toolbar */}
       <div className={styles.toolbar}>
         <div className={styles.searchBox}>
           <Search size={16} className={styles.searchIcon} />
@@ -418,7 +424,6 @@ const AdminPanel: React.FC = () => {
         </div>
       </div>
 
-      {/* Table */}
       <div className={styles.tableWrapper}>
         <table className={styles.table}>
           <thead>
@@ -434,8 +439,7 @@ const AdminPanel: React.FC = () => {
           <tbody>
             {paginatedAdmins.length > 0 ? (
               paginatedAdmins.map((admin, index) => {
-                const serialNumber =
-                  (currentPage - 1) * rowsPerPage + index + 1;
+                const serialNumber = (currentPage - 1) * rowsPerPage + index + 1;
                 return (
                   <tr key={admin.id}>
                     <td className={styles.colNo}>{serialNumber}</td>
@@ -444,20 +448,15 @@ const AdminPanel: React.FC = () => {
                         <div className={styles.userAvatar}>
                           {getInitials(admin.user_name)}
                         </div>
-                        <span className={styles.userName}>
-                          {admin.user_name}
-                        </span>
+                        <span className={styles.userName}>{admin.user_name}</span>
                       </div>
                     </td>
                     <td className={styles.colEmail}>{admin.email}</td>
                     <td className={styles.colRole}>
-                      <span
-                        className={`${styles.roleBadge} ${getRoleBadge(admin.role)}`}
-                      >
+                      <span className={`${styles.roleBadge} ${getRoleBadge(admin.role)}`}>
                         {getRoleDisplay(admin.role)}
                       </span>
                     </td>
-                    {/* NEW COMPACT TOGGLE with profile icon + status text */}
                     <td className={styles.colStatus}>
                       <div
                         className={`${styles.toggleCompact} ${admin.is_active ? styles.active : ""}`}
@@ -475,10 +474,7 @@ const AdminPanel: React.FC = () => {
                     </td>
                     <td className={styles.colActions}>
                       <div className="actionMenu">
-                        <button
-                          className={styles.dotsBtn}
-                          onClick={(e) => toggleDropdown(admin.id, e)}
-                        >
+                        <button className={styles.dotsBtn} onClick={(e) => toggleDropdown(admin.id, e)}>
                           <Settings size={16} />
                         </button>
                         {openDropdownId === admin.id && (
@@ -489,10 +485,7 @@ const AdminPanel: React.FC = () => {
                             <button onClick={() => handleEdit(admin)}>
                               <Pencil size={14} /> Edit
                             </button>
-                            <button
-                              className={styles.deleteBtn}
-                              onClick={() => handleDelete(admin.id)}
-                            >
+                            <button className={styles.deleteBtn} onClick={() => handleDelete(admin.id)}>
                               <Trash2 size={14} /> Delete
                             </button>
                           </div>
@@ -505,11 +498,7 @@ const AdminPanel: React.FC = () => {
             ) : (
               <tr>
                 <td colSpan={6} className={styles.noData}>
-                  <img
-                    src={fetchError ? errorImg : noDataImg}
-                    alt="No data"
-                    className={styles.noDataImg}
-                  />
+                  <img src={fetchError ? errorImg : noDataImg} alt="No data" className={styles.noDataImg} />
                   <p>
                     {fetchError
                       ? "Unable to load users. Please try again."
@@ -527,14 +516,9 @@ const AdminPanel: React.FC = () => {
         </table>
       </div>
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className={styles.pagination}>
-          <button
-            className={styles.pageBtn}
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage((p) => p - 1)}
-          >
+          <button className={styles.pageBtn} disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}>
             <ChevronLeft size={14} /> Prev
           </button>
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
@@ -546,35 +530,23 @@ const AdminPanel: React.FC = () => {
               {page}
             </button>
           ))}
-          <button
-            className={styles.pageBtn}
-            disabled={currentPage === totalPages}
-            onClick={() => setCurrentPage((p) => p + 1)}
-          >
+          <button className={styles.pageBtn} disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => p + 1)}>
             Next <ChevronRight size={14} />
           </button>
-          <span className={styles.pageInfo}>
-            Page {currentPage} of {totalPages}
-          </span>
+          <span className={styles.pageInfo}>Page {currentPage} of {totalPages}</span>
         </div>
       )}
 
-      {/* DRAWER */}
       {isDrawerOpen && (
         <>
           <div
             className={`${styles.drawerOverlay} ${isClosing ? styles.drawerOverlayClosing : ""}`}
             onClick={closeDrawerWithAnimation}
           />
-          <div
-            className={`${styles.drawer} ${isClosing ? styles.drawerClosing : ""}`}
-          >
+          <div className={`${styles.drawer} ${isClosing ? styles.drawerClosing : ""}`}>
             <div className={styles.drawerHeader}>
               <h3>Create New User</h3>
-              <button
-                className={styles.drawerClose}
-                onClick={closeDrawerWithAnimation}
-              >
+              <button className={styles.drawerClose} onClick={closeDrawerWithAnimation}>
                 <X size={20} />
               </button>
             </div>
@@ -582,63 +554,44 @@ const AdminPanel: React.FC = () => {
               {formError && <div className={styles.formError}>{formError}</div>}
 
               <div className={styles.formGroup}>
-                <label>
-                  Full Name <span className={styles.requiredStar}>*</span>
-                </label>
+                <label>Full Name <span className={styles.requiredStar}>*</span></label>
                 <input
                   type="text"
                   placeholder="Enter full name"
                   value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   autoFocus
                 />
               </div>
 
               <div className={styles.formGroup}>
-                <label>
-                  Email <span className={styles.requiredStar}>*</span>
-                </label>
+                <label>Email <span className={styles.requiredStar}>*</span></label>
                 <input
                   type="email"
                   placeholder="user@example.com"
                   value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 />
               </div>
 
               <div className={styles.formGroup}>
-                <label>
-                  Password <span className={styles.requiredStar}>*</span>{" "}
-                  <span className={styles.passwordHint}>
-                    (min 8 characters)
-                  </span>
-                </label>
+                <label>Password <span className={styles.requiredStar}>*</span> <span className={styles.passwordHint}>(min 8 characters)</span></label>
                 <div className={styles.passwordWrapper}>
                   <Lock size={16} className={styles.passwordIcon} />
                   <input
                     type="password"
                     placeholder="Enter password"
                     value={formData.password}
-                    onChange={(e) =>
-                      setFormData({ ...formData, password: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   />
                 </div>
               </div>
 
               <div className={styles.formGroup}>
-                <label>
-                  Role <span className={styles.requiredStar}>*</span>
-                </label>
+                <label>Role <span className={styles.requiredStar}>*</span></label>
                 <select
                   value={formData.role}
-                  onChange={(e) =>
-                    setFormData({ ...formData, role: e.target.value as never })
-                  }
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value as never })}
                 >
                   <option value="USER">User</option>
                   <option value="ADMIN">Admin</option>
@@ -647,17 +600,10 @@ const AdminPanel: React.FC = () => {
               </div>
 
               <div className={styles.formGroup}>
-                <label>
-                  Status <span className={styles.requiredStar}>*</span>
-                </label>
+                <label>Status <span className={styles.requiredStar}>*</span></label>
                 <select
                   value={formData.active ? "active" : "inactive"}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      active: e.target.value === "active",
-                    })
-                  }
+                  onChange={(e) => setFormData({ ...formData, active: e.target.value === "active" })}
                 >
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
@@ -665,18 +611,10 @@ const AdminPanel: React.FC = () => {
               </div>
 
               <div className={styles.drawerActions}>
-                <button
-                  type="button"
-                  className={styles.cancelBtn}
-                  onClick={closeDrawerWithAnimation}
-                >
+                <button type="button" className={styles.cancelBtn} onClick={closeDrawerWithAnimation}>
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className={styles.submitBtn}
-                  disabled={creating}
-                >
+                <button type="submit" className={styles.submitBtn} disabled={creating}>
                   {creating ? "Creating..." : "Create User"}
                 </button>
               </div>
