@@ -605,16 +605,39 @@
 .env-tabs-wrapper {
     display: flex;
     align-items: center;
-    gap: 0;
+    width: 100%;
+    position: relative;
 }
 
 .env-tabs {
     display: flex;
-    align-items: center;
-    gap: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
     flex: 1;
+    gap: 8px;
     padding-right: 8px;
-    position: relative;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+}
+
+.env-tabs::-webkit-scrollbar {
+    height: 4px;
+}
+
+.env-tabs::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .env-tab {
@@ -622,7 +645,7 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 16px;
+    padding: 6px 16px;
     border-radius: 10px;
     cursor: pointer;
     flex-shrink: 0;
@@ -745,8 +768,13 @@
 }
 
 .sticky-add-env {
-    padding: 6px 12px;
-    font-size: 11px;
+    position: sticky;
+    right: 0;
+    flex-shrink: 0;
+    margin-left: auto;
+    z-index: 5;
+    background: white;
+    padding-left: 12px;
 }
 
 /* ===== SERVICE ENV INFO ===== */
@@ -1969,6 +1997,8 @@
 }
 
 .token-section-wrapper .form-card {
+    max-width: 1055px;
+    margin: 0 auto;
     background: white;
     border-radius: 16px;
     padding: 24px;
@@ -1980,6 +2010,7 @@
     display: flex;
     align-items: center;
     margin-bottom: 20px;
+    margin-top: 20px;
 }
 
 .token-search-bar {

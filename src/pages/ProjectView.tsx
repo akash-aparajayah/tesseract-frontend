@@ -1,18 +1,17 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { useParams } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-import "../styles/ProjectView.css";
+import styles from "../styles/ProjectView.module.css";
 import {
   Pencil, FolderOpen, Plus, MessageSquare, Mail, MessageCircle, Plug, Check,
   Save, X, ChevronDown, Server, Copy, Trash2, Globe, Rocket, Wrench,
   Search, Lock, AlertTriangle, Home, Monitor, Key,
   User, UserMinus, UserPlus, AlertCircle, Calendar, Clock, RefreshCw, Filter, Settings
 } from 'lucide-react';
-import { Link as LinkIcon } from 'lucide-react';
 import { useToast } from "../hooks/useToast";
 import "../styles/Toast.css"
 import noDataIllustration from '../assets/illustration/No data.gif';
-
+import { getAllServices, getProvidersByServiceId, createProvider, getProviderById, deleteProvider, createEnvironment, getEnvironmentsByProjectId, getProvidersByEnvironmentId } from "../services/projectApi";
 interface Project {
   id: string;
   name: string;
@@ -178,11 +177,7 @@ const SERVICE_COLORS: Record<string, string> = { SMS: "#10b981", Email: "#6366f1
 const SERVICE_ICONS: Record<string, React.ReactNode> = {
   SMS: <MessageSquare size={18} />, Email: <Mail size={18} />, Whatsapp: <MessageCircle size={18} />
 };
-const PROVIDERS_BY_SERVICE: Record<string, string[]> = {
-  SMS: ["MSG91", "Twilio", "Gupshup", "Vonage", "Kaleyra", "Textlocal", "TrueDialog"],
-  Email: ["SendGrid", "AWS_SES", "Mailgun", "SMTP", "Postmark"],
-  Whatsapp: ["WhatsApp_Twilio", "WhatsApp_Gupshup", "Meta_Cloud", "WhatsApp_Kaleyra", "WhatsApp_Vonage"]
-};
+
 
 // Token Utils
 const TOKEN_PREFIX = "env_";
@@ -216,12 +211,11 @@ const calculateExpiryLabel = (expires: string, expiresInDays: number | null): st
 };
 
 export default function ProjectView() {
-  const navigate = useNavigate();
   const { projectId } = useParams();
 
   const [project, setProject] = useState<Project | null>(null);
-  const [environments, setEnvironments] = useState<string[]>([]);
-  const [selectedEnv, setSelectedEnv] = useState<string>("");
+  const [environments, setEnvironments] = useState<any[]>([]);
+  const [selectedEnv, setSelectedEnv] = useState("");
   const [activeService, setActiveService] = useState<string>("SMS");
   const [providers, setProviders] = useState<Provider[]>([]);
   const [serviceProviderCounts, setServiceProviderCounts] = useState<Record<string, number>>({ SMS: 0, Email: 0, Whatsapp: 0 });
@@ -296,7 +290,62 @@ export default function ProjectView() {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [pendingStatusChange, setPendingStatusChange] = useState<{ env: string; newStatus: "active" | "inactive" } | null>(null);
 
+  // REFS - ADDED for CSS Modules fix
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const envMenuRef = useRef<HTMLDivElement>(null);
+  const envTabsRef = useRef<HTMLDivElement>(null);
+  const userFilterRef = useRef<HTMLDivElement>(null);
+  const tokenDateRef = useRef<HTMLInputElement>(null);
 
+  const [providersLoading, setProvidersLoading] = useState(false);
+  const [serviceData, setServiceData] = useState<any>(null);
+
+  const [providersList, setProvidersList] = useState<any[]>([]);
+
+
+
+  const fetchProvidersForService = async (servicePublicId: string) => {
+    try {
+      const res = await getProvidersByServiceId(servicePublicId);
+      setProvidersList(res.data || []);
+    } catch (error) {
+      console.error("Failed to fetch providers:", error);
+      setProvidersList([]);
+    }
+  };
+
+  useEffect(() => {
+    if (serviceData && activeService) {
+      const service = serviceData.find(
+        (s: any) => s.name === activeService || s.slug === activeService.toLowerCase()
+      );
+      if (service?.public_id) {
+        fetchProvidersForService(service.public_id);
+      }
+    }
+  }, [activeService, serviceData]);
+
+
+  const fetchProvidersForCurrentService = async () => {
+    if (!serviceData || !activeService) return;
+
+    const service = serviceData.find(
+      (s: any) => s.name === activeService || s.slug === activeService.toLowerCase()
+    );
+
+    console.log("Fetching providers for service:", service);
+
+    if (service?.public_id) {
+      try {
+        const res = await getProvidersByServiceId(service.public_id);
+        console.log("Providers response:", res);
+        setProvidersList(res.data || []);
+      } catch (error) {
+        console.error("Failed to fetch providers:", error);
+        setProvidersList([]);
+      }
+    }
+  };
 
   const startEditingTab = (env: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -334,15 +383,50 @@ export default function ProjectView() {
     setEnvironments(updatedOrder);
     if (selectedEnv === oldName) setSelectedEnv(newName);
 
-    showToast(`Environment renamed to "${newName}"`, "success"); // Add this
+    showToast(`Environment renamed to "${newName}"`, "success");
   };
 
-  // Close filter dropdown when clicking outside
+  const loadProvidersForEnv = async (env: any) => {
+    if (!projectId || !serviceData) return;
+
+    try {
+      setProvidersLoading(true);
+
+      const service = serviceData.find((s: any) => s.name === activeService);
+      if (!env?.public_id || !service?.public_id) return;
+
+      const res = await getProvidersByEnvironmentId(env.public_id, service.public_id);
+      const data = res.data || {};
+      const allProviders = [...(data.sandbox || []), ...(data.live || [])];
+
+      const providerList = allProviders.map((p: any) => ({
+        id: p.public_id || p.id,
+        name: p.provider_name || p.name,
+        fields: {
+          ...(p.credentials || {}),
+          mode: p.mode,
+          endpoint: p.endpoint,
+        },
+      }));
+
+      console.log("Setting providers:", providerList.length);
+      setProviders(providerList);
+      updateAllServiceCounts();
+    } catch (error) {
+      console.error("Failed to load providers:", error);
+    } finally {
+      setProvidersLoading(false);
+    }
+  };
+
+
+
+  // Close filter dropdown when clicking outside - FIXED
   useEffect(() => {
     if (!userFilterDropdownOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (!target.closest('.user-panel-filter-wrapper')) {
+      if (userFilterRef.current && !userFilterRef.current.contains(target)) {
         setUserFilterDropdownOpen(false);
       }
     };
@@ -353,13 +437,11 @@ export default function ProjectView() {
   useEffect(() => {
     if (!generatedToken) return;
 
-    // Browser refresh/close
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
       e.returnValue = 'You have an unsaved token. Are you sure you want to leave?';
     };
 
-    // Browser back/forward
     const handlePopState = () => {
       const confirmLeave = window.confirm('You have an unsaved token. Are you sure you want to leave?');
       if (!confirmLeave) {
@@ -380,6 +462,7 @@ export default function ProjectView() {
     };
   }, [generatedToken]);
 
+
   useEffect(() => {
     if (generatedToken) {
       const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -391,13 +474,12 @@ export default function ProjectView() {
     }
   }, [generatedToken]);
 
-  // Close edit on click outside
+  // Close edit on click outside - FIXED
   useEffect(() => {
     if (!editingTabEnv) return;
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      // Only cancel if clicking outside ALL env-tabs
-      if (!target.closest('.env-tab')) {
+      if (envTabsRef.current && !envTabsRef.current.contains(target)) {
         cancelTabEdit();
       }
     };
@@ -423,26 +505,98 @@ export default function ProjectView() {
   const unassignedUsers = availableUsers.filter(u => !assignedUsers.some(au => au.id === u.id));
 
   // ---- ENVIRONMENT FUNCTIONS ----
-  const loadEnvironments = () => {
+  // const loadEnvironments = async () => {
+  //   if (!projectId) return;
+
+  //   try {
+  //     const res = await getEnvironmentsByProjectId(projectId);
+
+  //     const envs = res?.data?.data || [];
+
+  //     setEnvironments(envs);
+
+  //     if (envs.length > 0) {
+  //       setSelectedEnv(envs[0].environment_name);
+  //     }
+  //   } catch (error) {
+  //     console.error(error);
+  //   }
+  // };
+
+  const loadEnvironments = async () => {
     if (!projectId) return;
 
-    const savedOrder = JSON.parse(
-      localStorage.getItem(`env_order_${projectId}`) || "[]"
-    );
+    const cached = localStorage.getItem(`env_data_${projectId}`);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (parsed.length > 0) {
+          setEnvironments(parsed);
+          const firstEnv = parsed[0].environment_name;
+          setSelectedEnv(firstEnv);
+          // ✅ Load providers for the first environment
+          loadProvidersForEnv(parsed[0]);
+        }
+      } catch { }
+    }
 
-    setEnvironments(savedOrder);
-
-    if (savedOrder.length > 0 && !selectedEnv) {
-      setSelectedEnv(savedOrder[0]);
+    try {
+      const res = await getEnvironmentsByProjectId(projectId);
+      const envs = res?.data || [];
+      if (envs.length > 0) {
+        setEnvironments(envs);
+        const firstEnv = envs[0].environment_name;
+        if (!selectedEnv) {
+          setSelectedEnv(firstEnv);
+          // ✅ Load providers for the first environment
+          loadProvidersForEnv(envs[0]);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load environments", error);
     }
   };
 
-  const loadProviders = () => {
-    if (!selectedEnv || !projectId) return;
-    const key = `env_${projectId}_${selectedEnv}_${activeService.toLowerCase()}_providers`;
-    const data = localStorage.getItem(key);
-    setProviders(data ? JSON.parse(data).providers || [] : []);
-    updateAllServiceCounts();
+  const loadProviders = async () => {
+    if (!selectedEnv || !projectId || !serviceData) {
+      console.log("loadProviders skipped - missing data");
+      return;
+    }
+
+    try {
+      setProvidersLoading(true);
+
+      const env = environments.find((e: any) => e.environment_name === selectedEnv);
+      const service = serviceData.find((s: any) => s.name === activeService);
+
+      if (!env?.public_id || !service?.public_id) {
+        console.log("Missing env or service public_id");
+        return;
+      }
+
+      const res = await getProvidersByEnvironmentId(env.public_id, service.public_id);
+      const data = res.data || {};
+      const allProviders = [...(data.sandbox || []), ...(data.live || [])];
+
+      const providerList = allProviders.map((p: any) => ({
+        id: p.public_id || p.id,
+        name: p.provider_name || p.name,
+        fields: {
+          ...(p.credentials || {}),
+          mode: p.mode,
+          endpoint: p.endpoint,
+        },
+      }));
+
+      if (providerList.length > 0) {
+        setProviders(providerList);
+        updateAllServiceCounts();
+      }
+    } catch (error) {
+      console.error("Failed to load providers:", error);
+    } finally {
+      setProvidersLoading(false);
+    }
   };
 
   const updateAllServiceCounts = () => {
@@ -457,57 +611,56 @@ export default function ProjectView() {
     setServiceProviderCounts(counts);
   };
 
-  const saveToLocalStorage = (p: Provider[]) => {
+  // const handleCreateEnvironment = () => {
+  //   if (!projectId) return;
+  //   const envToCreate = isCustomEnv && customEnvInput.trim() ? customEnvInput.trim() : (newEnvName || 'Local');
+
+  //   ['sms', 'email', 'whatsapp'].forEach(service => {
+  //     const key = `env_${projectId}_${envToCreate}_${service}_providers`;
+  //     if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify({ providers: [], timestamp: Date.now() }));
+  //   });
+
+  //   const existingOrder = JSON.parse(
+  //     localStorage.getItem(`env_order_${projectId}`) || "[]"
+  //   );
+
+  //   if (!existingOrder.includes(envToCreate)) {
+  //     const updatedOrder = [...existingOrder, envToCreate];
+  //     localStorage.setItem(`env_order_${projectId}`, JSON.stringify(updatedOrder));
+  //   }
+
+  //   loadEnvironments();
+  //   setSelectedEnv(envToCreate);
+  //   setNewEnvName("");
+  //   setIsCustomEnv(false);
+  //   setCustomEnvInput("");
+  // };
+
+  const handleAddEnvironment = async () => {
     if (!projectId) return;
-    localStorage.setItem(`env_${projectId}_${selectedEnv}_${activeService.toLowerCase()}_providers`, JSON.stringify({ providers: p, timestamp: Date.now() }));
-  };
 
-  const handleCreateEnvironment = () => {
-    if (!projectId) return;
-    const envToCreate = isCustomEnv && customEnvInput.trim() ? customEnvInput.trim() : (newEnvName || 'Local');
-    ['sms', 'email', 'whatsapp'].forEach(service => {
-      const key = `env_${projectId}_${envToCreate}_${service}_providers`;
-      if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify({ providers: [], timestamp: Date.now() }));
-    });
-    const existingOrder = JSON.parse(
-      localStorage.getItem(`env_order_${projectId}`) || "[]"
-    );
-
-    if (!existingOrder.includes(envToCreate)) {
-      const updatedOrder = [...existingOrder, envToCreate];
-
-      localStorage.setItem(
-        `env_order_${projectId}`,
-        JSON.stringify(updatedOrder)
-      );
-    }
-    loadEnvironments();
-    setSelectedEnv(envToCreate);
-    setNewEnvName(""); setIsCustomEnv(false); setCustomEnvInput("");
-  };
-
-  const handleAddEnvironment = () => {
-    if (!projectId) return;
     let name = newEnvName;
     if (isCustomEnv && customEnvInput.trim()) name = customEnvInput.trim();
     if (!name) return;
-    if (environments.some(e => e.toLowerCase() === name.toLowerCase())) return;
-    ['sms', 'email', 'whatsapp'].forEach(s => {
-      if (!localStorage.getItem(`env_${projectId}_${name}_${s}_providers`))
-        localStorage.setItem(`env_${projectId}_${name}_${s}_providers`, JSON.stringify({ providers: [], timestamp: Date.now() }));
-    });
-    const updatedEnvs = [...environments, name];
-    setEnvironments(updatedEnvs);
-    localStorage.setItem(`env_order_${projectId}`, JSON.stringify(updatedEnvs));
-    setSelectedEnv(name);
-    setProviders([]);
-    setServiceProviderCounts({ SMS: 0, EMAIL: 0, WHATSAPP: 0 });
-    setShowAddEnvModal(false);
-    setNewEnvName("");
-    setIsCustomEnv(false);
-    setCustomEnvInput("");
 
-    showToast(`Environment "${name}" created successfully`, "success"); // <-- After everything
+    try {
+      await createEnvironment(projectId, { environment_name: name });
+
+      showToast(`Environment "${name}" created successfully`, "success");
+
+      // ✅ Use loadEnvironments instead of calling API directly
+      await loadEnvironments();
+
+      setSelectedEnv(name);
+      await loadProviders();
+
+      setShowAddEnvModal(false);
+      setNewEnvName("");
+      setIsCustomEnv(false);
+      setCustomEnvInput("");
+    } catch (error: any) {
+      showToast(error?.response?.data?.message || "Failed to create environment", "error");
+    }
   };
 
   const handleEditEnvironment = () => {
@@ -525,16 +678,14 @@ export default function ProjectView() {
     if (selectedEnv === editingEnvName) setSelectedEnv(editEnvName);
     setShowEditEnvModal(false);
 
-    showToast(`Environment renamed to "${editEnvName}"`, "success"); // Add this
+    showToast(`Environment renamed to "${editEnvName}"`, "success");
   };
 
   const handleDeleteEnvironment = () => {
     if (!projectId) return;
     ['sms', 'email', 'whatsapp'].forEach(s => localStorage.removeItem(`env_${projectId}_${deletingEnvName}_${s}_providers`));
-    // Also delete tokens for this environment
     deleteToken(projectId, deletingEnvName, 'Sandbox');
     deleteToken(projectId, deletingEnvName, 'Live');
-    // Update allTokens state
     setAllTokens(prev => {
       const updated = { ...prev };
       delete updated[`${deletingEnvName}_Sandbox`];
@@ -562,7 +713,6 @@ export default function ProjectView() {
       if (src) localStorage.setItem(`env_${projectId}_${target}_${s}_providers`, JSON.stringify({ ...JSON.parse(src), timestamp: Date.now() }));
     });
 
-    // Add the cloned environment to the order list
     const savedOrder = JSON.parse(localStorage.getItem(`env_order_${projectId}`) || "[]");
     if (!savedOrder.includes(target)) {
       const updatedOrder = [...savedOrder, target];
@@ -576,57 +726,92 @@ export default function ProjectView() {
     showToast(`Environment cloned to "${target}"`, "success");
   };
 
-  const saveProvider = () => {
-    if (!selectedProvider) return;
-    const fields = PROVIDER_FIELDS_MAP[selectedProvider];
-    if (fields) for (const f of fields) if (f.required && !providerFields[f.name]) return;
+  const saveProvider = async () => {
+    if (!selectedProvider || !projectId || !selectedEnv) return;
+
     setSaving(true);
-    setTimeout(() => {
-      let updated: Provider[];
-      if (editingProvider) {
-        updated = providers.map(p => p.id === editingProvider.id ? { ...p, name: selectedProvider, fields: { ...providerFields } } : p);
-      } else {
-        updated = [...providers, { id: Date.now(), name: selectedProvider, fields: { ...providerFields } }];
+
+    try {
+      const service = serviceData?.find(
+        (s: any) => s.name === activeService || s.slug === activeService.toLowerCase()
+      );
+
+      const provider = providersList.find((p: any) => p.name === selectedProvider);
+      const env = environments.find((e: any) => e.environment_name === selectedEnv);
+
+      const payload = {
+        environment_id: env?.public_id,
+        service_type_id: service?.public_id,
+        provider_id: provider?.public_id,
+        provider_name: provider?.name,
+        credentials: {
+          ...providerFields,
+          mode: modeFilter,
+        },
+        mode: modeFilter,
+        endpoint: providerFields.endpoint || "",
+      };
+
+      console.log("FULL PAYLOAD:", JSON.stringify(payload, null, 2));
+
+      await createProvider(payload);
+
+      // Refresh providers for current environment
+      if (env) {
+        await loadProvidersForEnv(env);
       }
-      setProviders(updated);
-      saveToLocalStorage(updated);
-      updateAllServiceCounts();
-      const savedMode = providerFields.mode;
-      if (savedMode) setmodeFilter(savedMode);
+
       setShowAddProviderModal(false);
       setEditingProvider(null);
       setSelectedProvider("");
       setProviderFields({});
+      showToast("Provider created successfully", "success");
+    } catch (error: any) {
+      showToast(error?.response?.data?.message || "Failed to create provider", "error");
+    } finally {
       setSaving(false);
-
-      // Toast after modal closes
-      showToast(editingProvider ? "Provider updated successfully" : "Provider added successfully", "success");
-    }, 500);
+    }
   };
 
-  const deleteProvider = () => {
+  const deleteProviderHandler = async () => {
     if (!showDeleteProviderModal) return;
-    const updated = providers.filter(p => p.id !== showDeleteProviderModal.id);
-    setProviders(updated); saveToLocalStorage(updated); updateAllServiceCounts();
-    setShowDeleteProviderModal(null);
-    showToast("Provider deleted", "error");
+    try {
+      await deleteProvider(showDeleteProviderModal.id.toString());
+      await loadProviders();
+      setShowDeleteProviderModal(null);
+      showToast("Provider deleted", "error");
+    } catch (error: any) {
+      console.error("Failed to delete provider:", error);
+      showToast(error?.response?.data?.message || "Failed to delete provider", "error");
+    }
   };
 
-  const handleProviderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedProvider(e.target.value);
-    const defs = PROVIDER_FIELDS_MAP[e.target.value] || [];
-    const nf: Record<string, string> = {};
-    defs.forEach(f => {
-      if (f.type === "select") {
-        // Auto-set mode to current modeFilter when adding
-        if (!editingProvider) {
-          nf[f.name] = modeFilter; // "Sandbox" or "Live"
-        }
-      } else {
-        nf[f.name] = "";
+  const handleProviderChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const providerName = e.target.value;
+    setSelectedProvider(providerName);
+
+    // Find the provider from the list
+    const provider = providersList.find((p: any) => p.name === providerName);
+
+    if (provider?.public_id) {
+      try {
+        // Fetch provider details to get credential schema
+        const res = await getProviderById(provider.public_id);
+        console.log("Provider details:", res);
+
+        const schema = res.data?.required_credential_schema || [];
+
+        const nf: Record<string, string> = {};
+        schema.forEach((field: any) => {
+          nf[field.key] = "";
+        });
+        nf["mode"] = modeFilter;
+
+        setProviderFields(nf);
+      } catch (error) {
+        console.error("Failed to fetch provider schema:", error);
       }
-    });
-    setProviderFields(nf);
+    }
   };
 
   const handleFieldChange = (n: string, v: string) => setProviderFields(prev => ({ ...prev, [n]: v }));
@@ -654,7 +839,6 @@ export default function ProjectView() {
   const handleTokenGenerate = () => {
     if (!tokenName.trim() || !selectedEnv || !projectId || !tokenMode) return;
 
-    // If regenerating, delete the old token first
     if (isRegenerating && currentToken?.mode) {
       deleteToken(projectId, selectedEnv, currentToken.mode);
     }
@@ -704,7 +888,8 @@ export default function ProjectView() {
     const newProviders = [...providers];
     const draggedItem = newProviders[dragIndex];
     newProviders.splice(dragIndex, 1); newProviders.splice(realDropIndex, 0, draggedItem);
-    setProviders(newProviders); setDragIndex(null); saveToLocalStorage(newProviders);
+    setProviders(newProviders); setDragIndex(null);
+    // saveToLocalStorage(newProviders);
     showToast("Primary provider updated successfully", "success");
   };
   const handleDragEnd = () => setDragIndex(null);
@@ -770,14 +955,69 @@ export default function ProjectView() {
     return () => window.removeEventListener('projectUpdated', handleProjectUpdate);
   }, [projectId]);
 
-  useEffect(() => { if (!dropdownOpen) return; const hc = (e: MouseEvent) => { if (!(e.target as HTMLElement).closest('.custom-dropdown-wrapper')) setDropdownOpen(false); }; document.addEventListener('mousedown', hc); return () => document.removeEventListener('mousedown', hc); }, [dropdownOpen]);
-  useEffect(() => { if (!openEnvMenu) return; const hc = (e: MouseEvent) => { const t = e.target as HTMLElement; if (t.closest('.env-menu-dropdown') || t.closest('.env-menu-trigger')) return; setOpenEnvMenu(null); }; document.addEventListener('mousedown', hc); return () => document.removeEventListener('mousedown', hc); }, [openEnvMenu]);
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const res = await getAllServices();
+        setServiceData(res.data);  //extracts data array
+      } catch (error) {
+        console.error("Failed to fetch services:", error);
+      }
+    };
+    fetchServices();
+  }, []);
+
+  // Dropdown click outside - FIXED with ref
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    const hc = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as HTMLElement))
+        setDropdownOpen(false);
+    };
+    document.addEventListener('mousedown', hc);
+    return () => document.removeEventListener('mousedown', hc);
+  }, [dropdownOpen]);
+
+  // Env menu click outside - FIXED with ref
+  useEffect(() => {
+    if (!openEnvMenu) return;
+    const hc = (e: MouseEvent) => {
+      const t = e.target as HTMLElement;
+      if (envMenuRef.current && envMenuRef.current.contains(t)) return;
+      setOpenEnvMenu(null);
+    };
+    document.addEventListener('mousedown', hc);
+    return () => document.removeEventListener('mousedown', hc);
+  }, [openEnvMenu]);
+
+
+  // After setting environments:
+  // useEffect(() => {
+  //   if (environments.length > 0) {
+  //     localStorage.setItem(`env_data_${projectId}`, JSON.stringify(environments));
+  //   }
+  // }, [environments, projectId]);
+
+  // On load, check localStorage first:
+
   useEffect(() => { if (selectedEnv && activeMainTab === 'environments') loadProviders(); }, [selectedEnv, activeService, activeMainTab]);
   useEffect(() => { if (selectedEnv && activeMainTab === 'environments') updateAllServiceCounts(); }, [selectedEnv, activeService, modeFilter, activeMainTab]);
-  useEffect(() => { loadEnvironments(); }, [projectId]);
   useEffect(() => {
     if (projectId) setAllTokens(getAllTokens(projectId));
   }, [projectId]);
+
+  useEffect(() => { if (selectedEnv && activeMainTab === 'environments') loadProviders(); }, [selectedEnv, activeService, activeMainTab]);
+  useEffect(() => { if (selectedEnv && activeMainTab === 'environments') updateAllServiceCounts(); }, [selectedEnv, activeService, modeFilter, activeMainTab]);
+  // ✅ ADD THIS NEW ONE:
+  useEffect(() => {
+    if (selectedEnv && activeMainTab === 'environments' && serviceData) {
+      const env = environments.find((e: any) => e.environment_name === selectedEnv);
+      if (env) {
+        loadProvidersForEnv(env);
+      }
+    }
+  }, [selectedEnv, serviceData]);
+
   useEffect(() => {
     if (projectId) setAllTokens(getAllTokens(projectId));
   }, [showTokenFormModal, showTokenDeleteModal, showRegenModal]);
@@ -799,66 +1039,66 @@ export default function ProjectView() {
   };
   const handleCancelEdit = () => { if (project) setEditForm({ name: project.name, description: project.description || "", status: project.status }); setIsEditing(false); };
 
-  if (!project) return <div className="loading">Loading...</div>;
+  if (!project) return <div className={styles["loading"]}>Loading...</div>;
 
   return (
-    <div className="project-view-page">
+    <div className={styles["project-view-page"]}>
 
       {/* Project Details Card */}
-      <div className="project-details-card">
-        <div className="project-details-content">
-          <div className="project-logo-section">
+      <div className={styles["project-details-card"]}>
+        <div className={styles["project-details-content"]}>
+          <div className={styles["project-logo-section"]}>
             {isEditing ? (
-              <div className="logo-edit-wrapper">
-                <label className="logo-label">Logo</label>
-                <label className="project-logo editable-logo" style={{ cursor: 'pointer' }}>
+              <div className={styles["logo-edit-wrapper"]}>
+                <label className={styles["logo-label"]}>Logo</label>
+                <label className={`${styles["project-logo"]} ${styles["editable-logo"]}`} style={{ cursor: 'pointer' }}>
                   {project.logo ? <img src={project.logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '20px' }} /> : <FolderOpen size={40} color="#818cf8" />}
                   <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" onChange={(e) => { const file = e.target.files?.[0]; if (file) { const reader = new FileReader(); reader.onloadend = () => { setProject({ ...project, logo: reader.result as string }); }; reader.readAsDataURL(file); } }} style={{ display: 'none' }} />
-                  <div className="image-overlay-edit"><span>Change</span></div>
+                  <div className={styles["image-overlay-edit"]}><span>Change</span></div>
                 </label>
               </div>
             ) : (
-              <div className="project-logo">{project.logo ? <img src={project.logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '20px' }} /> : <FolderOpen size={40} color="#818cf8" />}</div>
+              <div className={styles["project-logo"]}>{project.logo ? <img src={project.logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '20px' }} /> : <FolderOpen size={40} color="#818cf8" />}</div>
             )}
           </div>
-          <div className="project-info-section">
+          <div className={styles["project-info-section"]}>
             {isEditing ? (
               <>
-                <div className="edit-inline-form">
-                  <div className="edit-row">
-                    <div className="form-group-inline flex-1">
+                <div className={styles["edit-inline-form"]}>
+                  <div className={styles["edit-row"]}>
+                    <div className={`${styles["form-group-inline"]} ${styles["flex-1"]}`}>
                       <label>Project Name</label>
-                      <input type="text" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="inline-input" />
+                      <input type="text" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className={styles["inline-input"]} />
                     </div>
-                    <div className="form-group-inline" style={{ width: '160px' }}>
+                    <div className={styles["form-group-inline"]} style={{ width: '160px' }}>
                       <label>Status</label>
-                      <div className="status-select-wrapper">
-                        <select value={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.value as "active" | "inactive" })} className="inline-select-dark">
+                      <div className={styles["status-select-wrapper"]}>
+                        <select value={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.value as "active" | "inactive" })} className={styles["inline-select-dark"]}>
                           <option value="active">Active</option><option value="inactive">Inactive</option>
                         </select>
-                        <ChevronDown size={14} className="select-arrow" />
+                        <ChevronDown size={14} className={styles["select-arrow"]} />
                       </div>
                     </div>
                   </div>
-                  <div className="form-group-inline"><label>Description</label><textarea value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} className="inline-textarea" rows={2} /></div>
+                  <div className={styles["form-group-inline"]}><label>Description</label><textarea value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} className={styles["inline-textarea"]} rows={2} /></div>
                 </div>
-                <div className="edit-actions-inline">
-                  <button className="action-btn cancel" onClick={handleCancelEdit}><X size={16} /> Cancel</button>
-                  <button className="action-btn save" onClick={handleSaveEdit}><Save size={16} /> Save</button>
+                <div className={styles["edit-actions-inline"]}>
+                  <button className={`${styles["action-btn"]} ${styles["cancel"]}`} onClick={handleCancelEdit}><X size={16} /> Cancel</button>
+                  <button className={`${styles["action-btn"]} ${styles["save"]}`} onClick={handleSaveEdit}><Save size={16} /> Save</button>
                 </div>
               </>
             ) : (
               <>
-                <div className="project-name-row">
-                  <div className="project-name-left">
+                <div className={styles["project-name-row"]}>
+                  <div className={styles["project-name-left"]}>
                     <h2>{project.name}</h2>
-                    <span className={`status-badge ${project.status}`}>{project.status === "active" ? "Active" : "Inactive"}</span>
-                    <button className="edit-icon-inline" onClick={() => setIsEditing(true)}><Pencil size={15} /></button>
+                    <span className={`${styles["status-badge"]} ${styles[project.status]}`}>{project.status === "active" ? "Active" : "Inactive"}</span>
+                    <button className={styles["edit-icon-inline"]} onClick={() => setIsEditing(true)}><Pencil size={15} /></button>
                   </div>
-                  <span className="project-date-text">Created on: {project.created}</span>
+                  <span className={styles["project-date-text"]}>Created on: {project.created}</span>
                 </div>
-                <p className="project-id-text">#{project.id}</p>
-                {project.description && <p className="project-desc-text">{project.description}</p>}
+                <p className={styles["project-id-text"]}>#{project.id}</p>
+                {project.description && <p className={styles["project-desc-text"]}>{project.description}</p>}
 
 
               </>
@@ -866,11 +1106,11 @@ export default function ProjectView() {
           </div>
         </div>
         {/* Main Tabs */}
-        <div className="main-tabs-wrapper">
-          <button className={`main-tab ${activeMainTab === 'environments' ? 'active' : ''}`} onClick={() => setActiveMainTab('environments')}>
+        <div className={styles["main-tabs-wrapper"]}>
+          <button className={`${styles["main-tab"]} ${activeMainTab === 'environments' ? styles["active"] : ''}`} onClick={() => setActiveMainTab('environments')}>
             <Globe size={16} /> Environments
           </button>
-          <button className={`main-tab ${activeMainTab === 'tokens' ? 'active' : ''}`} onClick={() => setActiveMainTab('tokens')}>
+          <button className={`${styles["main-tab"]} ${activeMainTab === 'tokens' ? styles["active"] : ''}`} onClick={() => setActiveMainTab('tokens')}>
             <Key size={16} /> Manage Token
           </button>
         </div>
@@ -878,40 +1118,40 @@ export default function ProjectView() {
 
       {/* Content Section */}
       {activeMainTab === 'environments' ? (
-        <div className="environment-section-new">
+        <div className={styles["environment-section-new"]}>
           {environments.length === 0 ? (
-            <div className="pc-simple-first-time">
-              <div className="pc-simple-card">
-                <div className="pc-card-icon"><Globe size={40} color="#6366f1" /></div>
+            <div className={styles["pc-simple-first-time"]}>
+              <div className={styles["pc-simple-card"]}>
+                <div className={styles["pc-card-icon"]}><Globe size={40} color="#6366f1" /></div>
                 <h2>Configure Your Environment</h2>
                 <p>Get started by creating an environment to manage SMS, Email & WhatsApp providers</p>
-                <div className="pc-card-steps">
-                  <div className="pc-card-step"><span className="pc-step-dot">1</span><span>Choose an environment type</span></div>
-                  <div className="pc-card-step"><span className="pc-step-dot">2</span><span>Add providers for each service</span></div>
-                  <div className="pc-card-step"><span className="pc-step-dot">3</span><span>Start sending notifications</span></div>
+                <div className={styles["pc-card-steps"]}>
+                  <div className={styles["pc-card-step"]}><span className={styles["pc-step-dot"]}>1</span><span>Choose an environment type</span></div>
+                  <div className={styles["pc-card-step"]}><span className={styles["pc-step-dot"]}>2</span><span>Add providers for each service</span></div>
+                  <div className={styles["pc-card-step"]}><span className={styles["pc-step-dot"]}>3</span><span>Start sending notifications</span></div>
                 </div>
-                <div className="pc-simple-select-row">
-                  <div className="custom-dropdown-wrapper">
-                    <div className={`custom-dropdown-trigger ${dropdownOpen ? 'open' : ''}`} onClick={() => setDropdownOpen(!dropdownOpen)}>
-                      <span className={newEnvName || isCustomEnv ? 'selected-text' : 'placeholder-text'}>{isCustomEnv ? 'Custom' : newEnvName || '-- Select Environment --'}</span>
+                <div className={styles["pc-simple-select-row"]}>
+                  <div className={styles["custom-dropdown-wrapper"]} ref={dropdownRef}>
+                    <div className={`${styles["custom-dropdown-trigger"]} ${dropdownOpen ? styles["open"] : ''}`} onClick={() => setDropdownOpen(!dropdownOpen)}>
+                      <span className={newEnvName || isCustomEnv ? styles["selected-text"] : styles["placeholder-text"]}>{isCustomEnv ? 'Custom' : newEnvName || '-- Select Environment --'}</span>
                       <ChevronDown size={16} />
                     </div>
                     {dropdownOpen && (
-                      <div className="custom-dropdown-menu">
+                      <div className={styles["custom-dropdown-menu"]}>
                         {['Local', 'Dev', 'Staging', 'Live'].map(env => (
-                          <div key={env} className={`custom-dropdown-item ${newEnvName === env && !isCustomEnv ? 'selected' : ''}`} onClick={() => { setNewEnvName(env); setIsCustomEnv(false); setDropdownOpen(false); }}>
+                          <div key={env} className={`${styles["custom-dropdown-item"]} ${newEnvName === env && !isCustomEnv ? styles["selected"] : ''}`} onClick={() => { setNewEnvName(env); setIsCustomEnv(false); setDropdownOpen(false); }}>
                             {getEnvIcon(env)} {env}{newEnvName === env && !isCustomEnv && <Check size={14} style={{ marginLeft: 'auto' }} />}
                           </div>
                         ))}
-                        <div className="custom-dropdown-divider"></div>
-                        <div className={`custom-dropdown-item ${isCustomEnv ? 'selected' : ''}`} onClick={() => { setIsCustomEnv(true); setNewEnvName(""); setDropdownOpen(false); }}>
+                        <div className={styles["custom-dropdown-divider"]}></div>
+                        <div className={`${styles["custom-dropdown-item"]} ${isCustomEnv ? styles["selected"] : ''}`} onClick={() => { setIsCustomEnv(true); setNewEnvName(""); setDropdownOpen(false); }}>
                           <Wrench size={14} /> Custom{isCustomEnv && <Check size={14} />}
                         </div>
                       </div>
                     )}
                   </div>
-                  {isCustomEnv && <input type="text" placeholder="Enter environment name" value={customEnvInput} onChange={e => setCustomEnvInput(e.target.value)} className="pc-input" autoFocus />}
-                  <button className="pc-create-first-env-btn" onClick={handleCreateEnvironment} disabled={(!isCustomEnv && !newEnvName) || (isCustomEnv && !customEnvInput.trim())}>
+                  {isCustomEnv && <input type="text" placeholder="Enter environment name" value={customEnvInput} onChange={e => setCustomEnvInput(e.target.value)} className={styles["pc-input"]} autoFocus />}
+                  <button className={styles["pc-create-first-env-btn"]} onClick={handleAddEnvironment} disabled={(!isCustomEnv && !newEnvName) || (isCustomEnv && !customEnvInput.trim())}>
                     Create Environment <Rocket size={16} />
                   </button>
                 </div>
@@ -920,13 +1160,24 @@ export default function ProjectView() {
           ) : (
             <>
               {/* Environment Tabs with Sticky Add Button */}
-              <div className="env-tabs-container">
-                <div className="env-tabs-wrapper">
-                  <div className="env-tabs">
+              <div className={styles["env-tabs-container"]}>
+                <div className={styles["env-tabs-wrapper"]}>
+                  <div className={styles["env-tabs"]} ref={envTabsRef}>
                     {environments.map((env) => (
-                      <div key={env} className={`env-tab ${selectedEnv === env ? 'active' : ''}`} onClick={() => setSelectedEnv(env)}>
+                      <div
+                        key={env.public_id}
+                        className={`${styles["env-tab"]} ${selectedEnv === env.environment_name ? styles["active"] : ''}`}
+                        onClick={() => {
+                          console.log("Clicked env:", env.environment_name);
+                          console.log("env.public_id:", env.public_id);
+                          setSelectedEnv(env.environment_name);
+                          setProviders([]);
+                          console.log("Calling loadProviders...");
+                          loadProvidersForEnv(env);
+                        }}
+                      >
                         {editingTabEnv === env ? (
-                          <div className="env-tab-editing" onClick={e => e.stopPropagation()}>
+                          <div className={styles["env-tab-editing"]} onClick={e => e.stopPropagation()}>
                             <input
                               type="text"
                               value={editingTabName}
@@ -935,47 +1186,49 @@ export default function ProjectView() {
                                 if (e.key === 'Enter') saveTabEdit();
                                 if (e.key === 'Escape') cancelTabEdit();
                               }}
-                              className="env-tab-edit-input"
+                              className={styles["env-tab-edit-input"]}
                               autoFocus
                               style={{ width: `${Math.max(editingTabName.length * 10, 60)}px` }}
                             />
-                            <button className="env-tab-save-btn" onClick={saveTabEdit}>
+                            <button className={styles["env-tab-save-btn"]} onClick={saveTabEdit}>
                               <Check size={14} />
                             </button>
                           </div>
                         ) : (
                           <>
-                            <span className="env-tab-name" onDoubleClick={(e) => startEditingTab(env, e)}>{env}</span>
-                            <div className="env-tab-menu" onClick={(e) => e.stopPropagation()}>
-                              <button className="env-menu-trigger" onClick={() => setOpenEnvMenu(openEnvMenu === env ? null : env)}>
+                            <span className={styles["env-tab-name"]} onDoubleClick={(e) => startEditingTab(env, e)}>
+                              {env.environment_name}
+                            </span>
+                            <div className={styles["env-tab-menu"]} onClick={(e) => e.stopPropagation()}>
+                              <button className={styles["env-menu-trigger"]} onClick={() => setOpenEnvMenu(openEnvMenu === env ? null : env)}>
                                 <Settings size={14} />
                               </button>
                               {openEnvMenu === env && (
-                                <div className="env-menu-dropdown">
+                                <div className={styles["env-menu-dropdown"]} ref={envMenuRef}>
                                   <button onClick={() => {
                                     setEditingTabEnv(env);
-                                    setEditingTabName(env);
+                                    setEditingTabName(env.environment_name);
                                     setOpenEnvMenu(null);
                                   }}>
-                                    <Pencil size={14} /><span className="env-menu-tooltip">Edit</span>
+                                    <Pencil size={14} /><span className={styles["env-menu-tooltip"]}>Edit</span>
                                   </button>
                                   <button onClick={() => { setCloneTarget(""); setCloneCustomMode(false); setShowCloneModal(true); setOpenEnvMenu(null); }}>
-                                    <Copy size={14} /><span className="env-menu-tooltip">Clone</span>
+                                    <Copy size={14} /><span className={styles["env-menu-tooltip"]}>Clone</span>
                                   </button>
                                   <button onClick={() => { setShowUserPanel(true); setOpenEnvMenu(null); setUserSearchTerm(""); setSelectedUsers(new Set()); setSelectAll(false); setUserFilter("all"); }}>
-                                    <User size={14} /><span className="env-menu-tooltip">Users</span>
+                                    <User size={14} /><span className={styles["env-menu-tooltip"]}>Users</span>
                                   </button>
                                   <button onClick={() => {
-                                    const sms = JSON.parse(localStorage.getItem(`env_${projectId}_${env}_sms_providers`) || '{"providers":[]}');
-                                    const email = JSON.parse(localStorage.getItem(`env_${projectId}_${env}_email_providers`) || '{"providers":[]}');
-                                    const wa = JSON.parse(localStorage.getItem(`env_${projectId}_${env}_whatsapp_providers`) || '{"providers":[]}');
+                                    const sms = JSON.parse(localStorage.getItem(`env_${projectId}_${env.environment_name}_sms_providers`) || '{"providers":[]}');
+                                    const email = JSON.parse(localStorage.getItem(`env_${projectId}_${env.environment_name}_email_providers`) || '{"providers":[]}');
+                                    const wa = JSON.parse(localStorage.getItem(`env_${projectId}_${env.environment_name}_whatsapp_providers`) || '{"providers":[]}');
                                     const total = (sms.providers?.length || 0) + (email.providers?.length || 0) + (wa.providers?.length || 0);
                                     setDeletingEnvName(env);
                                     if (total > 0) setBlockedDeleteCounts({ sms: sms.providers?.length || 0, email: email.providers?.length || 0, whatsapp: wa.providers?.length || 0 });
                                     else setShowDeleteEnvModal(true);
                                     setOpenEnvMenu(null);
                                   }}>
-                                    <Trash2 size={14} /><span className="env-menu-tooltip">Delete</span>
+                                    <Trash2 size={14} /><span className={styles["env-menu-tooltip"]}>Delete</span>
                                   </button>
                                 </div>
                               )}
@@ -985,98 +1238,98 @@ export default function ProjectView() {
                       </div>
                     ))}
                   </div>
-                  <button className="pc-add-env-btn sticky-add-env" onClick={() => { setNewEnvName(""); setIsCustomEnv(false); setCustomEnvInput(""); setShowAddEnvModal(true); }}>
+                  <button className={`${styles["pc-add-env-btn"]} ${styles["sticky-add-env"]}`} onClick={() => { setNewEnvName(""); setIsCustomEnv(false); setCustomEnvInput(""); setShowAddEnvModal(true); }}>
                     <Plus size={14} /> New Environment
                   </button>
                 </div>
               </div>
 
               {/* Environment Content Container */}
-              <div className="env-content-container">
+              <div className={styles["env-content-container"]}>
                 {/* Token Status Strip */}
-                <div className="token-status-strip">
-                  <span className="token-status-title"><strong>{selectedEnv}</strong> Token Details -</span>
+                <div className={styles["token-status-strip"]}>
+                  <span className={styles["token-status-title"]}><strong>{selectedEnv}</strong> Token Details -</span>
 
                   {/* Sandbox */}
-                  <div className="token-status-item">
+                  <div className={styles["token-status-item"]}>
                     {(() => {
                       const sandboxToken = allTokens[`${selectedEnv}_Sandbox`];
                       const isExpiring = sandboxToken?.expiresInDays != null && sandboxToken.expiresInDays <= 7;
                       if (sandboxToken) {
                         return isExpiring ? (
-                          <span className="token-status-dot expiring"></span>
+                          <span className={`${styles["token-status-dot"]} ${styles["expiring"]}`}></span>
                         ) : (
-                          <span className="token-status-dot active"></span>
+                          <span className={`${styles["token-status-dot"]} ${styles["active"]}`}></span>
                         );
                       }
-                      return <span className="token-status-dot inactive"></span>;
+                      return <span className={`${styles["token-status-dot"]} ${styles["inactive"]}`}></span>;
                     })()}
                     <Wrench size={14} />
-                    <span className="token-status-name">Sandbox</span>
+                    <span className={styles["token-status-name"]}>Sandbox</span>
                     {(() => {
                       const sandboxToken = allTokens[`${selectedEnv}_Sandbox`];
                       if (sandboxToken) {
                         return (
-                          <span className="token-status-expiry">
+                          <span className={styles["token-status-expiry"]}>
                             {sandboxToken.name} · {calculateExpiryLabel(sandboxToken.expires, sandboxToken.expiresInDays)}
                           </span>
                         );
                       }
                       return (
-                        <span className="token-status-expiry" style={{ color: '#94a3b8' }}>Not generated yet</span>
+                        <span className={styles["token-status-expiry"]} style={{ color: '#94a3b8' }}>Not generated yet</span>
                       );
                     })()}
                   </div>
 
-                  <span className="token-status-divider">|</span>
+                  <span className={styles["token-status-divider"]}>|</span>
 
                   {/* Live */}
-                  <div className="token-status-item">
+                  <div className={styles["token-status-item"]}>
                     {(() => {
                       const liveToken = allTokens[`${selectedEnv}_Live`];
                       const isExpiring = liveToken?.expiresInDays != null && liveToken.expiresInDays <= 7;
                       if (liveToken) {
                         return isExpiring ? (
-                          <span className="token-status-dot expiring"></span>
+                          <span className={`${styles["token-status-dot"]} ${styles["expiring"]}`}></span>
                         ) : (
-                          <span className="token-status-dot active"></span>
+                          <span className={`${styles["token-status-dot"]} ${styles["active"]}`}></span>
                         );
                       }
-                      return <span className="token-status-dot inactive"></span>;
+                      return <span className={`${styles["token-status-dot"]} ${styles["inactive"]}`}></span>;
                     })()}
                     <Rocket size={14} />
-                    <span className="token-status-name">Live</span>
+                    <span className={styles["token-status-name"]}>Live</span>
                     {(() => {
                       const liveToken = allTokens[`${selectedEnv}_Live`];
                       if (liveToken) {
                         return (
-                          <span className="token-status-expiry">
+                          <span className={styles["token-status-expiry"]}>
                             {liveToken.name} · {calculateExpiryLabel(liveToken.expires, liveToken.expiresInDays)}
                           </span>
                         );
                       }
                       return (
-                        <span className="token-status-expiry" style={{ color: '#94a3b8' }}>Not generated yet</span>
+                        <span className={styles["token-status-expiry"]} style={{ color: '#94a3b8' }}>Not generated yet</span>
                       );
                     })()}
                   </div>
                   {/* Vertical Separator */}
-                  <span className="token-section-separator"></span>
+                  <span className={styles["token-section-separator"]}></span>
 
                   {/* Active/Inactive Toggle */}
                   {/* Environment Status Toggle */}
-                  <div className="env-status-wrapper">
-                    <span className="env-status-label"><strong>{selectedEnv}</strong> Environment is:</span>
+                  <div className={styles["env-status-wrapper"]}>
+                    <span className={styles["env-status-label"]}><strong>{selectedEnv}</strong> Environment is:</span>
                     <button
-                      className={`env-status-toggle ${(envStatus[selectedEnv] || 'active') === 'active' ? 'status-active' : 'status-inactive'}`}
+                      className={`${styles["env-status-toggle"]} ${(envStatus[selectedEnv] || 'active') === 'active' ? styles["status-active"] : styles["status-inactive"]}`}
                       onClick={() => {
                         const newStatus = (envStatus[selectedEnv] || 'active') === 'active' ? 'inactive' : 'active';
                         setPendingStatusChange({ env: selectedEnv, newStatus });
                         setShowStatusModal(true);
                       }}
                     >
-                      <span className="toggle-text">{(envStatus[selectedEnv] || 'active').toUpperCase()}</span>
-                      <span className="toggle-icon">
+                      <span className={styles["toggle-text"]}>{(envStatus[selectedEnv] || 'active').toUpperCase()}</span>
+                      <span className={styles["toggle-icon"]}>
                         <svg viewBox="0 0 24 24">
                           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                           <circle cx="12" cy="7" r="4"></circle>
@@ -1093,63 +1346,104 @@ export default function ProjectView() {
 
 
                 {/* Services Sidebar + Providers Panel */}
-                <div className="pc-main-content" style={{ padding: '0' }}>
-                  <div className="pc-sidebar-wrapper" style={{ padding: '16px 0 16px 16px' }}>
-                    <div className="pc-service-env-info">
+                <div className={styles["pc-main-content"]} style={{ padding: '0' }}>
+                  <div className={styles["pc-sidebar-wrapper"]} style={{ padding: '16px 0 16px 16px' }}>
+                    <div className={styles["pc-service-env-info"]}>
 
                       <span>Services</span>
-                      <span className="pc-separator-dash">-</span>
-                      <span className="pc-service-label">{activeService}</span>
+                      <span className={styles["pc-separator-dash"]}>-</span>
+                      <span className={styles["pc-service-label"]}>{activeService}</span>
 
 
                     </div>
-                    <div className="pc-sidebar">
+                    <div className={styles["pc-sidebar"]}>
                       {SERVICE_TYPES.map((service) => (
-                        <div key={service} className={`pc-sidebar-item ${activeService === service ? 'active' : ''}`} onClick={() => setActiveService(service)}
-                          style={{ borderLeftColor: activeService === service ? SERVICE_COLORS[service] : 'transparent', backgroundColor: activeService === service ? `${SERVICE_COLORS[service]}10` : 'transparent' }}>
-                          <span className="pc-sidebar-icon">{SERVICE_ICONS[service]}</span>
-                          <div className="pc-sidebar-info"><div className="pc-sidebar-name">{service}</div><div className="pc-sidebar-count">{serviceProviderCounts[service] || 0} providers</div></div>
-                          {activeService === service && <div className="pc-sidebar-active-indicator" style={{ background: SERVICE_COLORS[service] }} />}
+                        <div
+                          key={service}
+                          className={`${styles["pc-sidebar-item"]} ${activeService === service ? styles["active"] : ''}`}
+                          onClick={async () => {
+                            console.log("Clicked service:", service);
+                            setActiveService(service);
+                            setmodeFilter("Sandbox");
+                            setProviders([]);
+                            await fetchProvidersForCurrentService();
+                            const env = environments.find((e: any) => e.environment_name === selectedEnv);
+                            if (env) loadProvidersForEnv(env);
+                          }}
+                          style={{
+                            borderLeftColor: activeService === service ? SERVICE_COLORS[service] : 'transparent',
+                            backgroundColor: activeService === service ? `${SERVICE_COLORS[service]}10` : 'transparent'
+                          }}
+                        >
+                          <span className={styles["pc-sidebar-icon"]}>{SERVICE_ICONS[service]}</span>
+                          <div className={styles["pc-sidebar-info"]}>
+                            <div className={styles["pc-sidebar-name"]}>{service}</div>
+                            <div className={styles["pc-sidebar-count"]}>{serviceProviderCounts[service] || 0} providers</div>
+                          </div>
+                          {activeService === service && (
+                            <div className={styles["pc-sidebar-active-indicator"]} style={{ background: SERVICE_COLORS[service] }} />
+                          )}
                         </div>
                       ))}
                     </div>
                   </div>
-                  <div className="pc-sidebar-wrapper" style={{ flex: 1, padding: '16px 16px 16px 0' }}>
-                    <h4 className="pc-column-label pc-column-label-providers">Providers</h4>
-                    <div className="pc-providers-panel" style={{ borderTop: `3px solid ${SERVICE_COLORS[activeService]}` }}>
-                      <div className="pc-panel-header">
-                        <div className="pc-panel-title">{SERVICE_ICONS[activeService]}<h3>{activeService} Providers</h3></div>
-                        <button className="pc-add-btn" style={{ backgroundColor: SERVICE_COLORS[activeService] }} onClick={() => { setEditingProvider(null); setSelectedProvider(""); setProviderFields({}); setShowAddProviderModal(true); }}>
+                  <div className={styles["pc-sidebar-wrapper"]} style={{ flex: 1, padding: '16px 16px 16px 0' }}>
+                    <h4 className={`${styles["pc-column-label"]} ${styles["pc-column-label-providers"]}`}>Providers</h4>
+                    <div className={styles["pc-providers-panel"]} style={{ borderTop: `3px solid ${SERVICE_COLORS[activeService]}` }}>
+                      <div className={styles["pc-panel-header"]}>
+                        <div className={styles["pc-panel-title"]}>{SERVICE_ICONS[activeService]}<h3>{activeService} Providers</h3></div>
+                        <button
+                          className={styles["pc-add-btn"]}
+                          style={{ backgroundColor: SERVICE_COLORS[activeService] }}
+                          onClick={async () => {
+                            await fetchProvidersForCurrentService();
+                            setEditingProvider(null);
+                            setSelectedProvider("");
+                            setProviderFields({});
+                            setShowAddProviderModal(true);
+                          }}
+                        >
                           <Plus size={14} /> Add Provider
                         </button>
                       </div>
-                      <div className="pc-mode-tabs">
-                        <button className={`pc-mode-tab ${modeFilter === 'Sandbox' ? 'active sandbox' : ''}`} onClick={() => setmodeFilter('Sandbox')}>
-                          <Wrench size={14} /> Sandbox <span className="pc-mode-tab-count">{providers.filter(p => p.fields.mode === 'Sandbox').length}</span>
+                      <div className={styles["pc-mode-tabs"]}>
+                        <button className={`${styles["pc-mode-tab"]} ${modeFilter === 'Sandbox' ? `${styles["active"]} ${styles["sandbox"]}` : ''}`} onClick={() => setmodeFilter('Sandbox')}>
+                          <Wrench size={14} /> Sandbox <span className={styles["pc-mode-tab-count"]}>{providers.filter(p => p.fields.mode === 'Sandbox').length}</span>
                         </button>
-                        <button className={`pc-mode-tab ${modeFilter === 'Live' ? 'active live' : ''}`} onClick={() => setmodeFilter('Live')}>
-                          <Rocket size={14} /> Live <span className="pc-mode-tab-count">{providers.filter(p => p.fields.mode === 'Live').length}</span>
+                        <button className={`${styles["pc-mode-tab"]} ${modeFilter === 'Live' ? `${styles["active"]} ${styles["live"]}` : ''}`} onClick={() => setmodeFilter('Live')}>
+                          <Rocket size={14} /> Live <span className={styles["pc-mode-tab-count"]}>{providers.filter(p => p.fields.mode === 'Live').length}</span>
                         </button>
                       </div>
-                      <div className="pc-providers-list">
-                        {filteredProviders.length === 0 ? (
-                          <div className="pc-empty-state"><Server size={44} color="#cbd5e1" /><h4>No {modeFilter} {activeService} providers yet</h4><p>Add your first {modeFilter.toLowerCase()} provider to start configuring services</p></div>
+                      <div className={styles["pc-providers-list"]}>
+                        {providersLoading && (
+                          <div style={{ textAlign: 'center', padding: '12px', opacity: 0.7 }}>
+                            <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> Loading...
+                          </div>
+                        )}
+                        {!providersLoading && filteredProviders.length === 0 ? (
+                          <div className={styles["pc-empty-state"]}>
+                            <Server size={44} color="#cbd5e1" />
+                            <h4>No {modeFilter} {activeService} providers yet</h4>
+                            <p>Add your first {modeFilter.toLowerCase()} provider to start configuring services</p>
+                          </div>
                         ) : (
                           filteredProviders.map((provider, index) => (
-                            <div key={provider.id} className={`pc-provider-card ${dragIndex === index ? 'dragging' : ''}`} style={{ borderLeftColor: SERVICE_COLORS[activeService] }}
+                            <div key={provider.id} className={`${styles["pc-provider-card"]} ${dragIndex === index ? styles["dragging"] : ''}`} style={{ borderLeftColor: SERVICE_COLORS[activeService] }}
                               draggable onDragStart={(e) => handleDragStart(e, index)} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, index)} onDragEnd={handleDragEnd}>
-                              <div className="pc-provider-card-header" onClick={() => setExpandedProviders(prev => ({ ...prev, [provider.id]: !prev[provider.id] }))}>
-                                <div className="pc-provider-title">
+                              <div className={styles["pc-provider-card-header"]} onClick={() => setExpandedProviders(prev => ({ ...prev, [provider.id]: !prev[provider.id] }))}>
+                                <div className={styles["pc-provider-title"]}>
                                   <Plug size={14} /><span>{provider.name.replace(/_/g, ' ')}</span>
-                                  {index === 0 && <span className="pc-primary-badge"><Rocket size={10} /> Primary</span>}
-                                  <span className="pc-configured-badge" style={{ background: `${SERVICE_COLORS[activeService]}15`, color: SERVICE_COLORS[activeService] }}><Check size={10} /> Configured</span>
+                                  {index === 0 && <span className={styles["pc-primary-badge"]}><Rocket size={10} /> Primary</span>}
+                                  <span className={styles["pc-configured-badge"]} style={{ background: `${SERVICE_COLORS[activeService]}15`, color: SERVICE_COLORS[activeService] }}><Check size={10} /> Configured</span>
                                 </div>
-                                <div className="pc-provider-header-right">
-                                  {provider.fields.endpoint && (
-                                    <div className="pc-endpoint-inline">
-                                      <code className="pc-endpoint-text">{provider.fields.endpoint}</code>
+                                <div className={styles["pc-provider-header-right"]}>
+                                  <div className={styles["pc-endpoint-inline"]}>
+                                    <code className={styles["pc-endpoint-text"]}>
+                                      Endpoint URL : {provider.fields.endpoint || "------------------"}
+                                    </code>
+                                    {provider.fields.endpoint && (
                                       <button
-                                        className="pc-endpoint-copy-mini"
+                                        className={styles["pc-endpoint-copy-mini"]}
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           navigator.clipboard.writeText(provider.fields.endpoint);
@@ -1158,35 +1452,38 @@ export default function ProjectView() {
                                       >
                                         <Copy size={12} />
                                       </button>
-                                    </div>
-                                  )}
-                                  <div className="pc-provider-actions" onClick={(e) => e.stopPropagation()}>
-                                    <button className="pc-edit-btn" onClick={() => { setEditingProvider(provider); setSelectedProvider(provider.name); setProviderFields({ ...provider.fields }); setShowAddProviderModal(true); }}><Pencil size={14} /></button>
-                                    <button className="pc-delete-btn" onClick={() => setShowDeleteProviderModal({ id: provider.id, name: provider.name })}><Trash2 size={14} /></button>
+                                    )}
+                                  </div>
+                                  <div className={styles["pc-provider-actions"]} onClick={(e) => e.stopPropagation()}>
+                                    <button className={styles["pc-edit-btn"]} onClick={() => { setEditingProvider(provider); setSelectedProvider(provider.name); setProviderFields({ ...provider.fields }); setShowAddProviderModal(true); }}><Pencil size={14} /></button>
+                                    <button className={styles["pc-delete-btn"]} onClick={() => setShowDeleteProviderModal({ id: provider.id, name: provider.name })}><Trash2 size={14} /></button>
                                   </div>
                                 </div>
                               </div>
                               {expandedProviders[provider.id] && (
-                                <div className="pc-provider-card-body">
-                                  {Object.entries(provider.fields).sort(([a], [b]) => a === 'mode' ? -1 : b === 'mode' ? 1 : 0).map(([key, value]) => {
-                                    const fc = PROVIDER_FIELDS_MAP[provider.name]?.find((f: any) => f.name === key);
-                                    const isPwd = fc?.type === "password" || key.includes("Key") || key.includes("Token");
-                                    const ismode = fc?.type === "select";
-                                    const pk = `${provider.id}_${key}`;
-                                    return (
-                                      <div className="pc-credential-row" key={key}>
-                                        <span className="pc-credential-label">{ismode ? "Mode" : fc?.label || key}</span>
-                                        {ismode ? (
-                                          <span className={`pc-mode-badge ${value === 'Live' ? 'live' : 'sandbox'}`}>{value === 'Live' ? <Rocket size={12} /> : <Wrench size={12} />}{value || "—"}</span>
-                                        ) : (
-                                          <>
-                                            <span className="pc-credential-value">{isPwd ? (visiblePasswords[pk] ? value : "••••••••••") : value || "—"}</span>
-                                            {isPwd && value && <button className="pc-eye-btn-inline" onClick={() => setVisiblePasswords(prev => ({ ...prev, [pk]: !prev[pk] }))}>{visiblePasswords[pk] ? <FaEyeSlash size={14} /> : <FaEye size={14} />}</button>}
-                                          </>
-                                        )}
-                                      </div>
-                                    );
-                                  })}
+                                <div className={styles["pc-provider-card-body"]}>
+                                  {Object.entries(provider.fields)
+                                    .filter(([key]) => key !== 'endpoint')
+                                    .sort(([a], [b]) => a === 'mode' ? -1 : b === 'mode' ? 1 : 0)
+                                    .map(([key, value]) => {
+                                      const fc = PROVIDER_FIELDS_MAP[provider.name]?.find((f: any) => f.name === key);
+                                      const isPwd = fc?.type === "password" || key.includes("Key") || key.includes("Token");
+                                      const ismode = fc?.type === "select";
+                                      const pk = `${provider.id}_${key}`;
+                                      return (
+                                        <div className={styles["pc-credential-row"]} key={key}>
+                                          <span className={styles["pc-credential-label"]}>{ismode ? "Mode" : fc?.label || key}</span>
+                                          {ismode ? (
+                                            <span className={`${styles["pc-mode-badge"]} ${value === 'Live' ? styles["live"] : styles["sandbox"]}`}>{value === 'Live' ? <Rocket size={12} /> : <Wrench size={12} />}{value || "—"}</span>
+                                          ) : (
+                                            <>
+                                              <span className={styles["pc-credential-value"]}>{isPwd ? (visiblePasswords[pk] ? value : "••••••••••") : value || "—"}</span>
+                                              {isPwd && value && <button className={styles["pc-eye-btn-inline"]} onClick={() => setVisiblePasswords(prev => ({ ...prev, [pk]: !prev[pk] }))}>{visiblePasswords[pk] ? <FaEyeSlash size={14} /> : <FaEye size={14} />}</button>}
+                                            </>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
                                 </div>
                               )}
                             </div>
@@ -1202,26 +1499,26 @@ export default function ProjectView() {
         </div>
       ) : (
         /* Token Generation Section */
-        <div className="token-section-wrapper">
-          <div className="form-card">
-            <div className="form-header"><p>Manage API tokens for your environments</p><div className="header-underline"></div></div>
+        <div className={styles["token-section-wrapper"]}>
+          <div className={styles["form-card"]}>
+            <div className={styles["form-header"]}><p>Manage API tokens for your environments</p><div className={styles["header-underline"]}></div></div>
             {environments.length > 0 && (
-              <div className="token-search-filter-row">
-                <div className="token-search-bar">
-                  <div className="search-input-group">
-                    <Search size={16} className="search-icon" />
-                    <input type="text" placeholder="Search environments..." value={tokenSearchTerm} onChange={(e) => setTokenSearchTerm(e.target.value)} className="token-search-input" />
-                    {tokenSearchTerm && <button className="token-clear-btn" onClick={() => setTokenSearchTerm("")}><X size={14} />Clear</button>}
+              <div className={styles["token-search-filter-row"]}>
+                <div className={styles["token-search-bar"]}>
+                  <div className={styles["search-input-group"]}>
+                    <Search size={16} className={styles["search-icon"]} />
+                    <input type="text" placeholder="Search environments..." value={tokenSearchTerm} onChange={(e) => setTokenSearchTerm(e.target.value)} className={styles["token-search-input"]} />
+                    {tokenSearchTerm && <button className={styles["token-clear-btn"]} onClick={() => setTokenSearchTerm("")}><X size={14} />Clear</button>}
                   </div>
                 </div>
               </div>
             )}
-            <div className="token-cards-grid">
+            <div className={styles["token-cards-grid"]}>
               {filteredTokens.length === 0 ? (
-                <div className="token-empty-illustration">
+                <div className={styles["token-empty-illustration"]}>
                   {tokenSearchTerm.trim() ? (
                     <>
-                      <img src={noDataIllustration} alt="No data" className="empty-illustration-img" />
+                      <img src={noDataIllustration} alt="No data" className={styles["empty-illustration-img"]} />
                       <h4>No results found</h4>
                       <p>Try adjusting your search term</p>
                     </>
@@ -1230,7 +1527,7 @@ export default function ProjectView() {
                       <h4>No environments found</h4>
                       <p>Create an environment first to get started</p>
                       <button
-                        className="pc-create-first-env-btn"
+                        className={styles["pc-create-first-env-btn"]}
                         onClick={() => setActiveMainTab('environments')}
                         style={{ marginTop: '16px' }}
                       >
@@ -1244,61 +1541,61 @@ export default function ProjectView() {
                   const sandboxToken = allTokens[`${env}_Sandbox`];
                   const liveToken = allTokens[`${env}_Live`];
                   return (
-                    <div key={env} className="token-env-card-full">
-                      <div className="token-card-header"><Globe size={18} /><span className="token-card-env-name">{env}</span></div>
-                      <div className="token-mode-buttons-row">
-                        <div className="token-mode-card">
+                    <div key={env} className={styles["token-env-card-full"]}>
+                      <div className={styles["token-card-header"]}><Globe size={18} /><span className={styles["token-card-env-name"]}>{env}</span></div>
+                      <div className={styles["token-mode-buttons-row"]}>
+                        <div className={styles["token-mode-card"]}>
                           {sandboxToken ? (
-                            <div className="mode-configured">
-                              <div className="mode-configured-header">
-                                <div className="mode-header-left"><Wrench size={16} /><span>Sandbox</span></div>
-                                <div className="mode-header-right">
-                                  <span className="status-badge active">Active</span>
-                                  {sandboxToken.expiresInDays && sandboxToken.expiresInDays <= 7 && <span className="status-badge expiring">Expiring Soon</span>}
+                            <div className={styles["mode-configured"]}>
+                              <div className={styles["mode-configured-header"]}>
+                                <div className={styles["mode-header-left"]}><Wrench size={16} /><span>Sandbox</span></div>
+                                <div className={styles["mode-header-right"]}>
+                                  <span className={`${styles["status-badge"]} ${styles["active"]}`}>Active</span>
+                                  {sandboxToken.expiresInDays && sandboxToken.expiresInDays <= 7 && <span className={`${styles["status-badge"]} ${styles["expiring"]}`}>Expiring Soon</span>}
                                 </div>
                               </div>
-                              <div className="mode-token-info">
-                                <div className="mode-token-row"><Key size={12} /><span>{sandboxToken.name}</span></div>
-                                <div className="mode-token-row"><Calendar size={12} /><span>Created {formatDate(sandboxToken.created)}</span></div>
-                                <div className="mode-token-row token-expiry-row">
-                                  <div className="expiry-left"><Clock size={12} /><span className={sandboxToken.expiresInDays && sandboxToken.expiresInDays <= 7 ? 'expiring-soon' : ''}>{calculateExpiryLabel(sandboxToken.expires, sandboxToken.expiresInDays)}</span></div>
-                                  <div className="mode-token-actions">
-                                    <button className="token-action-btn regenerate" onClick={() => { setSelectedEnv(env); setCurrentToken(sandboxToken); setShowRegenModal(true); }}><RefreshCw size={12} />Regenerate</button>
-                                    <button className="token-action-btn delete" onClick={() => { setSelectedEnv(env); setCurrentToken(sandboxToken); setShowTokenDeleteModal(true); }}><Trash2 size={12} />Delete</button>
+                              <div className={styles["mode-token-info"]}>
+                                <div className={styles["mode-token-row"]}><Key size={12} /><span>{sandboxToken.name}</span></div>
+                                <div className={styles["mode-token-row"]}><Calendar size={12} /><span>Created {formatDate(sandboxToken.created)}</span></div>
+                                <div className={`${styles["mode-token-row"]} ${styles["token-expiry-row"]}`}>
+                                  <div className={styles["expiry-left"]}><Clock size={12} /><span className={sandboxToken.expiresInDays && sandboxToken.expiresInDays <= 7 ? styles["expiring-soon"] : ''}>{calculateExpiryLabel(sandboxToken.expires, sandboxToken.expiresInDays)}</span></div>
+                                  <div className={styles["mode-token-actions"]}>
+                                    <button className={`${styles["token-action-btn"]} ${styles["regenerate"]}`} onClick={() => { setSelectedEnv(env); setCurrentToken(sandboxToken); setShowRegenModal(true); }}><RefreshCw size={12} />Regenerate</button>
+                                    <button className={`${styles["token-action-btn"]} ${styles["delete"]}`} onClick={() => { setSelectedEnv(env); setCurrentToken(sandboxToken); setShowTokenDeleteModal(true); }}><Trash2 size={12} />Delete</button>
                                   </div>
                                 </div>
                               </div>
                             </div>
                           ) : (
-                            <button className="mode-generate-btn sandbox" onClick={() => { setSelectedEnv(env); setTokenMode('Sandbox'); setTokenName(""); setTokenExpiration("30"); setTokenCustomDays(""); setTokenCustomDate(""); setIsRegenerating(false); setCurrentToken(null); setShowTokenFormModal(true); }}>
+                            <button className={`${styles["mode-generate-btn"]} ${styles["sandbox"]}`} onClick={() => { setSelectedEnv(env); setTokenMode('Sandbox'); setTokenName(""); setTokenExpiration("30"); setTokenCustomDays(""); setTokenCustomDate(""); setIsRegenerating(false); setCurrentToken(null); setShowTokenFormModal(true); }}>
                               <Wrench size={18} /><span>Generate Sandbox Token</span><Plus size={16} />
                             </button>
                           )}
                         </div>
-                        <div className="token-mode-card">
+                        <div className={styles["token-mode-card"]}>
                           {liveToken ? (
-                            <div className="mode-configured">
-                              <div className="mode-configured-header">
-                                <div className="mode-header-left"><Globe size={16} /><span>Live</span></div>
-                                <div className="mode-header-right">
-                                  <span className="status-badge active">Active</span>
-                                  {liveToken.expiresInDays && liveToken.expiresInDays <= 7 && <span className="status-badge expiring">Expiring Soon</span>}
+                            <div className={styles["mode-configured"]}>
+                              <div className={styles["mode-configured-header"]}>
+                                <div className={styles["mode-header-left"]}><Globe size={16} /><span>Live</span></div>
+                                <div className={styles["mode-header-right"]}>
+                                  <span className={`${styles["status-badge"]} ${styles["active"]}`}>Active</span>
+                                  {liveToken.expiresInDays && liveToken.expiresInDays <= 7 && <span className={`${styles["status-badge"]} ${styles["expiring"]}`}>Expiring Soon</span>}
                                 </div>
                               </div>
-                              <div className="mode-token-info">
-                                <div className="mode-token-row"><Key size={12} /><span>{liveToken.name}</span></div>
-                                <div className="mode-token-row"><Calendar size={12} /><span>Created {formatDate(liveToken.created)}</span></div>
-                                <div className="mode-token-row token-expiry-row">
-                                  <div className="expiry-left"><Clock size={12} /><span className={liveToken.expiresInDays && liveToken.expiresInDays <= 7 ? 'expiring-soon' : ''}>{calculateExpiryLabel(liveToken.expires, liveToken.expiresInDays)}</span></div>
-                                  <div className="mode-token-actions">
-                                    <button className="token-action-btn regenerate" onClick={() => { setSelectedEnv(env); setCurrentToken(liveToken); setShowRegenModal(true); }}><RefreshCw size={12} />Regenerate</button>
-                                    <button className="token-action-btn delete" onClick={() => { setSelectedEnv(env); setCurrentToken(liveToken); setShowTokenDeleteModal(true); }}><Trash2 size={12} />Delete</button>
+                              <div className={styles["mode-token-info"]}>
+                                <div className={styles["mode-token-row"]}><Key size={12} /><span>{liveToken.name}</span></div>
+                                <div className={styles["mode-token-row"]}><Calendar size={12} /><span>Created {formatDate(liveToken.created)}</span></div>
+                                <div className={`${styles["mode-token-row"]} ${styles["token-expiry-row"]}`}>
+                                  <div className={styles["expiry-left"]}><Clock size={12} /><span className={liveToken.expiresInDays && liveToken.expiresInDays <= 7 ? styles["expiring-soon"] : ''}>{calculateExpiryLabel(liveToken.expires, liveToken.expiresInDays)}</span></div>
+                                  <div className={styles["mode-token-actions"]}>
+                                    <button className={`${styles["token-action-btn"]} ${styles["regenerate"]}`} onClick={() => { setSelectedEnv(env); setCurrentToken(liveToken); setShowRegenModal(true); }}><RefreshCw size={12} />Regenerate</button>
+                                    <button className={`${styles["token-action-btn"]} ${styles["delete"]}`} onClick={() => { setSelectedEnv(env); setCurrentToken(liveToken); setShowTokenDeleteModal(true); }}><Trash2 size={12} />Delete</button>
                                   </div>
                                 </div>
                               </div>
                             </div>
                           ) : (
-                            <button className="mode-generate-btn live" onClick={() => { setSelectedEnv(env); setTokenMode('Live'); setTokenName(""); setTokenExpiration("30"); setTokenCustomDays(""); setTokenCustomDate(""); setIsRegenerating(false); setCurrentToken(null); setShowTokenFormModal(true); }}>
+                            <button className={`${styles["mode-generate-btn"]} ${styles["live"]}`} onClick={() => { setSelectedEnv(env); setTokenMode('Live'); setTokenName(""); setTokenExpiration("30"); setTokenCustomDays(""); setTokenCustomDate(""); setIsRegenerating(false); setCurrentToken(null); setShowTokenFormModal(true); }}>
                               <Rocket size={18} /><span>Generate Live Token</span><Plus size={16} />
                             </button>
                           )}
@@ -1314,30 +1611,35 @@ export default function ProjectView() {
       )
       }
 
-      {/* ===== ALL MODALS ===== */}
+
       {/* Add Environment Modal */}
       {
         showAddEnvModal && (
-          <div className="pc-modal-overlay slide-panel">
-            <div className="pc-modal" onClick={e => e.stopPropagation()}>
-              <div className="pc-modal-header"><h3><Plus size={18} /> Add Environment</h3><button className="pc-modal-close" onClick={() => { setShowAddEnvModal(false); setNewEnvName(""); setIsCustomEnv(false); setCustomEnvInput(""); }}><X size={20} /></button></div>
-              <div className="pc-modal-body">
-                <p className="pc-modal-desc">Select an environment or create a custom one</p>
-                <div className="pc-env-options">
-                  {['Local', 'Dev', 'Staging', 'Live'].filter(env => !environments.includes(env)).map(env => (
-                    <div key={env} className={`pc-env-option ${newEnvName === env && !isCustomEnv ? 'selected' : ''}`} onClick={() => { setNewEnvName(env); setIsCustomEnv(false); }}>
-                      <span className="pc-env-option-icon">{getEnvIcon(env)}</span><span>{env}</span>{newEnvName === env && !isCustomEnv && <Check size={18} />}
+          <div className={`${styles["pc-modal-overlay"]} ${styles["slide-panel"]}`}>
+            <div className={styles["pc-modal"]} onClick={e => e.stopPropagation()}>
+              <div className={styles["pc-modal-header"]}><h3><Plus size={18} /> Add Environment</h3><button className={styles["pc-modal-close"]} onClick={() => { setShowAddEnvModal(false); setNewEnvName(""); setIsCustomEnv(false); setCustomEnvInput(""); }}><X size={20} /></button></div>
+              <div className={styles["pc-modal-body"]}>
+                <p className={styles["pc-modal-desc"]}>Select an environment or create a custom one</p>
+                <div className={styles["pc-env-options"]}>
+                  {['Local', 'Dev', 'Staging', 'Live'].filter(
+                    env =>
+                      !environments.some(
+                        (e: any) => e.environment_name === env
+                      )
+                  ).map(env => (
+                    <div key={env} className={`${styles["pc-env-option"]} ${newEnvName === env && !isCustomEnv ? styles["selected"] : ''}`} onClick={() => { setNewEnvName(env); setIsCustomEnv(false); }}>
+                      <span className={styles["pc-env-option-icon"]}>{getEnvIcon(env)}</span><span>{env}</span>{newEnvName === env && !isCustomEnv && <Check size={18} />}
                     </div>
                   ))}
-                  <div className={`pc-env-option custom ${isCustomEnv ? 'selected' : ''}`} onClick={() => { setIsCustomEnv(true); setNewEnvName(""); }}>
-                    <span className="pc-env-option-icon"><Wrench size={18} /></span><span>Custom Environment</span>{isCustomEnv && <Check size={18} />}
+                  <div className={`${styles["pc-env-option"]} ${styles["custom"]} ${isCustomEnv ? styles["selected"] : ''}`} onClick={() => { setIsCustomEnv(true); setNewEnvName(""); }}>
+                    <span className={styles["pc-env-option-icon"]}><Wrench size={18} /></span><span>Custom Environment</span>{isCustomEnv && <Check size={18} />}
                   </div>
                 </div>
-                {isCustomEnv && <div className="pc-form-group"><label>Environment Name *</label><input type="text" placeholder="e.g., Production" value={customEnvInput} onChange={(e) => setCustomEnvInput(e.target.value)} className="pc-input" autoFocus /></div>}
+                {isCustomEnv && <div className={styles["pc-form-group"]}><label>Environment Name *</label><input type="text" placeholder="e.g., Production" value={customEnvInput} onChange={(e) => setCustomEnvInput(e.target.value)} className={styles["pc-input"]} autoFocus /></div>}
               </div>
-              <div className="pc-modal-footer">
-                <button className="pc-btn-cancel" onClick={() => { setShowAddEnvModal(false); setNewEnvName(""); setIsCustomEnv(false); setCustomEnvInput(""); }}>Cancel</button>
-                <button className="pc-btn-primary" onClick={handleAddEnvironment} disabled={(!isCustomEnv && !newEnvName) || (isCustomEnv && !customEnvInput.trim())}>Save Environment</button>
+              <div className={styles["pc-modal-footer"]}>
+                <button className={styles["pc-btn-cancel"]} onClick={() => { setShowAddEnvModal(false); setNewEnvName(""); setIsCustomEnv(false); setCustomEnvInput(""); }}>Cancel</button>
+                <button className={styles["pc-btn-primary"]} onClick={handleAddEnvironment} disabled={(!isCustomEnv && !newEnvName) || (isCustomEnv && !customEnvInput.trim())}>Save Environment</button>
               </div>
             </div>
           </div>
@@ -1347,13 +1649,13 @@ export default function ProjectView() {
       {/* Edit Environment Modal */}
       {
         showEditEnvModal && (
-          <div className="pc-modal-overlay slide-panel">
-            <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}>
-              <div className="pc-modal-header"><h3>Edit Environment</h3><button className="pc-modal-close" onClick={() => { setPendingCloseAction(() => () => setShowEditEnvModal(false)); setShowUnsavedModal(true); }}><X size={18} /></button></div>
-              <div className="pc-modal-body"><div className="pc-form-group"><label>Environment Name</label><input type="text" className="pc-input" value={editEnvName} onChange={(e) => setEditEnvName(e.target.value)} /></div></div>
-              <div className="pc-modal-footer">
-                <button className="pc-btn-cancel" onClick={() => { setPendingCloseAction(() => () => setShowEditEnvModal(false)); setShowUnsavedModal(true); }}>Cancel</button>
-                <button className="pc-btn-primary" onClick={handleEditEnvironment}>Save Changes</button>
+          <div className={`${styles["pc-modal-overlay"]} ${styles["slide-panel"]}`}>
+            <div className={`${styles["pc-modal"]} ${styles["pc-modal-small"]}`} onClick={e => e.stopPropagation()}>
+              <div className={styles["pc-modal-header"]}><h3>Edit Environment</h3><button className={styles["pc-modal-close"]} onClick={() => { setPendingCloseAction(() => () => setShowEditEnvModal(false)); setShowUnsavedModal(true); }}><X size={18} /></button></div>
+              <div className={styles["pc-modal-body"]}><div className={styles["pc-form-group"]}><label>Environment Name</label><input type="text" className={styles["pc-input"]} value={editEnvName} onChange={(e) => setEditEnvName(e.target.value)} /></div></div>
+              <div className={styles["pc-modal-footer"]}>
+                <button className={styles["pc-btn-cancel"]} onClick={() => { setPendingCloseAction(() => () => setShowEditEnvModal(false)); setShowUnsavedModal(true); }}>Cancel</button>
+                <button className={styles["pc-btn-primary"]} onClick={handleEditEnvironment}>Save Changes</button>
               </div>
             </div>
           </div>
@@ -1363,28 +1665,28 @@ export default function ProjectView() {
       {/* Clone Modal */}
       {
         showCloneModal && (
-          <div className="pc-modal-overlay slide-panel">
-            <div className="pc-modal" onClick={e => e.stopPropagation()}>
-              <div className="pc-modal-header"><h3><Copy size={18} /> Clone Environment</h3><button className="pc-modal-close" onClick={() => setShowCloneModal(false)}><X size={20} /></button></div>
-              <div className="pc-modal-body">
-                <div className="clone-source-info"><label>Source Environment</label><div className="clone-source-name">{getEnvIcon(selectedEnv)} {selectedEnv}</div></div>
-                <div className="pc-form-group"><label>Select Target Environment</label>
-                  <div className="pc-env-options">
+          <div className={`${styles["pc-modal-overlay"]} ${styles["slide-panel"]}`}>
+            <div className={styles["pc-modal"]} onClick={e => e.stopPropagation()}>
+              <div className={styles["pc-modal-header"]}><h3><Copy size={18} /> Clone Environment</h3><button className={styles["pc-modal-close"]} onClick={() => setShowCloneModal(false)}><X size={20} /></button></div>
+              <div className={styles["pc-modal-body"]}>
+                <div className={styles["clone-source-info"]}><label>Source Environment</label><div className={styles["clone-source-name"]}>{getEnvIcon(selectedEnv)} {selectedEnv}</div></div>
+                <div className={styles["pc-form-group"]}><label>Select Target Environment</label>
+                  <div className={styles["pc-env-options"]}>
                     {['Local', 'Dev', 'Staging', 'Live'].filter(env => env !== selectedEnv && !environments.includes(env)).map(env => (
-                      <div key={env} className={`pc-env-option ${cloneTarget === env && !cloneCustomMode ? 'selected' : ''}`} onClick={() => { setCloneTarget(env); setCloneCustomMode(false); }}>
-                        <span className="pc-env-option-icon">{getEnvIcon(env)}</span><span>{env}</span>{cloneTarget === env && !cloneCustomMode && <Check size={18} />}
+                      <div key={env} className={`${styles["pc-env-option"]} ${cloneTarget === env && !cloneCustomMode ? styles["selected"] : ''}`} onClick={() => { setCloneTarget(env); setCloneCustomMode(false); }}>
+                        <span className={styles["pc-env-option-icon"]}>{getEnvIcon(env)}</span><span>{env}</span>{cloneTarget === env && !cloneCustomMode && <Check size={18} />}
                       </div>
                     ))}
-                    <div className={`pc-env-option custom ${cloneCustomMode ? 'selected' : ''}`} onClick={() => { setCloneCustomMode(true); setCloneTarget(""); }}>
-                      <span className="pc-env-option-icon"><Wrench size={18} /></span><span>Custom Environment</span>{cloneCustomMode && <Check size={18} />}
+                    <div className={`${styles["pc-env-option"]} ${styles["custom"]} ${cloneCustomMode ? styles["selected"] : ''}`} onClick={() => { setCloneCustomMode(true); setCloneTarget(""); }}>
+                      <span className={styles["pc-env-option-icon"]}><Wrench size={18} /></span><span>Custom Environment</span>{cloneCustomMode && <Check size={18} />}
                     </div>
                   </div>
                 </div>
-                {cloneCustomMode && <div className="pc-form-group"><label>Custom Environment Name *</label><input type="text" placeholder="Enter environment name" value={cloneCustomName} onChange={(e) => setCloneCustomName(e.target.value)} className="pc-input" autoFocus /></div>}
+                {cloneCustomMode && <div className={styles["pc-form-group"]}><label>Custom Environment Name *</label><input type="text" placeholder="Enter environment name" value={cloneCustomName} onChange={(e) => setCloneCustomName(e.target.value)} className={styles["pc-input"]} autoFocus /></div>}
               </div>
-              <div className="pc-modal-footer">
-                <button className="pc-btn-cancel" onClick={() => setShowCloneModal(false)}>Cancel</button>
-                <button className="pc-btn-primary" onClick={executeClone} disabled={(!cloneCustomMode && !cloneTarget) || (cloneCustomMode && !cloneCustomName.trim())}>Clone Environment</button>
+              <div className={styles["pc-modal-footer"]}>
+                <button className={styles["pc-btn-cancel"]} onClick={() => setShowCloneModal(false)}>Cancel</button>
+                <button className={styles["pc-btn-primary"]} onClick={executeClone} disabled={(!cloneCustomMode && !cloneTarget) || (cloneCustomMode && !cloneCustomName.trim())}>Clone Environment</button>
               </div>
             </div>
           </div>
@@ -1394,73 +1696,75 @@ export default function ProjectView() {
       {/* Add/Edit Provider Modal */}
       {
         showAddProviderModal && (
-          <div className="pc-modal-overlay slide-panel">
-            <div className="pc-modal pc-modal-provider" onClick={e => e.stopPropagation()}>
-              <div className="pc-modal-header">
-                <div className="pc-modal-header-left">
-                  <span className="pc-modal-service-badge" style={{ backgroundColor: `${SERVICE_COLORS[activeService]}15`, color: SERVICE_COLORS[activeService], border: `1px solid ${SERVICE_COLORS[activeService]}40` }}>{SERVICE_ICONS[activeService]}<span>{activeService}</span></span>
+          <div className={`${styles["pc-modal-overlay"]} ${styles["slide-panel"]}`}>
+            <div className={`${styles["pc-modal"]} ${styles["pc-modal-provider"]}`} onClick={e => e.stopPropagation()}>
+              <div className={styles["pc-modal-header"]}>
+                <div className={styles["pc-modal-header-left"]}>
+                  <span className={styles["pc-modal-service-badge"]} style={{ backgroundColor: `${SERVICE_COLORS[activeService]}15`, color: SERVICE_COLORS[activeService], border: `1px solid ${SERVICE_COLORS[activeService]}40` }}>{SERVICE_ICONS[activeService]}<span>{activeService}</span></span>
                   <h3>{editingProvider ? 'Edit Provider' : 'Add Provider'}</h3>
                 </div>
-                <button className="pc-modal-close" onClick={() => { setPendingCloseAction(() => () => { setShowAddProviderModal(false); setEditingProvider(null); }); setShowUnsavedModal(true); }}><X size={20} /></button>
+                <button className={styles["pc-modal-close"]} onClick={() => { setPendingCloseAction(() => () => { setShowAddProviderModal(false); setEditingProvider(null); }); setShowUnsavedModal(true); }}><X size={20} /></button>
               </div>
-              <div className="pc-modal-env-info-row">
-                <div className="pc-modal-env-info">
+              <div className={styles["pc-modal-env-info-row"]}>
+                <div className={styles["pc-modal-env-info"]}>
                   <Globe size={14} />
                   <span>Environment: <strong>{selectedEnv}</strong></span>
                 </div>
                 {!editingProvider && (
-                  <div className="pc-modal-mode-info">
-                    <span className={`pc-mode-badge ${modeFilter === 'Live' ? 'live' : 'sandbox'}`}>
+                  <div className={styles["pc-modal-mode-info"]}>
+                    <span className={`${styles["pc-mode-badge"]} ${modeFilter === 'Live' ? styles["live"] : styles["sandbox"]}`}>
                       {modeFilter === 'Live' ? <Rocket size={14} /> : <Wrench size={14} />}
                       {modeFilter} Mode
                     </span>
                   </div>
                 )}
               </div>
-              <div className="pc-modal-body">
-                <div className="pc-form-group"><label>Select Provider *</label>
-                  <select value={selectedProvider} onChange={handleProviderChange} className="pc-select">
+              <div className={styles["pc-modal-body"]}>
+                <div className={styles["pc-form-group"]}><label>Select Provider *</label>
+                  <select value={selectedProvider} onChange={handleProviderChange} className={styles["pc-select"]}>
                     <option value="">-- Choose provider --</option>
-                    {PROVIDERS_BY_SERVICE[activeService]?.filter(p => {
-                      // Always show the provider being edited
-                      if (editingProvider?.name === p) return true;
-
-                      // Get existing providers of this type
-                      const existingOfType = providers.filter(prov => prov.name === p);
-
-                      // If both modes exist, hide this provider
-                      const hasLive = existingOfType.some(prov => prov.fields.mode === 'Live');
-                      const hasSandbox = existingOfType.some(prov => prov.fields.mode === 'Sandbox');
-
-                      if (hasLive && hasSandbox) return false;
-
-                      return true;
-                    }).map(p => <option key={p} value={p}>{p.replace(/_/g, ' ')}</option>)}
+                    {providersList.map((p: any) => (
+                      <option key={p.public_id} value={p.name}>
+                        {p.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
-                {selectedProvider && PROVIDER_FIELDS_MAP[selectedProvider] && (
-                  <>
+                {selectedProvider && (() => {
+                  const shortName = selectedProvider.replace(" SMS", "").replace(" Email", "").replace(" WhatsApp", "");
+                  const schema = PROVIDER_FIELDS_MAP[selectedProvider] || PROVIDER_FIELDS_MAP[shortName];
 
+                  if (!schema) return null;
 
-
-
-
-                    <div className="pc-credentials-section"><h4><Lock size={14} /> Credentials</h4>
-                      {PROVIDER_FIELDS_MAP[selectedProvider].filter((f: any) => f.type !== "select" && f.type !== "endpoint").map((field: any) => (
-                        <div className="pc-form-group" key={field.name}><label>{field.label}{field.required && " *"}</label>
-                          <div className="pc-input-wrapper">
-                            <input type={field.type === "password" && !showPasswords[field.name] ? "password" : "text"} value={providerFields[field.name] || ""} onChange={(e) => handleFieldChange(field.name, e.target.value)} placeholder={`Enter ${field.label}`} className="pc-input" readOnly={field.readOnly && editingProvider && providerFields[field.name]} style={field.readOnly && editingProvider && providerFields[field.name] ? { background: '#f1f5f9', cursor: 'not-allowed' } : {}} />
-                            {field.type === "password" && <button type="button" className="pc-eye-btn" onClick={() => togglePasswordVisibility(field.name)}>{showPasswords[field.name] ? <FaEyeSlash /> : <FaEye />}</button>}
+                  return (
+                    <div className={styles["pc-credentials-section"]}>
+                      <h4><Lock size={14} /> Credentials</h4>
+                      {schema.filter((f: any) => f.type !== "select" && f.type !== "endpoint").map((field: any) => (
+                        <div className={styles["pc-form-group"]} key={field.name}>
+                          <label>{field.label}{field.required && " *"}</label>
+                          <div className={styles["pc-input-wrapper"]}>
+                            <input
+                              type={field.type === "password" && !showPasswords[field.name] ? "password" : "text"}
+                              value={providerFields[field.name] || ""}
+                              onChange={(e) => handleFieldChange(field.name, e.target.value)}
+                              placeholder={`Enter ${field.label}`}
+                              className={styles["pc-input"]}
+                            />
+                            {field.type === "password" && (
+                              <button type="button" className={styles["pc-eye-btn"]} onClick={() => togglePasswordVisibility(field.name)}>
+                                {showPasswords[field.name] ? <FaEyeSlash /> : <FaEye />}
+                              </button>
+                            )}
                           </div>
                         </div>
                       ))}
                     </div>
-                  </>
-                )}
+                  );
+                })()}
               </div>
-              <div className="pc-modal-footer">
-                <button className="pc-btn-cancel" onClick={() => { setPendingCloseAction(() => () => { setShowAddProviderModal(false); setEditingProvider(null); }); setShowUnsavedModal(true); }}>Cancel</button>
-                <button className="pc-btn-primary" onClick={saveProvider} disabled={saving} style={{ backgroundColor: SERVICE_COLORS[activeService] }}>{saving ? 'Saving...' : editingProvider ? 'Update Provider' : 'Add Provider'}</button>
+              <div className={styles["pc-modal-footer"]}>
+                <button className={styles["pc-btn-cancel"]} onClick={() => { setPendingCloseAction(() => () => { setShowAddProviderModal(false); setEditingProvider(null); }); setShowUnsavedModal(true); }}>Cancel</button>
+                <button className={styles["pc-btn-primary"]} onClick={saveProvider} disabled={saving} style={{ backgroundColor: SERVICE_COLORS[activeService] }}>{saving ? 'Saving...' : editingProvider ? 'Update Provider' : 'Add Provider'}</button>
               </div>
             </div>
           </div>
@@ -1470,8 +1774,8 @@ export default function ProjectView() {
       {/* Delete Environment Modal */}
       {
         showDeleteEnvModal && (
-          <div className="pc-modal-overlay" onClick={() => setShowDeleteEnvModal(false)}>
-            <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}><div className="pc-modal-header"><h3>Delete Environment</h3><button className="pc-modal-close" onClick={() => setShowDeleteEnvModal(false)}><X size={18} /></button></div><div className="pc-modal-body"><p>Are you sure you want to delete <strong>{deletingEnvName}</strong> environment?</p><div className="warning-text">This action cannot be undone.</div></div><div className="pc-modal-footer"><button className="pc-btn-cancel" onClick={() => setShowDeleteEnvModal(false)}>Cancel</button><button className="pc-btn-danger" onClick={handleDeleteEnvironment}>Delete</button></div></div>
+          <div className={styles["pc-modal-overlay"]} onClick={() => setShowDeleteEnvModal(false)}>
+            <div className={`${styles["pc-modal"]} ${styles["pc-modal-small"]}`} onClick={e => e.stopPropagation()}><div className={styles["pc-modal-header"]}><h3>Delete Environment</h3><button className={styles["pc-modal-close"]} onClick={() => setShowDeleteEnvModal(false)}><X size={18} /></button></div><div className={styles["pc-modal-body"]}><p>Are you sure you want to delete <strong>{deletingEnvName}</strong> environment?</p><div className={styles["warning-text"]}>This action cannot be undone.</div></div><div className={styles["pc-modal-footer"]}><button className={styles["pc-btn-cancel"]} onClick={() => setShowDeleteEnvModal(false)}>Cancel</button><button className={styles["pc-btn-danger"]} onClick={handleDeleteEnvironment}>Delete</button></div></div>
           </div>
         )
       }
@@ -1479,8 +1783,8 @@ export default function ProjectView() {
       {/* Cannot Delete Modal */}
       {
         deletingEnvName && (blockedDeleteCounts.sms > 0 || blockedDeleteCounts.email > 0 || blockedDeleteCounts.whatsapp > 0) && (
-          <div className="pc-modal-overlay" onClick={() => { setDeletingEnvName(""); setBlockedDeleteCounts({ sms: 0, email: 0, whatsapp: 0 }); }}>
-            <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}><div className="pc-modal-header"><h3><AlertTriangle size={18} /> Cannot Delete</h3><button className="pc-modal-close" onClick={() => { setDeletingEnvName(""); setBlockedDeleteCounts({ sms: 0, email: 0, whatsapp: 0 }); }}><X size={18} /></button></div><div className="pc-modal-body"><p>Environment <strong>"{deletingEnvName}"</strong> cannot be deleted because providers are still configured.</p><div className="provider-summary">{blockedDeleteCounts.sms > 0 && <div className="summary-item">SMS: {blockedDeleteCounts.sms}</div>}{blockedDeleteCounts.email > 0 && <div className="summary-item">Email: {blockedDeleteCounts.email}</div>}{blockedDeleteCounts.whatsapp > 0 && <div className="summary-item">WhatsApp: {blockedDeleteCounts.whatsapp}</div>}</div><p className="warning-text">Remove all providers before deleting this environment.</p></div><div className="pc-modal-footer"><button className="pc-btn-cancel" onClick={() => { setDeletingEnvName(""); setBlockedDeleteCounts({ sms: 0, email: 0, whatsapp: 0 }); }}>Close</button></div></div>
+          <div className={styles["pc-modal-overlay"]} onClick={() => { setDeletingEnvName(""); setBlockedDeleteCounts({ sms: 0, email: 0, whatsapp: 0 }); }}>
+            <div className={`${styles["pc-modal"]} ${styles["pc-modal-small"]}`} onClick={e => e.stopPropagation()}><div className={styles["pc-modal-header"]}><h3><AlertTriangle size={18} /> Cannot Delete</h3><button className={styles["pc-modal-close"]} onClick={() => { setDeletingEnvName(""); setBlockedDeleteCounts({ sms: 0, email: 0, whatsapp: 0 }); }}><X size={18} /></button></div><div className={styles["pc-modal-body"]}><p>Environment <strong>"{deletingEnvName}"</strong> cannot be deleted because providers are still configured.</p><div className={styles["provider-summary"]}>{blockedDeleteCounts.sms > 0 && <div className={styles["summary-item"]}>SMS: {blockedDeleteCounts.sms}</div>}{blockedDeleteCounts.email > 0 && <div className={styles["summary-item"]}>Email: {blockedDeleteCounts.email}</div>}{blockedDeleteCounts.whatsapp > 0 && <div className={styles["summary-item"]}>WhatsApp: {blockedDeleteCounts.whatsapp}</div>}</div><p className={styles["warning-text"]}>Remove all providers before deleting this environment.</p></div><div className={styles["pc-modal-footer"]}><button className={styles["pc-btn-cancel"]} onClick={() => { setDeletingEnvName(""); setBlockedDeleteCounts({ sms: 0, email: 0, whatsapp: 0 }); }}>Close</button></div></div>
           </div>
         )
       }
@@ -1488,8 +1792,8 @@ export default function ProjectView() {
       {/* Delete Provider Modal */}
       {
         showDeleteProviderModal && (
-          <div className="pc-modal-overlay" onClick={() => setShowDeleteProviderModal(null)}>
-            <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}><div className="pc-modal-header"><h3><Trash2 size={18} /> Delete Provider</h3><button className="pc-modal-close" onClick={() => setShowDeleteProviderModal(null)}><X size={20} /></button></div><div className="pc-modal-body"><p>Are you sure you want to delete <strong>{showDeleteProviderModal.name.replace(/_/g, ' ')}</strong>?</p><p className="pc-warning-text">This action cannot be undone.</p></div><div className="pc-modal-footer"><button className="pc-btn-cancel" onClick={() => setShowDeleteProviderModal(null)}>Cancel</button><button className="pc-btn-danger" onClick={deleteProvider}>Delete</button></div></div>
+          <div className={styles["pc-modal-overlay"]} onClick={() => setShowDeleteProviderModal(null)}>
+            <div className={`${styles["pc-modal"]} ${styles["pc-modal-small"]}`} onClick={e => e.stopPropagation()}><div className={styles["pc-modal-header"]}><h3><Trash2 size={18} /> Delete Provider</h3><button className={styles["pc-modal-close"]} onClick={() => setShowDeleteProviderModal(null)}><X size={20} /></button></div><div className={styles["pc-modal-body"]}><p>Are you sure you want to delete <strong>{showDeleteProviderModal.name.replace(/_/g, ' ')}</strong>?</p><p className={styles["pc-warning-text"]}>This action cannot be undone.</p></div><div className={styles["pc-modal-footer"]}><button className={styles["pc-btn-cancel"]} onClick={() => setShowDeleteProviderModal(null)}>Cancel</button><button className={styles["pc-btn-danger"]} onClick={deleteProviderHandler}>Delete</button></div></div>
           </div>
         )
       }
@@ -1497,21 +1801,21 @@ export default function ProjectView() {
       {/* Unsaved Changes Modal */}
       {
         showUnsavedModal && (
-          <div className="pc-modal-overlay" onClick={() => setShowUnsavedModal(false)}>
-            <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}>
-              <div className="pc-modal-header">
+          <div className={styles["pc-modal-overlay"]} onClick={() => setShowUnsavedModal(false)}>
+            <div className={`${styles["pc-modal"]} ${styles["pc-modal-small"]}`} onClick={e => e.stopPropagation()}>
+              <div className={styles["pc-modal-header"]}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <AlertTriangle size={22} color="#f59e0b" />
                   <h3 style={{ margin: 0 }}>Discard Changes?</h3>
                 </div>
               </div>
-              <div className="pc-modal-body">
+              <div className={styles["pc-modal-body"]}>
                 <p>You have unsaved changes. If you leave now, your entered credentials will be lost.</p>
-                <div className="warning-text"><AlertTriangle size={14} /> This action cannot be undone.</div>
+                <div className={styles["warning-text"]}><AlertTriangle size={14} /> This action cannot be undone.</div>
               </div>
-              <div className="pc-modal-footer">
-                <button className="pc-btn-cancel" onClick={() => setShowUnsavedModal(false)}>Continue Editing</button>
-                <button className="pc-btn-danger" onClick={() => { setShowUnsavedModal(false); if (pendingCloseAction) pendingCloseAction(); setPendingCloseAction(null); }}><Trash2 size={16} /> Discard Changes</button>
+              <div className={styles["pc-modal-footer"]}>
+                <button className={styles["pc-btn-cancel"]} onClick={() => setShowUnsavedModal(false)}>Continue Editing</button>
+                <button className={styles["pc-btn-danger"]} onClick={() => { setShowUnsavedModal(false); if (pendingCloseAction) pendingCloseAction(); setPendingCloseAction(null); }}><Trash2 size={16} /> Discard Changes</button>
               </div>
             </div>
           </div>
@@ -1521,38 +1825,38 @@ export default function ProjectView() {
       {/* Token Generate Form Modal */}
       {
         showTokenFormModal && (
-          <div className="pc-modal-overlay slide-panel">
-            <div className="pc-modal token-form-modal" onClick={e => e.stopPropagation()}>
-              <div className="pc-modal-header"><h3>{isRegenerating ? 'Regenerate Token' : 'Generate Token'}</h3><button className="pc-modal-close" onClick={() => setShowTokenFormModal(false)}><X size={20} /></button></div>
-              <div className="pc-modal-body">
-                <div className="modal-token-info">
+          <div className={`${styles["pc-modal-overlay"]} ${styles["slide-panel"]}`}>
+            <div className={`${styles["pc-modal"]} ${styles["token-form-modal"]}`} onClick={e => e.stopPropagation()}>
+              <div className={styles["pc-modal-header"]}><h3>{isRegenerating ? 'Regenerate Token' : 'Generate Token'}</h3><button className={styles["pc-modal-close"]} onClick={() => setShowTokenFormModal(false)}><X size={20} /></button></div>
+              <div className={styles["pc-modal-body"]}>
+                <div className={styles["modal-token-info"]}>
                   <div><Globe size={14} /> Environment: <strong>{selectedEnv}</strong></div>
                   <div>{tokenMode === 'Sandbox' ? <Wrench size={14} /> : <Rocket size={14} />} Mode: <strong>{tokenMode}</strong></div>
                 </div>
-                <div className="pc-form-group"><label>Note</label><input type="text" placeholder="What’s this token for?" value={tokenName} onChange={(e) => setTokenName(e.target.value)} className="pc-input" autoFocus /></div>
-                <div className="pc-form-group"><label>Expiration</label>
-                  <div className="expiration-options">
+                <div className={styles["pc-form-group"]}><label>Note</label><input type="text" placeholder="What's this token for?" value={tokenName} onChange={(e) => setTokenName(e.target.value)} className={styles["pc-input"]} autoFocus /></div>
+                <div className={styles["pc-form-group"]}><label>Expiration</label>
+                  <div className={styles["expiration-options"]}>
                     {[{ value: "7", label: "7 Days" }, { value: "30", label: "30 Days" }, { value: "60", label: "60 Days" }, { value: "90", label: "90 Days" }, { value: "custom", label: "Custom" }, { value: "never", label: "Never" }].map(opt => (
-                      <div key={opt.value} className={`expiration-option ${tokenExpiration === opt.value ? 'active' : ''}`} onClick={() => setTokenExpiration(opt.value)}>
-                        <div className="expiration-label">{opt.label}</div>
-                        <div className="expiration-date">{opt.value === "never" ? "—" : opt.value === "custom" ? (tokenCustomDate ? formatDate(tokenCustomDate) : "Pick a date") : getExpiryDate(opt.value)}</div>
+                      <div key={opt.value} className={`${styles["expiration-option"]} ${tokenExpiration === opt.value ? styles["active"] : ''}`} onClick={() => setTokenExpiration(opt.value)}>
+                        <div className={styles["expiration-label"]}>{opt.label}</div>
+                        <div className={styles["expiration-date"]}>{opt.value === "never" ? "—" : opt.value === "custom" ? (tokenCustomDate ? formatDate(tokenCustomDate) : "Pick a date") : getExpiryDate(opt.value)}</div>
                       </div>
                     ))}
                   </div>
                 </div>
                 {tokenExpiration === "custom" && (
-                  <div className="pc-form-group"><label>Select Expiry Date</label>
-                    <div className="token-date-wrapper" onClick={() => { const input = document.querySelector('.token-date-input') as HTMLInputElement; if (input) input.showPicker(); }}>
-                      <input type="date" value={tokenCustomDate} onChange={(e) => { setTokenCustomDate(e.target.value); const now = new Date(); const expiry = new Date(e.target.value); const diffDays = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)); setTokenCustomDays(String(diffDays > 0 ? diffDays : 1)); }} className="pc-input token-date-input" min={new Date().toISOString().split('T')[0]} />
-                      <Calendar className="token-date-icon" size={16} />
+                  <div className={styles["pc-form-group"]}><label>Select Expiry Date</label>
+                    <div className={styles["token-date-wrapper"]} onClick={() => { if (tokenDateRef.current) tokenDateRef.current.showPicker(); }}>
+                      <input type="date" value={tokenCustomDate} onChange={(e) => { setTokenCustomDate(e.target.value); const now = new Date(); const expiry = new Date(e.target.value); const diffDays = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)); setTokenCustomDays(String(diffDays > 0 ? diffDays : 1)); }} ref={tokenDateRef} className={`${styles["pc-input"]} ${styles["token-date-input"]}`} min={new Date().toISOString().split('T')[0]} />
+                      <Calendar className={styles["token-date-icon"]} size={16} />
                     </div>
                   </div>
                 )}
-                <div className="token-warning"><AlertTriangle size={16} /><span>The token will only be shown once after creation.</span></div>
+                <div className={styles["token-warning"]}><AlertTriangle size={16} /><span>The token will only be shown once after creation.</span></div>
               </div>
-              <div className="pc-modal-footer">
-                <button className="pc-btn-cancel" onClick={() => setShowTokenFormModal(false)}>Cancel</button>
-                <button className="pc-btn-primary" onClick={handleTokenGenerate} disabled={!tokenName.trim() || !tokenMode}>{isRegenerating ? 'Regenerate Token' : 'Generate Token'}</button>
+              <div className={styles["pc-modal-footer"]}>
+                <button className={styles["pc-btn-cancel"]} onClick={() => setShowTokenFormModal(false)}>Cancel</button>
+                <button className={styles["pc-btn-primary"]} onClick={handleTokenGenerate} disabled={!tokenName.trim() || !tokenMode}>{isRegenerating ? 'Regenerate Token' : 'Generate Token'}</button>
               </div>
             </div>
           </div>
@@ -1562,25 +1866,25 @@ export default function ProjectView() {
       {/* Token Reveal Modal */}
       {
         generatedToken && (
-          <div className="pc-modal-overlay">
-            <div className="pc-modal token-reveal-modal" onClick={e => e.stopPropagation()}>
-              <div className="reveal-success"><Check size={20} /> Token Generated!</div>
-              <div className="reveal-warning-box"><AlertTriangle size={18} /><div><strong>SAVE THIS TOKEN NOW</strong><p>This token will NOT be shown again.</p></div></div>
-              <div className="reveal-token-box">
-                <div className="reveal-token-row">
-                  <div className="reveal-token-value">{generatedToken.token}</div>
-                  <button className={`btn-copy-inline ${copied ? 'copied' : ''}`} onClick={() => { navigator.clipboard.writeText(generatedToken.token); setCopied(true); setTimeout(() => setCopied(false), 3000); }}>
+          <div className={styles["pc-modal-overlay"]}>
+            <div className={`${styles["pc-modal"]} ${styles["token-reveal-modal"]}`} onClick={e => e.stopPropagation()}>
+              <div className={styles["reveal-success"]}><Check size={20} /> Token Generated!</div>
+              <div className={styles["reveal-warning-box"]}><AlertTriangle size={18} /><div><strong>SAVE THIS TOKEN NOW</strong><p>This token will NOT be shown again.</p></div></div>
+              <div className={styles["reveal-token-box"]}>
+                <div className={styles["reveal-token-row"]}>
+                  <div className={styles["reveal-token-value"]}>{generatedToken.token}</div>
+                  <button className={`${styles["btn-copy-inline"]} ${copied ? styles["copied"] : ''}`} onClick={() => { navigator.clipboard.writeText(generatedToken.token); setCopied(true); setTimeout(() => setCopied(false), 3000); }}>
                     {copied ? <><Check size={14} />Copied!</> : <><Copy size={14} />Copy</>}
                   </button>
                 </div>
-                <div className="reveal-token-meta">
+                <div className={styles["reveal-token-meta"]}>
                   <div><Globe size={14} />{generatedToken.environmentName}</div>
                   <div><Calendar size={14} />{generatedToken.name} · {formatDate(generatedToken.created)}</div>
                   <div><Clock size={14} />Expires: {formatDate(generatedToken.expires)}</div>
                 </div>
               </div>
               <div style={{ textAlign: 'center' }}>
-                <button className="pc-btn-primary" onClick={() => setShowTokenLeaveModal(true)}>
+                <button className={styles["pc-btn-primary"]} onClick={() => setShowTokenLeaveModal(true)}>
                   <Check size={16} /> I've Saved the Token, Go Back
                 </button>
               </div>
@@ -1592,8 +1896,8 @@ export default function ProjectView() {
       {/* Regenerate Token Confirm Modal */}
       {
         showRegenModal && (
-          <div className="pc-modal-overlay" onClick={() => setShowRegenModal(false)}>
-            <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}><div className="pc-modal-header"><RefreshCw size={22} color="#6366f1" /><h3>Regenerate Token?</h3></div><div className="pc-modal-body"><div className="modal-token-info"><div><Globe size={14} /> Environment: <strong>{selectedEnv}</strong></div>{currentToken && <><div><Key size={14} /> Token: <strong>{currentToken.name}</strong></div><div><Calendar size={14} /> Created: {formatDate(currentToken.created)}</div></>}</div><p className="warning-text">Regenerating will revoke the old token.</p></div><div className="pc-modal-footer"><button className="pc-btn-cancel" onClick={() => setShowRegenModal(false)}>Cancel</button><button className="pc-btn-primary" onClick={() => {
+          <div className={styles["pc-modal-overlay"]} onClick={() => setShowRegenModal(false)}>
+            <div className={`${styles["pc-modal"]} ${styles["pc-modal-small"]}`} onClick={e => e.stopPropagation()}><div className={styles["pc-modal-header"]}><RefreshCw size={22} color="#6366f1" /><h3>Regenerate Token?</h3></div><div className={styles["pc-modal-body"]}><div className={styles["modal-token-info"]}><div><Globe size={14} /> Environment: <strong>{selectedEnv}</strong></div>{currentToken && <><div><Key size={14} /> Token: <strong>{currentToken.name}</strong></div><div><Calendar size={14} /> Created: {formatDate(currentToken.created)}</div></>}</div><p className={styles["warning-text"]}>Regenerating will revoke the old token.</p></div><div className={styles["pc-modal-footer"]}><button className={styles["pc-btn-cancel"]} onClick={() => setShowRegenModal(false)}>Cancel</button><button className={styles["pc-btn-primary"]} onClick={() => {
               setShowRegenModal(false);
               setTokenMode(currentToken?.mode || '');
               setTokenName("");  // Clear the token name
@@ -1610,8 +1914,8 @@ export default function ProjectView() {
       {/* Delete Token Confirm Modal */}
       {
         showTokenDeleteModal && (
-          <div className="pc-modal-overlay" onClick={() => setShowTokenDeleteModal(false)}>
-            <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}><div className="pc-modal-header"><Trash2 size={22} color="#ef4444" /><h3>Delete Token?</h3></div><div className="pc-modal-body"><div className="modal-token-info"><div><Globe size={14} /> Environment: <strong>{selectedEnv}</strong></div>{currentToken && <><div><Key size={14} /> Token: <strong>{currentToken.name}</strong></div><div><Calendar size={14} /> Created: {formatDate(currentToken.created)}</div></>}</div><p className="warning-text">This will permanently revoke API access.</p></div><div className="pc-modal-footer"><button className="pc-btn-cancel" onClick={() => setShowTokenDeleteModal(false)}>Cancel</button><button className="pc-btn-primary" onClick={handleTokenDelete} style={{ background: '#ef4444' }}>Delete Token</button></div></div>
+          <div className={styles["pc-modal-overlay"]} onClick={() => setShowTokenDeleteModal(false)}>
+            <div className={`${styles["pc-modal"]} ${styles["pc-modal-small"]}`} onClick={e => e.stopPropagation()}><div className={styles["pc-modal-header"]}><Trash2 size={22} color="#ef4444" /><h3>Delete Token?</h3></div><div className={styles["pc-modal-body"]}><div className={styles["modal-token-info"]}><div><Globe size={14} /> Environment: <strong>{selectedEnv}</strong></div>{currentToken && <><div><Key size={14} /> Token: <strong>{currentToken.name}</strong></div><div><Calendar size={14} /> Created: {formatDate(currentToken.created)}</div></>}</div><p className={styles["warning-text"]}>This will permanently revoke API access.</p></div><div className={styles["pc-modal-footer"]}><button className={styles["pc-btn-cancel"]} onClick={() => setShowTokenDeleteModal(false)}>Cancel</button><button className={styles["pc-btn-primary"]} onClick={handleTokenDelete} style={{ background: '#ef4444' }}>Delete Token</button></div></div>
           </div>
         )
       }
@@ -1619,48 +1923,48 @@ export default function ProjectView() {
       {/* User Assignment Panel */}
       {
         showUserPanel && (
-          <div className="user-panel-overlay" onClick={() => setShowUserPanel(false)}>
-            <div className="user-panel" onClick={e => e.stopPropagation()}>
-              <div className="user-panel-header"><div className="user-panel-header-left"><User size={20} /><h3>Manage Users - {selectedEnv}</h3></div><button className="user-panel-close" onClick={() => setShowUserPanel(false)}><X size={20} /></button></div>
-              <div className="user-panel-tabs">
-                <button className={`user-panel-tab ${userActiveTab === 'assign' ? 'active' : ''}`} onClick={() => { setUserActiveTab('assign'); setSelectedUsers(new Set()); setSelectAll(false); }}><UserPlus size={14} /> Assign User</button>
-                <button className={`user-panel-tab ${userActiveTab === 'unassign' ? 'active' : ''}`} onClick={() => { setUserActiveTab('unassign'); setSelectedUsers(new Set()); setSelectAll(false); }}><UserMinus size={14} /> Unassign User</button>
+          <div className={styles["user-panel-overlay"]} onClick={() => setShowUserPanel(false)}>
+            <div className={styles["user-panel"]} onClick={e => e.stopPropagation()}>
+              <div className={styles["user-panel-header"]}><div className={styles["user-panel-header-left"]}><User size={20} /><h3>Manage Users - {selectedEnv}</h3></div><button className={styles["user-panel-close"]} onClick={() => setShowUserPanel(false)}><X size={20} /></button></div>
+              <div className={styles["user-panel-tabs"]}>
+                <button className={`${styles["user-panel-tab"]} ${userActiveTab === 'assign' ? styles["active"] : ''}`} onClick={() => { setUserActiveTab('assign'); setSelectedUsers(new Set()); setSelectAll(false); }}><UserPlus size={14} /> Assign User</button>
+                <button className={`${styles["user-panel-tab"]} ${userActiveTab === 'unassign' ? styles["active"] : ''}`} onClick={() => { setUserActiveTab('unassign'); setSelectedUsers(new Set()); setSelectAll(false); }}><UserMinus size={14} /> Unassign User</button>
               </div>
-              <div className="user-panel-search-row">
-                <div className="user-panel-search">
-                  <Search size={16} className="user-panel-search-icon" />
+              <div className={styles["user-panel-search-row"]}>
+                <div className={styles["user-panel-search"]}>
+                  <Search size={16} className={styles["user-panel-search-icon"]} />
                   <input
                     type="text"
                     placeholder="Search users..."
                     value={userSearchTerm}
                     onChange={(e) => setUserSearchTerm(e.target.value)}
-                    className="user-panel-search-input"
+                    className={styles["user-panel-search-input"]}
                   />
                   {userSearchTerm && (
-                    <button className="user-panel-search-clear" onClick={() => setUserSearchTerm("")}>
+                    <button className={styles["user-panel-search-clear"]} onClick={() => setUserSearchTerm("")}>
                       <X size={14} />
                     </button>
                   )}
                 </div>
 
                 {/* Replace the select with this custom dropdown */}
-                <div className="user-panel-filter-wrapper">
+                <div className={styles["user-panel-filter-wrapper"]} ref={userFilterRef}>
                   <div
-                    className={`user-panel-filter-trigger ${userFilterDropdownOpen ? 'open' : ''}`}
+                    className={`${styles["user-panel-filter-trigger"]} ${userFilterDropdownOpen ? styles["open"] : ''}`}
                     onClick={() => setUserFilterDropdownOpen(!userFilterDropdownOpen)}
                   >
-                    <div className="filter-trigger-left">
-                      <Filter size={14} className="filter-icon" />
-                      <span className="filter-selected-text">
+                    <div className={styles["filter-trigger-left"]}>
+                      <Filter size={14} className={styles["filter-icon"]} />
+                      <span className={styles["filter-selected-text"]}>
                         {userFilter === 'all' ? 'All Status' : userFilter === 'active' ? 'Active' : 'Inactive'}
                       </span>
                     </div>
-                    <ChevronDown size={16} className="filter-chevron" />
+                    <ChevronDown size={16} className={styles["filter-chevron"]} />
                   </div>
                   {userFilterDropdownOpen && (
-                    <div className="user-panel-filter-menu">
+                    <div className={styles["user-panel-filter-menu"]}>
                       <div
-                        className={`user-panel-filter-item ${userFilter === 'all' ? 'selected' : ''}`}
+                        className={`${styles["user-panel-filter-item"]} ${userFilter === 'all' ? styles["selected"] : ''}`}
                         onClick={() => {
                           setUserFilter('all');
                           setUserFilterDropdownOpen(false);
@@ -1670,24 +1974,24 @@ export default function ProjectView() {
                         {userFilter === 'all' && <Check size={14} />}
                       </div>
                       <div
-                        className={`user-panel-filter-item ${userFilter === 'active' ? 'selected' : ''}`}
+                        className={`${styles["user-panel-filter-item"]} ${userFilter === 'active' ? styles["selected"] : ''}`}
                         onClick={() => {
                           setUserFilter('active');
                           setUserFilterDropdownOpen(false);
                         }}
                       >
-                        <div className="filter-item-dot active"></div>
+                        <div className={`${styles["filter-item-dot"]} ${styles["active"]}`}></div>
                         <span>Active</span>
                         {userFilter === 'active' && <Check size={14} />}
                       </div>
                       <div
-                        className={`user-panel-filter-item ${userFilter === 'inactive' ? 'selected' : ''}`}
+                        className={`${styles["user-panel-filter-item"]} ${userFilter === 'inactive' ? styles["selected"] : ''}`}
                         onClick={() => {
                           setUserFilter('inactive');
                           setUserFilterDropdownOpen(false);
                         }}
                       >
-                        <div className="filter-item-dot inactive"></div>
+                        <div className={`${styles["filter-item-dot"]} ${styles["inactive"]}`}></div>
                         <span>Inactive</span>
                         {userFilter === 'inactive' && <Check size={14} />}
                       </div>
@@ -1695,21 +1999,21 @@ export default function ProjectView() {
                   )}
                 </div>
               </div>
-              <div className="user-panel-table-wrapper">
-                <table className="user-panel-table"><thead><tr><th className="col-checkbox"><input type="checkbox" checked={selectAll} onChange={handleSelectAll} className="user-checkbox" /></th><th className="col-user">User</th><th className="col-status">Status</th></tr></thead>
+              <div className={styles["user-panel-table-wrapper"]}>
+                <table className={styles["user-panel-table"]}><thead><tr><th className={styles["col-checkbox"]}><input type="checkbox" checked={selectAll} onChange={handleSelectAll} className={styles["user-checkbox"]} /></th><th className={styles["col-user"]}>User</th><th className={styles["col-status"]}>Status</th></tr></thead>
 
                   <tbody>
                     {filteredUserList.length === 0 ? (
                       <tr>
-                        <td colSpan={3} className="user-empty-state">
+                        <td colSpan={3} className={styles["user-empty-state"]}>
                           {userSearchTerm.trim() ? (
                             <>
                               <img
                                 src={noDataIllustration}
                                 alt="No data"
-                                className="user-empty-illustration-img"
+                                className={styles["user-empty-illustration-img"]}
                               />
-                              <div className="user-empty-message">
+                              <div className={styles["user-empty-message"]}>
                                 <h4>No results found</h4>
                                 <p>Try adjusting your search term</p>
                               </div>
@@ -1719,9 +2023,9 @@ export default function ProjectView() {
                               <img
                                 src={noDataIllustration}
                                 alt="No data"
-                                className="user-empty-illustration-img"
+                                className={styles["user-empty-illustration-img"]}
                               />
-                              <div className="user-empty-message">
+                              <div className={styles["user-empty-message"]}>
                                 <h4>
                                   {userActiveTab === 'assign'
                                     ? 'No users available to assign'
@@ -1739,17 +2043,17 @@ export default function ProjectView() {
                       </tr>
                     ) : (
                       filteredUserList.map(user => (
-                        <tr key={user.id} className={selectedUsers.has(user.id) ? 'selected' : ''}>
-                          <td className="col-checkbox"><input type="checkbox" checked={selectedUsers.has(user.id)} onChange={() => handleUserSelect(user.id)} className="user-checkbox" /></td>
-                          <td className="col-user"><div className="user-cell"><span className="user-name">{user.name}</span><span className="user-email">{user.email}</span></div></td>
-                          <td className="col-status"><span className={`user-status-badge ${user.status}`}>{user.status === 'active' ? <Check size={12} /> : <AlertCircle size={12} />}{user.status}</span></td>
+                        <tr key={user.id} className={selectedUsers.has(user.id) ? styles["selected"] : ''}>
+                          <td className={styles["col-checkbox"]}><input type="checkbox" checked={selectedUsers.has(user.id)} onChange={() => handleUserSelect(user.id)} className={styles["user-checkbox"]} /></td>
+                          <td className={styles["col-user"]}><div className={styles["user-cell"]}><span className={styles["user-name"]}>{user.name}</span><span className={styles["user-email"]}>{user.email}</span></div></td>
+                          <td className={styles["col-status"]}><span className={`${styles["user-status-badge"]} ${styles[user.status]}`}>{user.status === 'active' ? <Check size={12} /> : <AlertCircle size={12} />}{user.status}</span></td>
                         </tr>
                       )))}
                   </tbody>
                 </table>
               </div>
-              <div className="user-panel-footer">
-                <button className="user-panel-action-btn" onClick={userActiveTab === 'assign' ? handleAssignUsers : handleUnassignUsers} disabled={selectedUsers.size === 0} style={{ background: userActiveTab === 'assign' ? '#6366f1' : '#ef4444' }}>
+              <div className={styles["user-panel-footer"]}>
+                <button className={styles["user-panel-action-btn"]} onClick={userActiveTab === 'assign' ? handleAssignUsers : handleUnassignUsers} disabled={selectedUsers.size === 0} style={{ background: userActiveTab === 'assign' ? '#6366f1' : '#ef4444' }}>
                   {userActiveTab === 'assign' ? <><UserPlus size={16} /> Unassign Selected ({selectedUsers.size})</> : <><UserMinus size={16} /> Assign Selected ({selectedUsers.size})</>}
                 </button>
               </div>
@@ -1761,21 +2065,21 @@ export default function ProjectView() {
       {/* Token Leave Confirmation Modal */}
       {
         showTokenLeaveModal && (
-          <div className="pc-modal-overlay" onClick={() => setShowTokenLeaveModal(false)}>
-            <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}>
-              <div className="pc-modal-header">
+          <div className={styles["pc-modal-overlay"]} onClick={() => setShowTokenLeaveModal(false)}>
+            <div className={`${styles["pc-modal"]} ${styles["pc-modal-small"]}`} onClick={e => e.stopPropagation()}>
+              <div className={styles["pc-modal-header"]}>
                 <AlertTriangle size={22} color="#f59e0b" />
                 <h3>Leave Token Page?</h3>
               </div>
-              <div className="pc-modal-body">
+              <div className={styles["pc-modal-body"]}>
                 <p>Have you copied and saved this token?</p>
-                <div className="warning-text">
+                <div className={styles["warning-text"]}>
                   <AlertTriangle size={14} /> This token will not be shown again after leaving this page.
                 </div>
               </div>
-              <div className="pc-modal-footer">
-                <button className="pc-btn-cancel" onClick={() => setShowTokenLeaveModal(false)}>Stay Here</button>
-                <button className="pc-btn-danger" onClick={() => {
+              <div className={styles["pc-modal-footer"]}>
+                <button className={styles["pc-btn-cancel"]} onClick={() => setShowTokenLeaveModal(false)}>Stay Here</button>
+                <button className={styles["pc-btn-danger"]} onClick={() => {
                   setShowTokenLeaveModal(false);
                   setGeneratedToken(null);
                   setCopied(false);
@@ -1790,9 +2094,9 @@ export default function ProjectView() {
 
       {/* Environment Status Change Modal */}
       {showStatusModal && pendingStatusChange && (
-        <div className="pc-modal-overlay" onClick={() => setShowStatusModal(false)}>
-          <div className="pc-modal pc-modal-small" onClick={e => e.stopPropagation()}>
-            <div className="pc-modal-header">
+        <div className={styles["pc-modal-overlay"]} onClick={() => setShowStatusModal(false)}>
+          <div className={`${styles["pc-modal"]} ${styles["pc-modal-small"]}`} onClick={e => e.stopPropagation()}>
+            <div className={styles["pc-modal-header"]}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <AlertTriangle size={22} color="#f59e0b" />
                 <h3 style={{ margin: 0 }}>
@@ -1800,23 +2104,23 @@ export default function ProjectView() {
                 </h3>
               </div>
             </div>
-            <div className="pc-modal-body">
+            <div className={styles["pc-modal-body"]}>
               <p>
                 Are you sure you want to <strong>{pendingStatusChange.newStatus === 'active' ? 'activate' : 'deactivate'}</strong> the <strong>{pendingStatusChange.env}</strong> environment?
               </p>
               {pendingStatusChange.newStatus === 'inactive' && (
-                <div className="warning-text">
+                <div className={styles["warning-text"]}>
                   <AlertTriangle size={14} /> Deactivating this environment may affect running services.
                 </div>
               )}
             </div>
-            <div className="pc-modal-footer">
-              <button className="pc-btn-cancel" onClick={() => {
+            <div className={styles["pc-modal-footer"]}>
+              <button className={styles["pc-btn-cancel"]} onClick={() => {
                 setShowStatusModal(false);
                 setPendingStatusChange(null);
               }}>Cancel</button>
               <button
-                className={pendingStatusChange.newStatus === 'active' ? 'pc-btn-primary' : 'pc-btn-danger'}
+                className={pendingStatusChange.newStatus === 'active' ? styles["pc-btn-primary"] : styles["pc-btn-danger"]}
                 onClick={() => {
                   if (pendingStatusChange) {
                     setEnvStatus(prev => ({
