@@ -11,7 +11,7 @@
   /* Soft Glass Effect */
   background: rgba(255, 255, 255, 0.04);
 
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(3px);
   -webkit-backdrop-filter: blur(4px);
 }
 

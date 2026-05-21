@@ -5,7 +5,6 @@ import Dashboard from "../pages/selfDashboard";
 import ProjectDashboard from "../pages/ProjectDashboard";
 import ProjectView from "../pages/ProjectView";
 import AdminDashboard from "../pages/AdminDashboard";
-import AdminCreate from "../pages/AdminCreate";
 import ForgotPassword from "@/pages/ForgotPassword";
 import UserDetailView from "@/pages/UserDetailView";
 import Workspace from "@/pages/Workspace";
@@ -30,10 +29,6 @@ const router = createBrowserRouter([
       {
         path: "admin",
         element: <AdminDashboard />,
-      },
-      {
-        path: "admin-create",
-        element: <AdminCreate />,
       },
       {
         path: "project",

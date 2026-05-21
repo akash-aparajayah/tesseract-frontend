@@ -1,20 +1,21 @@
-// src/pages/admin/UserDetailView.tsx
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import React, { useState, useEffect, useMemo } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import styles from "../styles/userDetail.module.css";
+import noDataImg from "../assets/illustration/No-data.svg";
+
 import {
   ArrowLeft,
   Mail,
-  Shield,
-  Power,
   Briefcase,
-  Plus,
-  Trash2,
   AlertCircle,
-  CheckCircle,
-  User as UserIcon,
+  Eye,
+  X,
+  Server,
+  FolderOpen,
+  Search,
+  Trash2,
 } from "lucide-react";
-import { getUserByIdApi } from "../services/adminApi";
+
 import Loader from "@/components/common/Loader";
 
 interface User {
@@ -23,139 +24,160 @@ interface User {
   email: string;
   role: "ADMIN" | "SUPER_ADMIN" | "USER";
   active: boolean;
-  createdAt?: string;
 }
+
+interface EnvironmentItem {
+  public_id: string;
+  env_name: string;
+}
+
+type Environment = EnvironmentItem[];
 
 interface Project {
   id: string;
   name: string;
   description?: string;
+  environment?: Environment;
 }
 
-// Mock projects
+const MOCK_USER: User = {
+  id: "1",
+  name: "John Doe",
+  email: "john.doe@example.com",
+  role: "USER",
+  active: true,
+};
+
 const MOCK_ASSIGNED_PROJECTS: Project[] = [
-  { id: "1", name: "E-Commerce Platform", description: "Frontend + Backend integration" },
-  { id: "2", name: "Mobile App", description: "React Native cross-platform" },
-];
-const MOCK_AVAILABLE_PROJECTS: Project[] = [
-  { id: "3", name: "AI Chatbot", description: "OpenAI integration" },
-  { id: "4", name: "Analytics Dashboard", description: "Real-time data visualization" },
+  {
+    id: "1",
+    name: "E-Commerce Platform",
+    description: "Frontend + Backend Integration",
+    environment: [
+      { public_id: "1", env_name: "Production" },
+      { public_id: "2", env_name: "Staging" },
+      { public_id: "3", env_name: "Development" },
+      { public_id: "10", env_name: "Sandbox" },
+    ],
+  },
+  {
+    id: "2",
+    name: "Analytics Dashboard",
+    description: "Real-time monitoring system",
+    environment: [
+      { public_id: "4", env_name: "UAT" },
+      { public_id: "5", env_name: "Preview" },
+    ],
+  },
+  {
+    id: "3",
+    name: "Mobile Application",
+    description: "Cross platform mobile app",
+    environment: [
+      { public_id: "7", env_name: "Demo" },
+      { public_id: "8", env_name: "QA" },
+    ],
+  },
 ];
 
 const UserDetailView: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams();
   const navigate = useNavigate();
 
+  const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [assignedProjects, setAssignedProjects] = useState<Project[]>([]);
-  const [availableProjects, setAvailableProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [assigning, setAssigning] = useState(false);
-  const [selectedProjectId, setSelectedProjectId] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+  const [globalSearch, setGlobalSearch] = useState("");
+  const [drawerOpen, setDrawerOpen] = useState(false); // ✅ Added missing state
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   useEffect(() => {
-    let isMounted = true;
-    const timeoutId = setTimeout(() => {
-      if (isMounted && loading) {
-        setUser({
-          id: id || "1",
-          name: "John Doe",
-          email: "john.doe@example.com",
-          role: "USER",
-          active: true,
-          createdAt: new Date().toISOString(),
-        });
-        setAssignedProjects(MOCK_ASSIGNED_PROJECTS);
-        setAvailableProjects(MOCK_AVAILABLE_PROJECTS);
-        setLoading(false);
-      }
+    const timer = setTimeout(() => {
+      setUser(MOCK_USER);
+      setAssignedProjects(MOCK_ASSIGNED_PROJECTS);
+      setLoading(false);
     }, 1000);
-
-    const fetchData = async () => {
-      if (!id) return;
-      try {
-        setLoading(true);
-        setError(null);
-        let userData;
-        try {
-          userData = await getUserByIdApi(id);
-          userData = userData?.data?.user || userData?.data || userData;
-        } catch (apiErr) {
-          userData = {
-            id,
-            name: "Demo User",
-            email: "demo@example.com",
-            role: "USER",
-            active: true,
-            createdAt: new Date().toISOString(),
-          };
-        }
-        if (isMounted) {
-          setUser(userData);
-          setAssignedProjects(MOCK_ASSIGNED_PROJECTS);
-          setAvailableProjects(MOCK_AVAILABLE_PROJECTS);
-          clearTimeout(timeoutId);
-          setLoading(false);
-        }
-      } catch (err: any) {
-        if (isMounted) {
-          setError(err?.message || "Failed to load user");
-          setLoading(false);
-        }
-      }
-    };
-    fetchData();
-    return () => {
-      isMounted = false;
-      clearTimeout(timeoutId);
-    };
+    return () => clearTimeout(timer);
   }, [id]);
 
-  const handleAssignProject = async () => {
-    if (!selectedProjectId) return;
-    setAssigning(true);
-    setSuccessMessage("");
-    setTimeout(() => {
-      const project = availableProjects.find(p => p.id === selectedProjectId);
-      if (project) {
-        setAssignedProjects(prev => [...prev, project]);
-        setAvailableProjects(prev => prev.filter(p => p.id !== selectedProjectId));
-        setSelectedProjectId("");
-        setSuccessMessage("Project assigned!");
-        setTimeout(() => setSuccessMessage(""), 2000);
-      }
-      setAssigning(false);
-    }, 500);
+  // Optional: Close drawer on ESC key
+  const closeDrawer = () => {
+    setDrawerOpen(false);
+    setSelectedProject(null);
   };
 
-  const handleRemoveProject = (projectId: string) => {
-    if (!window.confirm("Remove this project?")) return;
-    const project = assignedProjects.find(p => p.id === projectId);
-    if (project) {
-      setAssignedProjects(prev => prev.filter(p => p.id !== projectId));
-      setAvailableProjects(prev => [...prev, project]);
-    }
+  useEffect(() => {
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && drawerOpen) {
+        closeDrawer();
+      }
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [drawerOpen]);
+
+  const handleToggleUserStatus = () => {
+    if (!user) return;
+    setUser({ ...user, active: !user.active });
+  };
+
+  const handleViewEnvironment = (project: Project) => {
+    setSelectedProject(project);
+    setDrawerOpen(true);
+  };
+
+  const handleDeleteSingleEnvironment = (envId: string) => {
+    if (!selectedProject) return;
+    const envToDelete = selectedProject.environment?.find(e => e.public_id === envId);
+    const confirmDelete = window.confirm(
+      `Delete environment "${envToDelete?.env_name}" from "${selectedProject.name}"?`
+    );
+    if (!confirmDelete) return;
+
+    const updatedProjects = assignedProjects.map((project) =>
+      project.id === selectedProject.id
+        ? {
+            ...project,
+            environment: project.environment?.filter((env) => env.public_id !== envId),
+          }
+        : project
+    );
+    setAssignedProjects(updatedProjects);
+    setSelectedProject({
+      ...selectedProject,
+      environment: selectedProject.environment?.filter((env) => env.public_id !== envId),
+    });
   };
 
   const getRoleDisplay = () => {
     switch (user?.role) {
-      case "SUPER_ADMIN": return "Super Admin";
-      case "ADMIN": return "Admin";
-      default: return "User";
+      case "SUPER_ADMIN":
+        return "Super Admin";
+      case "ADMIN":
+        return "Admin";
+      default:
+        return "User";
     }
   };
 
+  const filteredAssignedProjects = useMemo(() => {
+    if (!globalSearch.trim()) return assignedProjects;
+    return assignedProjects.filter(
+      (project) =>
+        project.name.toLowerCase().includes(globalSearch.toLowerCase()) ||
+        project.description?.toLowerCase().includes(globalSearch.toLowerCase())
+    );
+  }, [assignedProjects, globalSearch]);
+
   if (loading) return <Loader />;
-  if (error || !user) {
+
+  if (!user) {
     return (
       <div className={styles.errorContainer}>
-        <AlertCircle size={48} />
-        <h3>Error loading user</h3>
-        <p>{error || "User not found"}</p>
-        <button onClick={() => navigate("/dashboard/admin")} className={styles.backBtn}>
-          <ArrowLeft size={16} /> Back to Admin Panel
+        <AlertCircle size={40} />
+        <h3>User Not Found</h3>
+        <button className={styles.backBtn} onClick={() => navigate("/dashboard/admin")}>
+          <ArrowLeft size={16} /> Back
         </button>
       </div>
     );
@@ -163,92 +185,154 @@ const UserDetailView: React.FC = () => {
 
   return (
     <div className={styles.container}>
-      {/* Breadcrumbs */}
-      <div className={styles.breadcrumbs}>
-        <Link to="/dashboard/admin">Admin</Link>
-        <span>/</span>
-        <Link to="/dashboard/admin">Users</Link>
-        <span>/</span>
-        <span className={styles.current}>{user.name}</span>
-      </div>
-
-      {/* Hero Banner with User Info */}
-      <div className={styles.heroBanner}>
-        <div className={styles.heroContent}>
-          <h1>View User</h1>
-          <div className={styles.badgeRow}>
-            <span className={styles.userBadge}>#{user.id.slice(0, 8)}</span>
-            <span className={`${styles.statusPill} ${user.active ? styles.statusActive : styles.statusInactive}`}>
-              {user.active ? "Active" : "Inactive"}
-            </span>
+      <div className={styles.singleColumnLayout}>
+        {/* USER CARD */}
+        <div className={styles.userCard}>
+          <div className={styles.avatarPhotoRow}>
+            {user.name.charAt(0).toUpperCase()}
           </div>
-          <div className={styles.userInfoInline}>
-            <div className={styles.infoRow}>
-              <UserIcon size={16} />
-              <span>{user.name}</span>
+          <div className={styles.userInfoWrapper}>
+            <div className={styles.userTopRow}>
+              <h2 className={styles.userName}>{user.name}</h2>
+              <span className={user.active ? styles.badgeActive : styles.badgeInactive}>
+                {user.active ? "Active" : "Inactive"}
+              </span>
             </div>
-            <div className={styles.infoRow}>
-              <Mail size={16} />
-              <span>{user.email}</span>
-            </div>
-            <div className={styles.infoRow}>
-              <Shield size={16} />
-              <span>Role: {getRoleDisplay()}</span>
-            </div>
-          </div>
-        </div>
-        <div className={styles.userAvatarLarge}>
-          {user.name.charAt(0).toUpperCase()}
-        </div>
-      </div>
-
-      {/* Assigned Projects Section (only this remains) */}
-      <div className={styles.projectsSection}>
-        <div className={styles.sectionHeader}>
-          <h3><Briefcase size={18} /> Assigned Projects</h3>
-          <div className={styles.assignBox}>
-            <select
-              value={selectedProjectId}
-              onChange={(e) => setSelectedProjectId(e.target.value)}
-              disabled={assigning || availableProjects.length === 0}
-            >
-              <option value="">Select a project...</option>
-              {availableProjects.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-            <button onClick={handleAssignProject} disabled={!selectedProjectId || assigning} className={styles.assignBtn}>
-              <Plus size={16} /> Assign
-            </button>
-          </div>
-        </div>
-
-        {successMessage && (
-          <div className={styles.successMsg}>
-            <CheckCircle size={16} /> {successMessage}
-          </div>
-        )}
-
-        {assignedProjects.length === 0 ? (
-          <div className={styles.noProjects}>
-            <p>No projects assigned yet.</p>
-          </div>
-        ) : (
-          <div className={styles.projectList}>
-            {assignedProjects.map(project => (
-              <div key={project.id} className={styles.projectCard}>
-                <div className={styles.projectInfo}>
-                  <strong>{project.name}</strong>
-                  {project.description && <p>{project.description}</p>}
-                </div>
-                <button onClick={() => handleRemoveProject(project.id)} className={styles.removeBtn}>
-                  <Trash2 size={16} />
-                </button>
+            <div className={styles.userMeta}>
+              <div className={styles.userEmail}>
+                <Mail size={15} /> {user.email}
               </div>
-            ))}
+              <div className={styles.userRole}>{getRoleDisplay()}</div>
+            </div>
           </div>
-        )}
+          <div className={styles.switchWrapper}>
+            <div
+              className={`${styles.switch} ${user.active ? styles.active : ""}`}
+              onClick={handleToggleUserStatus}
+            >
+              <div className={styles.slider} />
+            </div>
+          </div>
+        </div>
+
+        {/* PROJECTS SECTION */}
+        <div className={styles.projectsSection}>
+          <div className={styles.sectionHeader}>
+            <div className={styles.headerLeft}>
+              <div className={styles.sectionIcon}>
+                <Briefcase size={18} />
+              </div>
+              <div>
+                <h3>Assigned Projects</h3>
+                <p>{filteredAssignedProjects.length} Projects</p>
+              </div>
+            </div>
+            <div className={styles.headerSearch}>
+              <Search size={15} className={styles.headerSearchIcon} />
+              <input
+                type="text"
+                placeholder="Search projects..."
+                value={globalSearch}
+                onChange={(e) => setGlobalSearch(e.target.value)}
+                className={styles.headerSearchInput}
+              />
+            </div>
+          </div>
+
+          <div className={styles.projectGrid}>
+            {filteredAssignedProjects.length === 0 ? (
+              <div className={styles.noProjects}>
+                <p>No Projects Found</p>
+                <img src={noDataImg} alt="No data" />
+              </div>
+            ) : (
+              filteredAssignedProjects.map((project) => (
+                <div key={project.id} className={styles.projectCard}>
+                  <div className={styles.cardContent}>
+                    <div className={styles.folderIcon}>
+                      <FolderOpen size={24} />
+                    </div>
+                    <div className={styles.projectInfo}>
+                      <strong>{project.name}</strong>
+                      <p>{project.description || "No description available"}</p>
+                      
+                      {/* Environment list as vertical bullet points */}
+                      <div className={styles.envListVertical}>
+                        {project.environment && project.environment.length > 0 ? (
+                          <>
+                            {project.environment.slice(0, 2).map((env) => (
+                              <div key={env.public_id} className={styles.envItem}>
+                                <span className={styles.envBullet}>•</span>
+                                <span className={styles.envName}>{env.env_name}</span>
+                              </div>
+                            ))}
+                            {project.environment.length > 2 && (
+                              <div className={styles.envMore}>
+                                +{project.environment.length - 2} more
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className={styles.noEnvBadge}>No environments</div>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      className={styles.viewBtn}
+                      onClick={() => handleViewEnvironment(project)}
+                    >
+                      <Eye size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       </div>
+
+      {/* DRAWER - list all environments with individual delete */}
+      {drawerOpen && selectedProject && (
+        <>
+          <div className={styles.drawerOverlay} onClick={closeDrawer} />
+          <div className={styles.drawer}>
+            <div className={styles.drawerHeader}>
+              <div>
+                <h3>Environment Details</h3>
+                <p className={styles.drawerProjectName}>{selectedProject.name}</p>
+              </div>
+              <button onClick={closeDrawer} className={styles.closeDrawerBtn}>
+                <X size={18} />
+              </button>
+            </div>
+            <div className={styles.drawerContent}>
+              {selectedProject.environment && selectedProject.environment.length > 0 ? (
+                <div className={styles.envList}>
+                  {selectedProject.environment.map((env) => (
+                    <div key={env.public_id} className={styles.envCard}>
+                      <div className={styles.envCardHeader}>
+                        <Server size={18} />
+                        <strong>{env.env_name}</strong>
+                        <button
+                          onClick={() => handleDeleteSingleEnvironment(env.public_id)}
+                          className={styles.deleteEnvBtn}
+                        >
+                          <Trash2 size={15} /> Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className={styles.noEnvMessage}>
+                  <img src={noDataImg} alt="No environment" />
+                  <p>No Environments Configured</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
