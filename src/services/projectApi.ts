@@ -121,8 +121,10 @@ export const getProvidersByEnvironmentId = async (environmentId: string, service
 
 
 /* -------- UPDATE PROVIDER -------- */
-export const updateProvider = async (providerId: string, data: { credentials: Record<string, string> }) => {
-  const response = await api.patch(`/services/update-provider/${providerId}`, data);
+export const updateProvider = async (providerId: string, data: any) => {
+  const response = await api.patch(`/services/update-provider/${providerId}`,
+    { ...data, id: providerId },
+  );
   return response.data;
 };
 
@@ -131,3 +133,34 @@ export const deleteProvider = async (providerId: string) => {
   const response = await api.patch(`/services/delete-provider/${providerId}`);
   return response.data;
 };
+
+/* -------- GET ASSIGNED UNASSIGNED EMPLOYEES -------- */
+export const getAssignedUnassignedEmployees = async (projectId: string, environmentId: string) => {
+  const response = await api.get(
+    `/project/get-assigned-unassigned-employees/${projectId}/${environmentId}`,
+    { data: { project_id: projectId, environment_id: environmentId } }
+  );
+  return response.data;
+};
+
+export const assignUnassignEmployee = async (data: {
+  project_id: string;
+  environment_id: string;
+  user_id: string[];
+  status: boolean;
+}) => {
+  const response = await api.post(`/project/assign-unassign-employee`, data);
+  return response.data;
+};
+
+export const createApiKey = (data: any) =>
+  api.post("/create-api-key", data);
+
+export const getApiKeys = (projectId: string) =>
+  api.get(`/get-api-keys?project_id=${projectId}`);
+
+export const regenerateApiKey = (id: string) =>
+  api.patch(`/regenerate-api-key/${id}`);
+
+export const deleteApiKey = (id: string) =>
+  api.delete(`/delete-api-key/${id}`);

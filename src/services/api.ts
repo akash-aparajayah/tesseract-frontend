@@ -13,7 +13,7 @@ api.interceptors.request.use(
     if (token) {
       // Use backticks (`) for the string template
       config.headers.Authorization = `Bearer ${token}`;
-      console.log("Token attached to header:", token); // Debugging line
+      // console.log("Token attached to header:", token); // Debugging line
     } else {
       console.warn("No token found in localStorage");
     }

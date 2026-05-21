@@ -11,7 +11,12 @@ import {
 import { useToast } from "../hooks/useToast";
 import "../styles/Toast.css"
 import noDataIllustration from '../assets/illustration/No data.gif';
-import { getAllServices, getProvidersByServiceId, createProvider, getProviderById, deleteProvider, createEnvironment, getEnvironmentsByProjectId, getProvidersByEnvironmentId } from "../services/projectApi";
+import {
+  getAllServices, getProvidersByServiceId, createProvider, getProviderById, deleteProvider,
+  createEnvironment, getEnvironmentsByProjectId, getProvidersByEnvironmentId, updateProvider, getAssignedUnassignedEmployees, assignUnassignEmployee,
+  getApiKeys, regenerateApiKey, createApiKey, deleteApiKey
+} from "../services/projectApi";
+
 interface Project {
   id: string;
   name: string;
@@ -26,7 +31,7 @@ interface Project {
 }
 
 interface Provider {
-  id: number;
+  id: string;
   name: string;
   fields: Record<string, string>;
   usageCount?: number;
@@ -180,13 +185,7 @@ const SERVICE_ICONS: Record<string, React.ReactNode> = {
 
 
 // Token Utils
-const TOKEN_PREFIX = "env_";
-const generateToken = (): string => {
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  let result = TOKEN_PREFIX;
-  for (let i = 0; i < 40; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
-  return result;
-};
+
 const getExpiryDate = (days: string, customDays?: string): string => {
   const now = new Date(); let daysNum = 0;
   switch (days) { case "7": daysNum = 7; break; case "30": daysNum = 30; break; case "60": daysNum = 60; break; case "90": daysNum = 90; break; case "custom": daysNum = parseInt(customDays || "0"); break; case "never": return "Never"; }
@@ -220,7 +219,7 @@ export default function ProjectView() {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [serviceProviderCounts, setServiceProviderCounts] = useState<Record<string, number>>({ SMS: 0, Email: 0, Whatsapp: 0 });
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
-  const [expandedProviders, setExpandedProviders] = useState<Record<number, boolean>>({});
+  const [expandedProviders, setExpandedProviders] = useState<Record<string, boolean>>({});
   const [openEnvMenu, setOpenEnvMenu] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ name: "", description: "", status: "active" as "active" | "inactive" });
@@ -235,7 +234,7 @@ export default function ProjectView() {
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
   const [editingProvider, setEditingProvider] = useState<Provider | null>(null);
   const [saving, setSaving] = useState(false);
-  const [showDeleteProviderModal, setShowDeleteProviderModal] = useState<{ id: number; name: string } | null>(null);
+  const [showDeleteProviderModal, setShowDeleteProviderModal] = useState<{ id: string; name: string } | null>(null);
 
   const [showAddEnvModal, setShowAddEnvModal] = useState(false);
   const [showEditEnvModal, setShowEditEnvModal] = useState(false);
@@ -303,6 +302,39 @@ export default function ProjectView() {
   const [providersList, setProvidersList] = useState<any[]>([]);
 
 
+  const fetchUsersForEnvironment = async () => {
+    if (!projectId || !selectedEnv) return;
+
+    try {
+      setUsersLoading(true);
+      const env = environments.find((e: any) => e.environment_name === selectedEnv);
+      if (!env?.public_id) return;
+
+      const res = await getAssignedUnassignedEmployees(projectId, env.public_id);
+      console.log("Assigned/Unassigned:", res);
+
+      const data = res.data || res;
+
+      // Map API response fields
+      const mapUsers = (users: any[]) => users.map((u: any) => ({
+        id: u.public_id,
+        name: u.user_name,
+        email: u.email,
+        role: u.role,
+        status: u.is_active ? 'active' : 'inactive',
+      }));
+
+
+      const unassigned = mapUsers(data.unassignedEmployees || []);
+      const assigned = mapUsers(data.assignedEmployees || []);
+      setAvailableUsers(assigned);    // Assign tab = assignedEmployees
+      setAssignedUsers(unassigned);
+    } catch (error) {
+      console.error("Failed to fetch users:", error);
+    } finally {
+      setUsersLoading(false);
+    }
+  };
 
   const fetchProvidersForService = async (servicePublicId: string) => {
     try {
@@ -324,28 +356,6 @@ export default function ProjectView() {
       }
     }
   }, [activeService, serviceData]);
-
-
-  const fetchProvidersForCurrentService = async () => {
-    if (!serviceData || !activeService) return;
-
-    const service = serviceData.find(
-      (s: any) => s.name === activeService || s.slug === activeService.toLowerCase()
-    );
-
-    console.log("Fetching providers for service:", service);
-
-    if (service?.public_id) {
-      try {
-        const res = await getProvidersByServiceId(service.public_id);
-        console.log("Providers response:", res);
-        setProvidersList(res.data || []);
-      } catch (error) {
-        console.error("Failed to fetch providers:", error);
-        setProvidersList([]);
-      }
-    }
-  };
 
   const startEditingTab = (env: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -386,37 +396,23 @@ export default function ProjectView() {
     showToast(`Environment renamed to "${newName}"`, "success");
   };
 
-  const loadProvidersForEnv = async (env: any) => {
+  const loadProvidersForEnv = (env: any) => {
     if (!projectId || !serviceData) return;
+    const service = serviceData.find((s: any) => s.name === activeService);
+    if (!env?.public_id || !service?.public_id) return;
 
-    try {
-      setProvidersLoading(true);
-
-      const service = serviceData.find((s: any) => s.name === activeService);
-      if (!env?.public_id || !service?.public_id) return;
-
-      const res = await getProvidersByEnvironmentId(env.public_id, service.public_id);
-      const data = res.data || {};
-      const allProviders = [...(data.sandbox || []), ...(data.live || [])];
-
-      const providerList = allProviders.map((p: any) => ({
-        id: p.public_id || p.id,
-        name: p.provider_name || p.name,
-        fields: {
-          ...(p.credentials || {}),
-          mode: p.mode,
-          endpoint: p.endpoint,
-        },
-      }));
-
-      console.log("Setting providers:", providerList.length);
-      setProviders(providerList);
-      updateAllServiceCounts();
-    } catch (error) {
-      console.error("Failed to load providers:", error);
-    } finally {
-      setProvidersLoading(false);
-    }
+    getProvidersByEnvironmentId(env.public_id, service.public_id)
+      .then(res => {
+        const data = res.data || {};
+        const allProviders = [...(data.sandbox || []), ...(data.live || [])];
+        setProviders(allProviders.map((p: any) => ({
+          id: p.public_id || p.id,
+          name: p.provider_name || p.name,
+          fields: { ...(p.credentials || {}), mode: p.mode, endpoint: p.endpoint },
+        })));
+        setServiceProviderCounts(prev => ({ ...prev, [activeService]: allProviders.length }));
+      })
+      .catch(() => { });
   };
 
 
@@ -489,20 +485,14 @@ export default function ProjectView() {
 
 
   // Mock user data
-  const availableUsers = [
-    { id: "u1", name: "John Doe", email: "john@example.com", role: "Developer", status: "active", assignedAt: "2026-05-14" },
-    { id: "u2", name: "Jane Smith", email: "jane@example.com", role: "Admin", status: "active", assignedAt: "2026-05-13" },
-    { id: "u3", name: "Mike Johnson", email: "mike@example.com", role: "Viewer", status: "inactive", assignedAt: "2026-05-12" },
-    { id: "u4", name: "Sarah Wilson", email: "sarah@example.com", role: "Developer", status: "active", assignedAt: "2026-05-11" },
-    { id: "u5", name: "Tom Brown", email: "tom@example.com", role: "Viewer", status: "active", assignedAt: "2026-05-10" },
-    { id: "u6", name: "Alice Cooper", email: "alice@example.com", role: "Developer", status: "active", assignedAt: "2026-05-09" },
-    { id: "u7", name: "Bob Marley", email: "bob@example.com", role: "Admin", status: "active", assignedAt: "2026-05-08" },
-  ];
-  const [assignedUsers, setAssignedUsers] = useState<any[]>([
-    { id: "u6", name: "Alice Cooper", email: "alice@example.com", role: "Developer", status: "active", assignedAt: "2026-05-14" },
-    { id: "u7", name: "Bob Marley", email: "bob@example.com", role: "Admin", status: "active", assignedAt: "2026-05-13" },
-  ]);
-  const unassignedUsers = availableUsers.filter(u => !assignedUsers.some(au => au.id === u.id));
+  const [availableUsers, setAvailableUsers] = useState<any[]>([]);
+  const [assignedUsers, setAssignedUsers] = useState<any[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const unassignedUsers = (Array.isArray(availableUsers) ? availableUsers : []).filter(
+    u => !assignedUsers.some(au => au.id === u.id)
+  );
+
+
 
   // ---- ENVIRONMENT FUNCTIONS ----
   // const loadEnvironments = async () => {
@@ -557,59 +547,15 @@ export default function ProjectView() {
     }
   };
 
-  const loadProviders = async () => {
-    if (!selectedEnv || !projectId || !serviceData) {
-      console.log("loadProviders skipped - missing data");
-      return;
-    }
-
-    try {
-      setProvidersLoading(true);
-
-      const env = environments.find((e: any) => e.environment_name === selectedEnv);
-      const service = serviceData.find((s: any) => s.name === activeService);
-
-      if (!env?.public_id || !service?.public_id) {
-        console.log("Missing env or service public_id");
-        return;
-      }
-
-      const res = await getProvidersByEnvironmentId(env.public_id, service.public_id);
-      const data = res.data || {};
-      const allProviders = [...(data.sandbox || []), ...(data.live || [])];
-
-      const providerList = allProviders.map((p: any) => ({
-        id: p.public_id || p.id,
-        name: p.provider_name || p.name,
-        fields: {
-          ...(p.credentials || {}),
-          mode: p.mode,
-          endpoint: p.endpoint,
-        },
-      }));
-
-      if (providerList.length > 0) {
-        setProviders(providerList);
-        updateAllServiceCounts();
-      }
-    } catch (error) {
-      console.error("Failed to load providers:", error);
-    } finally {
-      setProvidersLoading(false);
-    }
+  const loadProviders = () => {
+    const env = environments.find((e: any) => e.environment_name === selectedEnv);
+    if (env) loadProvidersForEnv(env);
   };
 
   const updateAllServiceCounts = () => {
-    if (!selectedEnv || !projectId) return;
-    const counts: Record<string, number> = {};
-    SERVICE_TYPES.forEach(service => {
-      const key = `env_${projectId}_${selectedEnv}_${service.toLowerCase()}_providers`;
-      const data = localStorage.getItem(key);
-      const providers = data ? JSON.parse(data).providers || [] : [];
-      counts[service] = providers.filter((p: Provider) => p.fields.mode === modeFilter).length;
-    });
-    setServiceProviderCounts(counts);
+    setServiceProviderCounts(prev => ({ ...prev, [activeService]: providers.length }));
   };
+
 
   // const handleCreateEnvironment = () => {
   //   if (!projectId) return;
@@ -732,42 +678,78 @@ export default function ProjectView() {
     setSaving(true);
 
     try {
-      const service = serviceData?.find(
-        (s: any) => s.name === activeService || s.slug === activeService.toLowerCase()
-      );
-
-      const provider = providersList.find((p: any) => p.name === selectedProvider);
       const env = environments.find((e: any) => e.environment_name === selectedEnv);
 
-      const payload = {
-        environment_id: env?.public_id,
-        service_type_id: service?.public_id,
-        provider_id: provider?.public_id,
-        provider_name: provider?.name,
-        credentials: {
-          ...providerFields,
+      if (editingProvider) {
+        // UPDATE
+        await updateProvider(editingProvider.id.toString(), {
+          credentials: {
+            ...providerFields,
+            mode: modeFilter,
+          },
+        });
+      } else {
+        // CREATE
+        const service = serviceData?.find(
+          (s: any) =>
+            s.name?.trim().toLowerCase() ===
+            activeService.trim().toLowerCase() ||
+            s.slug?.trim().toLowerCase() ===
+            activeService.trim().toLowerCase()
+        );
+
+        console.log("SERVICE FOUND:", service);
+
+        if (!service?.public_id) {
+          showToast("Service mapping failed", "error");
+          return;
+        }
+        const provider = providersList.find(
+          (p: any) =>
+            p.name?.trim().toLowerCase() ===
+            selectedProvider?.trim().toLowerCase()
+        );
+
+        console.log("Selected Provider:", provider);
+
+        if (!provider?.public_id) {
+          showToast("Provider mapping failed", "error");
+          return;
+        }
+        const payload = {
+          environment_id: env?.public_id,
+          service_type_id: service?.public_id,
+          provider_id: provider?.public_id,
+          provider_name: provider?.name,
+          credentials: {
+            ...providerFields,
+            mode: modeFilter,
+          },
           mode: modeFilter,
-        },
-        mode: modeFilter,
-        endpoint: providerFields.endpoint || "",
-      };
+          endpoint: providerFields.endpoint || "",
+        };
 
-      console.log("FULL PAYLOAD:", JSON.stringify(payload, null, 2));
-
-      await createProvider(payload);
-
-      // Refresh providers for current environment
-      if (env) {
-        await loadProvidersForEnv(env);
+        await createProvider(payload);
       }
+
+      // Refresh
+      setTimeout(async () => {
+        const refreshedEnv = environments.find(
+          (e: any) => e.environment_name === selectedEnv
+        );
+
+        if (refreshedEnv) {
+          await loadProvidersForEnv(refreshedEnv);
+        }
+      }, 500);
 
       setShowAddProviderModal(false);
       setEditingProvider(null);
       setSelectedProvider("");
       setProviderFields({});
-      showToast("Provider created successfully", "success");
+      showToast(editingProvider ? "Provider updated successfully" : "Provider created successfully", "success");
     } catch (error: any) {
-      showToast(error?.response?.data?.message || "Failed to create provider", "error");
+      showToast(error?.response?.data?.message || "Failed to save provider", "error");
     } finally {
       setSaving(false);
     }
@@ -777,11 +759,13 @@ export default function ProjectView() {
     if (!showDeleteProviderModal) return;
     try {
       await deleteProvider(showDeleteProviderModal.id.toString());
-      await loadProviders();
+
+      const env = environments.find((e: any) => e.environment_name === selectedEnv);
+      if (env) await loadProvidersForEnv(env);
+
       setShowDeleteProviderModal(null);
-      showToast("Provider deleted", "error");
+      showToast("Provider deleted", "success");
     } catch (error: any) {
-      console.error("Failed to delete provider:", error);
       showToast(error?.response?.data?.message || "Failed to delete provider", "error");
     }
   };
@@ -821,58 +805,138 @@ export default function ProjectView() {
   const saveToken = (pId: string, env: string, mode: string, token: ApiToken) => {
     localStorage.setItem(`token_${pId}_${env}_${mode}`, JSON.stringify(token));
   };
-  const getAllTokens = (pId: string): Record<string, ApiToken> => {
-    const tokens: Record<string, ApiToken> = {};
-    Object.keys(localStorage).forEach(key => {
-      const match = key.match(new RegExp(`^token_${pId}_(.+)_(Sandbox|Live)$`));
-      if (match) {
-        const data = localStorage.getItem(key);
-        if (data) try { tokens[`${match[1]}_${match[2]}`] = JSON.parse(data); } catch { }
-      }
-    });
-    return tokens;
-  };
+  // const getAllTokens = (pId: string): Record<string, ApiToken> => {
+  //   const tokens: Record<string, ApiToken> = {};
+  //   Object.keys(localStorage).forEach(key => {
+  //     const match = key.match(new RegExp(`^token_${pId}_(.+)_(Sandbox|Live)$`));
+  //     if (match) {
+  //       const data = localStorage.getItem(key);
+  //       if (data) try { tokens[`${match[1]}_${match[2]}`] = JSON.parse(data); } catch { }
+  //     }
+  //   });
+  //   return tokens;
+  // };
   const deleteToken = (pId: string, env: string, mode: string) => {
     localStorage.removeItem(`token_${pId}_${env}_${mode}`);
   };
 
-  const handleTokenGenerate = () => {
+  const handleTokenGenerate = async () => {
     if (!tokenName.trim() || !selectedEnv || !projectId || !tokenMode) return;
 
-    if (isRegenerating && currentToken?.mode) {
-      deleteToken(projectId, selectedEnv, currentToken.mode);
-    }
+    try {
+      const payload = {
+        projectId: projectId || "",
+        environment_name: selectedEnv,
+        mode: tokenMode,
+        name: tokenName.trim(),
+        expires_in_days: getExpiryDays(
+          tokenExpiration,
+          tokenCustomDays
+        ),
+      };
 
-    const token: ApiToken = {
-      id: Date.now().toString(), name: tokenName.trim(), token: generateToken(),
-      projectId, environmentName: selectedEnv, mode: tokenMode,
-      created: new Date().toISOString().split('T')[0],
-      expires: getExpiryDate(tokenExpiration, tokenCustomDays),
-      expiresInDays: getExpiryDays(tokenExpiration, tokenCustomDays), revealed: false,
-    };
-    saveToken(projectId, selectedEnv, tokenMode, token);
-    setAllTokens(prev => ({ ...prev, [`${selectedEnv}_${tokenMode}`]: token }));
-    setGeneratedToken(token);
-    setShowTokenFormModal(false);
-    showToast(`Token ${isRegenerating ? 'regenerated' : 'generated'} for ${selectedEnv}`, "success");
+      let res;
+
+      // REGENERATE
+      if (isRegenerating && currentToken?.id) {
+        res = await regenerateApiKey(currentToken.id);
+      } else {
+        // CREATE
+        res = await createApiKey(payload);
+      }
+
+      const tokenData = res.data;
+
+      const token: ApiToken = {
+        id: tokenData.public_id || "",
+        name: tokenData.name || "",
+        token: tokenData.api_key || "",
+        projectId: projectId || "",
+        environmentName: tokenData.environment_name || "",
+        mode: tokenData.mode || "",
+        created: tokenData.created_at || "",
+        expires: tokenData.expires_at || "",
+        expiresInDays: tokenData.expires_in_days || 0,
+        revealed: false,
+      };
+
+      setAllTokens((prev) => ({
+        ...prev,
+        [`${selectedEnv}_${tokenMode}`]: token,
+      }));
+
+      setGeneratedToken(token);
+      setShowTokenFormModal(false);
+
+      showToast(
+        `Token ${isRegenerating ? "regenerated" : "generated"
+        } for ${selectedEnv}`,
+        "success"
+      );
+
+      // RESET
+      setTokenName("");
+      setTokenExpiration("30");
+      setTokenCustomDays("");
+      setTokenCustomDate("");
+      setIsRegenerating(false);
+      setCurrentToken(null);
+
+    } catch (error: any) {
+      console.error("Token generation failed:", error);
+
+      showToast(
+        error?.response?.data?.message ||
+        "Failed to generate token",
+        "error"
+      );
+    }
   };
 
-  const handleTokenDelete = () => {
+  const handleTokenDelete = async () => {
     if (!projectId || !selectedEnv || !currentToken?.mode) return;
-    deleteToken(projectId, selectedEnv, currentToken.mode);
-    setAllTokens(prev => { const updated = { ...prev }; delete updated[`${selectedEnv}_${currentToken.mode}`]; return updated; });
-    setShowTokenDeleteModal(false); setSelectedEnv(""); setCurrentToken(null);
-    showToast("Token deleted", "error");
+
+    try {
+      await deleteApiKey(currentToken.id);
+
+      setAllTokens((prev) => {
+        const updated = { ...prev };
+        delete updated[`${selectedEnv}_${currentToken.mode}`];
+        return updated;
+      });
+
+      setShowTokenDeleteModal(false);
+      setSelectedEnv("");
+      setCurrentToken(null);
+
+      showToast("Token deleted", "error");
+
+    } catch (error: any) {
+      console.error("Delete token failed:", error);
+
+      showToast(
+        error?.response?.data?.message ||
+        "Failed to delete token",
+        "error"
+      );
+    }
   };
 
   const filteredTokens = environments.filter(env => {
     if (!tokenSearchTerm.trim()) return true;
     const q = tokenSearchTerm.toLowerCase();
-    return env.toLowerCase().includes(q) || allTokens[`${env}_Sandbox`]?.name?.toLowerCase().includes(q) || allTokens[`${env}_Live`]?.name?.toLowerCase().includes(q);
+    const envName = env.environment_name || env;
+    return envName.toLowerCase().includes(q) ||
+      allTokens[`${envName}_Sandbox`]?.name?.toLowerCase().includes(q) ||
+      allTokens[`${envName}_Live`]?.name?.toLowerCase().includes(q);
   });
 
   // ---- DRAG & DROP ----
-  const filteredProviders = providers.filter(p => p.fields.mode === modeFilter);
+  const filteredProviders = providers.filter(
+    p =>
+      p.fields.mode?.toLowerCase() ===
+      modeFilter.toLowerCase()
+  );
   const handleDragStart = (e: React.DragEvent, index: number) => {
     const provider = filteredProviders[index];
     setDragIndex(providers.findIndex(p => p.id === provider.id));
@@ -896,7 +960,7 @@ export default function ProjectView() {
 
   // ---- USER FUNCTIONS ----
   const getFilteredUsers = () => {
-    const userList = userActiveTab === "assign" ? unassignedUsers : assignedUsers;
+    const userList = userActiveTab === "assign" ? availableUsers : assignedUsers;
     let filtered = userList;
     if (userSearchTerm.trim()) {
       const q = userSearchTerm.toLowerCase();
@@ -906,29 +970,66 @@ export default function ProjectView() {
     if (userActiveTab === "unassign") filtered = [...filtered].sort((a, b) => new Date(b.assignedAt || "").getTime() - new Date(a.assignedAt || "").getTime());
     return filtered;
   };
+
   const filteredUserList = getFilteredUsers();
   const handleSelectAll = () => { setSelectAll(!selectAll); setSelectedUsers(selectAll ? new Set() : new Set(filteredUserList.map(u => u.id))); };
   const handleUserSelect = (userId: string) => {
     const ns = new Set(selectedUsers); ns.has(userId) ? ns.delete(userId) : ns.add(userId);
     setSelectedUsers(ns); setSelectAll(ns.size === filteredUserList.length);
   };
-  const handleAssignUsers = () => {
-    const usersToAssign = unassignedUsers.filter(u => selectedUsers.has(u.id)).map(u => ({ ...u, assignedAt: new Date().toISOString().split('T')[0] }));
-    setAssignedUsers(prev => [...usersToAssign, ...prev]);
-    setSelectedUsers(new Set());
-    setSelectAll(false);
+  // "Unassign User" tab = users from API (unassigned)
+  // "Assign User" tab = users you've assigned
 
-    const count = usersToAssign.length;
-    showToast(`${count} user${count !== 1 ? 's' : ''} Unassigned successfully`, "error");
+  const handleAssignUsers = async () => {
+    if (!projectId || !selectedEnv) return;
+    const env = environments.find((e: any) => e.environment_name === selectedEnv);
+    if (!env?.public_id) return;
+
+    const usersToAssign = assignedUsers.filter(u => selectedUsers.has(u.id));
+    if (usersToAssign.length === 0) return;
+
+    try {
+      await assignUnassignEmployee({
+        project_id: projectId,
+        environment_id: env.public_id,
+        user_id: usersToAssign.map(u => u.id),
+        status: true,
+      });
+
+      setAvailableUsers(prev => [...usersToAssign, ...prev]);
+      setAssignedUsers(prev => prev.filter(u => !selectedUsers.has(u.id)));
+      setSelectedUsers(new Set());
+      setSelectAll(false);
+      showToast(`${usersToAssign.length} user(s) assigned`, "success");
+    } catch (error: any) {
+      showToast(error?.response?.data?.message || "Failed to assign users", "error");
+    }
   };
 
-  const handleUnassignUsers = () => {
-    const count = selectedUsers.size;
-    setAssignedUsers(prev => prev.filter(u => !selectedUsers.has(u.id)));
-    setSelectedUsers(new Set());
-    setSelectAll(false);
+  const handleUnassignUsers = async () => {
+    if (!projectId || !selectedEnv) return;
+    const env = environments.find((e: any) => e.environment_name === selectedEnv);
+    if (!env?.public_id) return;
 
-    showToast(`${count} user${count !== 1 ? 's' : ''} Assigned successfully`, "success");
+    const usersToUnassign = availableUsers.filter(u => selectedUsers.has(u.id));
+    if (usersToUnassign.length === 0) return;
+
+    try {
+      await assignUnassignEmployee({
+        project_id: projectId,
+        environment_id: env.public_id,
+        user_id: usersToUnassign.map(u => u.id),
+        status: false,
+      });
+
+      setAssignedUsers(prev => [...usersToUnassign, ...prev]);
+      setAvailableUsers(prev => prev.filter(u => !selectedUsers.has(u.id)));
+      setSelectedUsers(new Set());
+      setSelectAll(false);
+      showToast(`${usersToUnassign.length} user(s) unassigned`, "success");
+    } catch (error: any) {
+      showToast(error?.response?.data?.message || "Failed to unassign users", "error");
+    }
   };
 
   // ---- EFFECTS ----
@@ -983,7 +1084,8 @@ export default function ProjectView() {
     if (!openEnvMenu) return;
     const hc = (e: MouseEvent) => {
       const t = e.target as HTMLElement;
-      if (envMenuRef.current && envMenuRef.current.contains(t)) return;
+      // Don't close if clicking inside the menu or the trigger button
+      if (t.closest('[data-env-menu]')) return;
       setOpenEnvMenu(null);
     };
     document.addEventListener('mousedown', hc);
@@ -1000,15 +1102,43 @@ export default function ProjectView() {
 
   // On load, check localStorage first:
 
-  useEffect(() => { if (selectedEnv && activeMainTab === 'environments') loadProviders(); }, [selectedEnv, activeService, activeMainTab]);
-  useEffect(() => { if (selectedEnv && activeMainTab === 'environments') updateAllServiceCounts(); }, [selectedEnv, activeService, modeFilter, activeMainTab]);
+  const loadApiKeys = async () => {
+    if (!projectId) return;
+
+    try {
+      const res = await getApiKeys(projectId);
+
+      const mapped: Record<string, ApiToken> = {};
+
+      (res.data || []).forEach((token: any) => {
+        mapped[`${token.environment_name}_${token.mode}`] = {
+          id: token.public_id,
+          name: token.name,
+          token: token.api_key,
+          projectId: projectId || "",
+          environmentName: token.environment_name,
+          mode: token.mode,
+          created: token.created_at,
+          expires: token.expires_at,
+          expiresInDays: token.expires_in_days,
+          revealed: false,
+        };
+      });
+
+      setAllTokens(mapped);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   useEffect(() => {
-    if (projectId) setAllTokens(getAllTokens(projectId));
+    loadApiKeys();
   }, [projectId]);
 
   useEffect(() => { if (selectedEnv && activeMainTab === 'environments') loadProviders(); }, [selectedEnv, activeService, activeMainTab]);
   useEffect(() => { if (selectedEnv && activeMainTab === 'environments') updateAllServiceCounts(); }, [selectedEnv, activeService, modeFilter, activeMainTab]);
-  // ✅ ADD THIS NEW ONE:
+
+
   useEffect(() => {
     if (selectedEnv && activeMainTab === 'environments' && serviceData) {
       const env = environments.find((e: any) => e.environment_name === selectedEnv);
@@ -1018,9 +1148,6 @@ export default function ProjectView() {
     }
   }, [selectedEnv, serviceData]);
 
-  useEffect(() => {
-    if (projectId) setAllTokens(getAllTokens(projectId));
-  }, [showTokenFormModal, showTokenDeleteModal, showRegenModal]);
 
   const getEnvIcon = (name: string): React.ReactNode => {
     const icons: Record<string, React.ReactNode> = { 'Local': <Home size={16} />, 'Dev': <Monitor size={16} />, 'Staging': <Rocket size={16} />, 'Live': <Globe size={16} /> };
@@ -1200,11 +1327,11 @@ export default function ProjectView() {
                               {env.environment_name}
                             </span>
                             <div className={styles["env-tab-menu"]} onClick={(e) => e.stopPropagation()}>
-                              <button className={styles["env-menu-trigger"]} onClick={() => setOpenEnvMenu(openEnvMenu === env ? null : env)}>
+                              <button className={styles["env-menu-trigger"]} data-env-menu onClick={() => setOpenEnvMenu(openEnvMenu === env ? null : env)}>
                                 <Settings size={14} />
                               </button>
                               {openEnvMenu === env && (
-                                <div className={styles["env-menu-dropdown"]} ref={envMenuRef}>
+                                <div className={styles["env-menu-dropdown"]} ref={envMenuRef} data-env-menu>
                                   <button onClick={() => {
                                     setEditingTabEnv(env);
                                     setEditingTabName(env.environment_name);
@@ -1215,7 +1342,7 @@ export default function ProjectView() {
                                   <button onClick={() => { setCloneTarget(""); setCloneCustomMode(false); setShowCloneModal(true); setOpenEnvMenu(null); }}>
                                     <Copy size={14} /><span className={styles["env-menu-tooltip"]}>Clone</span>
                                   </button>
-                                  <button onClick={() => { setShowUserPanel(true); setOpenEnvMenu(null); setUserSearchTerm(""); setSelectedUsers(new Set()); setSelectAll(false); setUserFilter("all"); }}>
+                                  <button onClick={() => { setShowUserPanel(true); setOpenEnvMenu(null); setUserSearchTerm(""); setSelectedUsers(new Set()); setSelectAll(false); setUserFilter("all"); fetchUsersForEnvironment(); }}>
                                     <User size={14} /><span className={styles["env-menu-tooltip"]}>Users</span>
                                   </button>
                                   <button onClick={() => {
@@ -1361,14 +1488,29 @@ export default function ProjectView() {
                         <div
                           key={service}
                           className={`${styles["pc-sidebar-item"]} ${activeService === service ? styles["active"] : ''}`}
-                          onClick={async () => {
-                            console.log("Clicked service:", service);
+                          onClick={() => {
                             setActiveService(service);
                             setmodeFilter("Sandbox");
                             setProviders([]);
-                            await fetchProvidersForCurrentService();
                             const env = environments.find((e: any) => e.environment_name === selectedEnv);
-                            if (env) loadProvidersForEnv(env);
+                            if (env && serviceData) {
+                              const svc = serviceData.find((s: any) => s.name === service);
+                              if (svc?.public_id && env?.public_id) {
+                                getProvidersByEnvironmentId(env.public_id, svc.public_id)
+                                  .then(res => {
+                                    const data = res.data || {};
+                                    const allProviders = [...(data.sandbox || []), ...(data.live || [])];
+                                    const providerList = allProviders.map((p: any) => ({
+                                      id: p.public_id || p.id,
+                                      name: p.provider_name || p.name,
+                                      fields: { ...(p.credentials || {}), mode: p.mode, endpoint: p.endpoint },
+                                    }));
+                                    setProviders(providerList);
+                                    setServiceProviderCounts(prev => ({ ...prev, [service]: providerList.length }));
+                                  })
+                                  .catch(() => { });
+                              }
+                            }
                           }}
                           style={{
                             borderLeftColor: activeService === service ? SERVICE_COLORS[service] : 'transparent',
@@ -1396,7 +1538,6 @@ export default function ProjectView() {
                           className={styles["pc-add-btn"]}
                           style={{ backgroundColor: SERVICE_COLORS[activeService] }}
                           onClick={async () => {
-                            await fetchProvidersForCurrentService();
                             setEditingProvider(null);
                             setSelectedProvider("");
                             setProviderFields({});
@@ -1455,7 +1596,18 @@ export default function ProjectView() {
                                     )}
                                   </div>
                                   <div className={styles["pc-provider-actions"]} onClick={(e) => e.stopPropagation()}>
-                                    <button className={styles["pc-edit-btn"]} onClick={() => { setEditingProvider(provider); setSelectedProvider(provider.name); setProviderFields({ ...provider.fields }); setShowAddProviderModal(true); }}><Pencil size={14} /></button>
+                                    <button
+                                      className={styles["pc-edit-btn"]}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditingProvider(provider);
+                                        setSelectedProvider(provider.name);
+                                        setProviderFields({ ...provider.fields });
+                                        setShowAddProviderModal(true);
+                                      }}
+                                    >
+                                      <Pencil size={14} />
+                                    </button>
                                     <button className={styles["pc-delete-btn"]} onClick={() => setShowDeleteProviderModal({ id: provider.id, name: provider.name })}><Trash2 size={14} /></button>
                                   </div>
                                 </div>
@@ -1463,7 +1615,7 @@ export default function ProjectView() {
                               {expandedProviders[provider.id] && (
                                 <div className={styles["pc-provider-card-body"]}>
                                   {Object.entries(provider.fields)
-                                    .filter(([key]) => key !== 'endpoint')
+                                    .filter(([key]) => key !== 'endpoint' && key !== 'id')
                                     .sort(([a], [b]) => a === 'mode' ? -1 : b === 'mode' ? 1 : 0)
                                     .map(([key, value]) => {
                                       const fc = PROVIDER_FIELDS_MAP[provider.name]?.find((f: any) => f.name === key);
@@ -1538,11 +1690,12 @@ export default function ProjectView() {
                 </div>
               ) : (
                 filteredTokens.map(env => {
-                  const sandboxToken = allTokens[`${env}_Sandbox`];
-                  const liveToken = allTokens[`${env}_Live`];
+                  const envName = env.environment_name || env;
+                  const sandboxToken = allTokens[`${envName}_Sandbox`];
+                  const liveToken = allTokens[`${envName}_Live`];
                   return (
-                    <div key={env} className={styles["token-env-card-full"]}>
-                      <div className={styles["token-card-header"]}><Globe size={18} /><span className={styles["token-card-env-name"]}>{env}</span></div>
+                    <div key={env.public_id || envName} className={styles["token-env-card-full"]}>
+                      <div className={styles["token-card-header"]}><Globe size={18} /><span className={styles["token-card-env-name"]}>{env.environment_name || env}</span></div>
                       <div className={styles["token-mode-buttons-row"]}>
                         <div className={styles["token-mode-card"]}>
                           {sandboxToken ? (
@@ -1560,14 +1713,14 @@ export default function ProjectView() {
                                 <div className={`${styles["mode-token-row"]} ${styles["token-expiry-row"]}`}>
                                   <div className={styles["expiry-left"]}><Clock size={12} /><span className={sandboxToken.expiresInDays && sandboxToken.expiresInDays <= 7 ? styles["expiring-soon"] : ''}>{calculateExpiryLabel(sandboxToken.expires, sandboxToken.expiresInDays)}</span></div>
                                   <div className={styles["mode-token-actions"]}>
-                                    <button className={`${styles["token-action-btn"]} ${styles["regenerate"]}`} onClick={() => { setSelectedEnv(env); setCurrentToken(sandboxToken); setShowRegenModal(true); }}><RefreshCw size={12} />Regenerate</button>
-                                    <button className={`${styles["token-action-btn"]} ${styles["delete"]}`} onClick={() => { setSelectedEnv(env); setCurrentToken(sandboxToken); setShowTokenDeleteModal(true); }}><Trash2 size={12} />Delete</button>
+                                    <button className={`${styles["token-action-btn"]} ${styles["regenerate"]}`} onClick={() => { setSelectedEnv(env.environment_name); setCurrentToken(sandboxToken); setShowRegenModal(true); }}><RefreshCw size={12} />Regenerate</button>
+                                    <button className={`${styles["token-action-btn"]} ${styles["delete"]}`} onClick={() => { setSelectedEnv(env.environment_name); setCurrentToken(sandboxToken); setShowTokenDeleteModal(true); }}><Trash2 size={12} />Delete</button>
                                   </div>
                                 </div>
                               </div>
                             </div>
                           ) : (
-                            <button className={`${styles["mode-generate-btn"]} ${styles["sandbox"]}`} onClick={() => { setSelectedEnv(env); setTokenMode('Sandbox'); setTokenName(""); setTokenExpiration("30"); setTokenCustomDays(""); setTokenCustomDate(""); setIsRegenerating(false); setCurrentToken(null); setShowTokenFormModal(true); }}>
+                            <button className={`${styles["mode-generate-btn"]} ${styles["sandbox"]}`} onClick={() => { setSelectedEnv(env.environment_name); setTokenMode('Sandbox'); setTokenName(""); setTokenExpiration("30"); setTokenCustomDays(""); setTokenCustomDate(""); setIsRegenerating(false); setCurrentToken(null); setShowTokenFormModal(true); }}>
                               <Wrench size={18} /><span>Generate Sandbox Token</span><Plus size={16} />
                             </button>
                           )}
@@ -1588,14 +1741,14 @@ export default function ProjectView() {
                                 <div className={`${styles["mode-token-row"]} ${styles["token-expiry-row"]}`}>
                                   <div className={styles["expiry-left"]}><Clock size={12} /><span className={liveToken.expiresInDays && liveToken.expiresInDays <= 7 ? styles["expiring-soon"] : ''}>{calculateExpiryLabel(liveToken.expires, liveToken.expiresInDays)}</span></div>
                                   <div className={styles["mode-token-actions"]}>
-                                    <button className={`${styles["token-action-btn"]} ${styles["regenerate"]}`} onClick={() => { setSelectedEnv(env); setCurrentToken(liveToken); setShowRegenModal(true); }}><RefreshCw size={12} />Regenerate</button>
-                                    <button className={`${styles["token-action-btn"]} ${styles["delete"]}`} onClick={() => { setSelectedEnv(env); setCurrentToken(liveToken); setShowTokenDeleteModal(true); }}><Trash2 size={12} />Delete</button>
+                                    <button className={`${styles["token-action-btn"]} ${styles["regenerate"]}`} onClick={() => { setSelectedEnv(env.environment_name); setCurrentToken(liveToken); setShowRegenModal(true); }}><RefreshCw size={12} />Regenerate</button>
+                                    <button className={`${styles["token-action-btn"]} ${styles["delete"]}`} onClick={() => { setSelectedEnv(env.environment_name); setCurrentToken(liveToken); setShowTokenDeleteModal(true); }}><Trash2 size={12} />Delete</button>
                                   </div>
                                 </div>
                               </div>
                             </div>
                           ) : (
-                            <button className={`${styles["mode-generate-btn"]} ${styles["live"]}`} onClick={() => { setSelectedEnv(env); setTokenMode('Live'); setTokenName(""); setTokenExpiration("30"); setTokenCustomDays(""); setTokenCustomDate(""); setIsRegenerating(false); setCurrentToken(null); setShowTokenFormModal(true); }}>
+                            <button className={`${styles["mode-generate-btn"]} ${styles["live"]}`} onClick={() => { setSelectedEnv(env.environment_name); setTokenMode('Live'); setTokenName(""); setTokenExpiration("30"); setTokenCustomDays(""); setTokenCustomDate(""); setIsRegenerating(false); setCurrentToken(null); setShowTokenFormModal(true); }}>
                               <Rocket size={18} /><span>Generate Live Token</span><Plus size={16} />
                             </button>
                           )}
@@ -1638,8 +1791,20 @@ export default function ProjectView() {
                 {isCustomEnv && <div className={styles["pc-form-group"]}><label>Environment Name *</label><input type="text" placeholder="e.g., Production" value={customEnvInput} onChange={(e) => setCustomEnvInput(e.target.value)} className={styles["pc-input"]} autoFocus /></div>}
               </div>
               <div className={styles["pc-modal-footer"]}>
-                <button className={styles["pc-btn-cancel"]} onClick={() => { setShowAddEnvModal(false); setNewEnvName(""); setIsCustomEnv(false); setCustomEnvInput(""); }}>Cancel</button>
-                <button className={styles["pc-btn-primary"]} onClick={handleAddEnvironment} disabled={(!isCustomEnv && !newEnvName) || (isCustomEnv && !customEnvInput.trim())}>Save Environment</button>
+                <button className={styles["pc-btn-cancel"]} onClick={() => {
+                  setPendingCloseAction(() => () => { setShowAddProviderModal(false); setEditingProvider(null); });
+                  setShowUnsavedModal(true);
+                }}>
+                  Cancel
+                </button>
+                <button
+                  className={styles["pc-btn-primary"]}
+                  onClick={saveProvider}
+                  disabled={saving}
+                  style={{ backgroundColor: SERVICE_COLORS[activeService], border: 'none' }}
+                >
+                  {saving ? 'Saving...' : editingProvider ? 'Update Provider' : 'Add Provider'}
+                </button>
               </div>
             </div>
           </div>
@@ -1721,13 +1886,28 @@ export default function ProjectView() {
               </div>
               <div className={styles["pc-modal-body"]}>
                 <div className={styles["pc-form-group"]}><label>Select Provider *</label>
-                  <select value={selectedProvider} onChange={handleProviderChange} className={styles["pc-select"]}>
+                  <select value={selectedProvider} onChange={handleProviderChange} className={styles["pc-select"]} disabled={!!editingProvider}>
                     <option value="">-- Choose provider --</option>
-                    {providersList.map((p: any) => (
-                      <option key={p.public_id} value={p.name}>
-                        {p.name}
-                      </option>
-                    ))}
+                    {providersList
+                      .filter((p: any) => {
+                        // Always show if editing this provider
+                        if (editingProvider?.name === p.name) return true;
+
+                        // Check if this provider already exists in current mode
+                        const existsInCurrentMode = providers.some(
+                          (prov) => prov.name === p.name && prov.fields.mode === modeFilter
+                        );
+
+                        // Hide if already configured in this mode
+                        if (existsInCurrentMode) return false;
+
+                        return true;
+                      })
+                      .map((p: any) => (
+                        <option key={p.public_id} value={p.name}>
+                          {p.name}
+                        </option>
+                      ))}
                   </select>
                 </div>
                 {selectedProvider && (() => {
@@ -1763,8 +1943,23 @@ export default function ProjectView() {
                 })()}
               </div>
               <div className={styles["pc-modal-footer"]}>
-                <button className={styles["pc-btn-cancel"]} onClick={() => { setPendingCloseAction(() => () => { setShowAddProviderModal(false); setEditingProvider(null); }); setShowUnsavedModal(true); }}>Cancel</button>
-                <button className={styles["pc-btn-primary"]} onClick={saveProvider} disabled={saving} style={{ backgroundColor: SERVICE_COLORS[activeService] }}>{saving ? 'Saving...' : editingProvider ? 'Update Provider' : 'Add Provider'}</button>
+                <button
+                  className={styles["pc-btn-cancel"]}
+                  onClick={() => {
+                    setPendingCloseAction(() => () => { setShowAddProviderModal(false); setEditingProvider(null); });
+                    setShowUnsavedModal(true);
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  className={styles["pc-btn-primary"]}
+                  onClick={saveProvider}
+                  disabled={saving}
+                  style={{ backgroundColor: SERVICE_COLORS[activeService], border: 'none' }}
+                >
+                  {saving ? 'Saving...' : editingProvider ? 'Update Provider' : 'Add Provider'}
+                </button>
               </div>
             </div>
           </div>
@@ -1897,15 +2092,43 @@ export default function ProjectView() {
       {
         showRegenModal && (
           <div className={styles["pc-modal-overlay"]} onClick={() => setShowRegenModal(false)}>
-            <div className={`${styles["pc-modal"]} ${styles["pc-modal-small"]}`} onClick={e => e.stopPropagation()}><div className={styles["pc-modal-header"]}><RefreshCw size={22} color="#6366f1" /><h3>Regenerate Token?</h3></div><div className={styles["pc-modal-body"]}><div className={styles["modal-token-info"]}><div><Globe size={14} /> Environment: <strong>{selectedEnv}</strong></div>{currentToken && <><div><Key size={14} /> Token: <strong>{currentToken.name}</strong></div><div><Calendar size={14} /> Created: {formatDate(currentToken.created)}</div></>}</div><p className={styles["warning-text"]}>Regenerating will revoke the old token.</p></div><div className={styles["pc-modal-footer"]}><button className={styles["pc-btn-cancel"]} onClick={() => setShowRegenModal(false)}>Cancel</button><button className={styles["pc-btn-primary"]} onClick={() => {
-              setShowRegenModal(false);
-              setTokenMode(currentToken?.mode || '');
-              setTokenName("");  // Clear the token name
-              setTokenExpiration("30");
-              setTokenCustomDays("");
-              setTokenCustomDate("");
-              setIsRegenerating(true);
-              setShowTokenFormModal(true);
+            <div className={`${styles["pc-modal"]} ${styles["pc-modal-small"]}`} onClick={e => e.stopPropagation()}><div className={styles["pc-modal-header"]}><RefreshCw size={22} color="#6366f1" /><h3>Regenerate Token?</h3></div><div className={styles["pc-modal-body"]}><div className={styles["modal-token-info"]}><div><Globe size={14} /> Environment: <strong>{selectedEnv}</strong></div>{currentToken && <><div><Key size={14} /> Token: <strong>{currentToken.name}</strong></div><div><Calendar size={14} /> Created: {formatDate(currentToken.created)}</div></>}</div><p className={styles["warning-text"]}>Regenerating will revoke the old token.</p></div><div className={styles["pc-modal-footer"]}><button className={styles["pc-btn-cancel"]} onClick={() => setShowRegenModal(false)}>Cancel</button><button className={styles["pc-btn-primary"]} onClick={async () => {
+              try {
+                if (!currentToken?.id) return;
+
+                const res = await regenerateApiKey(currentToken.id);
+
+                const tokenData = res.data;
+
+                const token: ApiToken = {
+                  id: tokenData.public_id,
+                  name: tokenData.name,
+                  token: tokenData.api_key,
+                  projectId: projectId || "",
+                  environmentName: tokenData.environment_name,
+                  mode: tokenData.mode,
+                  created: tokenData.created_at,
+                  expires: tokenData.expires_at,
+                  expiresInDays: tokenData.expires_in_days,
+                  revealed: false,
+                };
+
+                setAllTokens((prev) => ({
+                  ...prev,
+                  [`${token.environmentName}_${token.mode}`]: token,
+                }));
+
+                setGeneratedToken(token);
+
+                setShowRegenModal(false);
+
+                showToast("Token regenerated successfully", "success");
+
+              } catch (error) {
+                console.error(error);
+
+                showToast("Failed to regenerate token", "error");
+              }
             }}>Continue</button></div></div>
           </div>
         )
@@ -2000,7 +2223,7 @@ export default function ProjectView() {
                 </div>
               </div>
               <div className={styles["user-panel-table-wrapper"]}>
-                <table className={styles["user-panel-table"]}><thead><tr><th className={styles["col-checkbox"]}><input type="checkbox" checked={selectAll} onChange={handleSelectAll} className={styles["user-checkbox"]} /></th><th className={styles["col-user"]}>User</th><th className={styles["col-status"]}>Status</th></tr></thead>
+                <table className={styles["user-panel-table"]}><thead><tr><th className={styles["col-checkbox"]}><input type="checkbox" checked={selectAll} onChange={handleSelectAll} className={styles["user-checkbox"]} /></th><th className={styles["col-user"]} style={{ textAlign: 'center' }}>User</th><th className={styles["col-status"]}>Status</th></tr></thead>
 
                   <tbody>
                     {filteredUserList.length === 0 ? (
@@ -2046,15 +2269,27 @@ export default function ProjectView() {
                         <tr key={user.id} className={selectedUsers.has(user.id) ? styles["selected"] : ''}>
                           <td className={styles["col-checkbox"]}><input type="checkbox" checked={selectedUsers.has(user.id)} onChange={() => handleUserSelect(user.id)} className={styles["user-checkbox"]} /></td>
                           <td className={styles["col-user"]}><div className={styles["user-cell"]}><span className={styles["user-name"]}>{user.name}</span><span className={styles["user-email"]}>{user.email}</span></div></td>
-                          <td className={styles["col-status"]}><span className={`${styles["user-status-badge"]} ${styles[user.status]}`}>{user.status === 'active' ? <Check size={12} /> : <AlertCircle size={12} />}{user.status}</span></td>
+                          <td className={styles["col-status"]}><span className={`${styles["user-status-badge"]} ${styles[user.status]}`}>
+                            {user.status === 'active' ? <Check size={12} /> : <AlertCircle size={12} />}
+                            {user.status}
+                          </span></td>
                         </tr>
                       )))}
                   </tbody>
                 </table>
               </div>
               <div className={styles["user-panel-footer"]}>
-                <button className={styles["user-panel-action-btn"]} onClick={userActiveTab === 'assign' ? handleAssignUsers : handleUnassignUsers} disabled={selectedUsers.size === 0} style={{ background: userActiveTab === 'assign' ? '#6366f1' : '#ef4444' }}>
-                  {userActiveTab === 'assign' ? <><UserPlus size={16} /> Unassign Selected ({selectedUsers.size})</> : <><UserMinus size={16} /> Assign Selected ({selectedUsers.size})</>}
+                <button
+                  className={styles["user-panel-action-btn"]}
+                  onClick={userActiveTab === 'assign' ? handleUnassignUsers : handleAssignUsers}
+                  disabled={selectedUsers.size === 0}
+                  style={{ background: userActiveTab === 'assign' ? '#ef4444' : '#6366f1' }}
+                >
+                  {userActiveTab === 'assign' ? (
+                    <><UserMinus size={16} /> Unassign Selected ({selectedUsers.size})</>
+                  ) : (
+                    <><UserPlus size={16} /> Assign Selected ({selectedUsers.size})</>
+                  )}
                 </button>
               </div>
             </div>
