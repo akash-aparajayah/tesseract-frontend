@@ -16,6 +16,12 @@ import styles from "../componentStyles/Topbar.module.css";
 import Toast from "./common/Toast";
 import { resetPasswordApi } from "@/services/authApi";
 
+interface ToastState {
+  id: number;
+  message: string;
+  type: "success" | "error";
+}
+
 /* ===============================
    TOKEN TYPE
 ================================ */
@@ -96,11 +102,25 @@ export default function TopBar() {
   const [showConfirmPassword, setShowConfirmPassword] =
     useState(false);
 
+  const [toasts, setToasts] = useState<ToastState[]>([]);
+
   /* ===============================
      USER DETAILS
   =============================== */
   const { name: userName, role: userRole } =
     getUserFromToken();
+
+  /* ===============================
+     SHOW TOAST
+  =============================== */
+  const showToast = (message: string, type: "success" | "error" = "error") => {
+    const id = Date.now();
+    setToasts((prev) => [...prev, { id, message, type }]);
+  };
+
+  const removeToast = (id: number) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  };
 
   /* ===============================
      BELL ANIMATION
@@ -131,7 +151,7 @@ export default function TopBar() {
     e.preventDefault();
 
     if (newPassword !== confirmPassword) {
-      Toast("Passwords do not match ❌");
+      showToast("Passwords do not match", "error");
       return;
     }
 
@@ -155,7 +175,7 @@ export default function TopBar() {
         throw new Error(response.data.message);
       }
 
-      Toast("Password updated successfully 🎉");
+      showToast("Password updated successfully", "success");
 
       /* RESET */
       setShowPasswordModal(false);
@@ -171,7 +191,7 @@ export default function TopBar() {
           ? error.message
           : "An unexpected error occurred";
 
-      Toast(`❌ ${message}`);
+      showToast(message, "error");
     } finally {
       setIsUpdating(false);
     }
@@ -179,6 +199,20 @@ export default function TopBar() {
 
   return (
     <>
+      {/* ===============================
+          TOASTS
+      =============================== */}
+      <div className="toast-container">
+        {toasts.map((toast) => (
+          <Toast
+            key={toast.id}
+            message={toast.message}
+            type={toast.type}
+            onClose={() => removeToast(toast.id)}
+          />
+        ))}
+      </div>
+
       {/* ===============================
           TOPBAR
       =============================== */}

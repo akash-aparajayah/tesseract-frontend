@@ -748,7 +748,7 @@ body {
 .cancelBtn:hover {
   background: #e2e8f0;
 }
-.submitBtn {
+/* .submitBtn {
   background: linear-gradient(135deg, #0f3d91, #0b2f6b);
   border: none;
   color: white;
@@ -765,7 +765,7 @@ body {
 .submitBtn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
+} */
 
 /* ========= ANIMATIONS ========= */
 @keyframes cardFadeUp {
@@ -800,4 +800,45 @@ body {
   .actionsGroup { width: 100%; justify-content: space-between; }
   .table { min-width: 100%; }
   .pagination { justify-content: center; }
+}
+
+.submitBtn {
+  flex: 1;
+  background: #2563eb;
+  border: none;
+border-radius: 10px;
+  padding: 0.7rem;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.submitBtn:hover:not(:disabled) {
+  background: #3b82f6;
+  transform: translateY(-1px);
+}
+
+.submitBtn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.spinner {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ========== SKELETON PULSE (for inline usage) ========== */
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
 }

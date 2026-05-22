@@ -17,11 +17,12 @@ import {
   AlertCircle,
   X,
   Lock,
+  Loader2, // fixed import (was Loder2)
 } from "lucide-react";
 
 import noDataImg from "../assets/illustration/No data.gif";
 import errorImg from "../assets/illustration/error.svg";
-import Loader from "@/components/common/Loader";
+// import Loader from "@/components/common/Loader"; // not used anymore
 import { useToast } from "../hooks/useToast";
 
 import {
@@ -39,19 +40,34 @@ interface Admin {
   is_active: boolean;
 }
 
+interface RawAdmin {
+  public_id?: string;
+  id?: string;
+  user_name: string;
+  email: string;
+  role: "ADMIN" | "SUPER_ADMIN" | "USER";
+  is_active: boolean;
+}
+
 const api = {
   async getAdmins(): Promise<Admin[]> {
     try {
       const response = await getAllUsersApi();
-      const data = response?.data?.data;
+      const data = response?.data?.data as RawAdmin[];
       if (!data || !Array.isArray(data) || data.length === 0) return [];
-      return data.map((item: any) => ({
-        id: item.public_id || item.id,        // ← FIX: use public_id as id
-        user_name: item.user_name,
-        email: item.email,
-        role: item.role,
-        is_active: item.is_active,
-      }));
+      return data
+        .map((item: RawAdmin) => {
+          const id = item.public_id ?? item.id;
+          if (!id) return null;
+          return {
+            id,
+            user_name: item.user_name,
+            email: item.email,
+            role: item.role,
+            is_active: item.is_active,
+          };
+        })
+        .filter((item): item is Admin => item !== null);
     } catch (error) {
       console.error("GET ADMINS ERROR:", error);
       return [];
@@ -59,7 +75,6 @@ const api = {
   },
 
   async toggleStatus(id: string, currentActive: boolean) {
-    // id here is the public_id
     await activateOrDeactivateUserApi(id, !currentActive);
     return true;
   },
@@ -69,19 +84,18 @@ const api = {
   },
 
   async createAdmin(
-    admin: Omit<Admin, "id"> & { password: string },
+    admin: Omit<Admin, "id"> & { password: string }
   ): Promise<Admin> {
     const response = await createUserApi(
       admin.user_name,
       admin.email,
       admin.password,
       admin.role,
-      admin.is_active,
+      admin.is_active
     );
-    // Extract the nested user data from response.data.data
     const userData = response.data.data;
     return {
-      id: userData.public_id,      // ← FIX: map public_id to id
+      id: userData.public_id,
       user_name: userData.user_name,
       email: userData.email,
       role: userData.role,
@@ -92,6 +106,60 @@ const api = {
 
 const getInitials = (name: string) => name?.charAt(0)?.toUpperCase() || "";
 
+/* ---------- SKELETON LOADER (MOVED OUTSIDE COMPONENT) ---------- */
+const SkeletonLoader: React.FC = () => {
+  const skeletonPulse = {
+    animation: "skeletonPulse 1.5s ease-in-out infinite",
+    background: "#e2e8f0",
+    borderRadius: "0.75rem",
+  };
+  return (
+    <>
+      <style>{`
+        @keyframes skeletonPulse {
+          0%, 100% { opacity: 0.4; }
+          50% { opacity: 0.8; }
+        }
+      `}</style>
+      <div className={styles.statsGrid}>
+        {[1, 2, 3].map((i) => (
+          <div key={i} className={styles.statCard} style={{ ...skeletonPulse, height: "100px" }} />
+        ))}
+      </div>
+      <div className={styles.toolbar}>
+        <div className={styles.searchBox} style={{ ...skeletonPulse, height: "40px", width: "260px" }} />
+        <div className={styles.actionsGroup} style={{ display: "flex", gap: "0.75rem" }}>
+          <div style={{ ...skeletonPulse, width: "120px", height: "40px", borderRadius: "2rem" }} />
+          <div style={{ ...skeletonPulse, width: "120px", height: "40px", borderRadius: "2rem" }} />
+          <div style={{ ...skeletonPulse, width: "120px", height: "40px", borderRadius: "2rem" }} />
+        </div>
+      </div>
+      <div className={styles.tableWrapper}>
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              <th>S.NO</th><th>User</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <tr key={i}>
+                <td><div style={{ ...skeletonPulse, height: "20px", width: "30px" }} /></td>
+                <td><div style={{ ...skeletonPulse, height: "40px", width: "150px", borderRadius: "2rem" }} /></td>
+                <td><div style={{ ...skeletonPulse, height: "20px", width: "180px" }} /></td>
+                <td><div style={{ ...skeletonPulse, height: "24px", width: "80px", borderRadius: "2rem" }} /></td>
+                <td><div style={{ ...skeletonPulse, height: "28px", width: "90px", borderRadius: "2rem" }} /></td>
+                <td><div style={{ ...skeletonPulse, height: "32px", width: "32px", borderRadius: "50%" }} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+};
+
+/* ---------- MAIN COMPONENT ---------- */
 const AdminPanel: React.FC = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -100,17 +168,12 @@ const AdminPanel: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [roleFilter, setRoleFilter] = useState<
-    "all" | "ADMIN" | "SUPER_ADMIN" | "USER"
-  >("all");
-  const [statusFilter, setStatusFilter] = useState<
-    "all" | "active" | "inactive"
-  >("all");
+  const [roleFilter, setRoleFilter] = useState<"all" | "ADMIN" | "SUPER_ADMIN" | "USER">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5;
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
-  // Drawer state with closing animation
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [formData, setFormData] = useState({
@@ -130,9 +193,7 @@ const AdminPanel: React.FC = () => {
       const data = await api.getAdmins();
       setAdmins(data);
     } catch (err) {
-      setFetchError(
-        err instanceof Error ? err.message : "Failed to load admins",
-      );
+      setFetchError(err instanceof Error ? err.message : "Failed to load admins");
       setAdmins([]);
     } finally {
       setLoading(false);
@@ -140,7 +201,11 @@ const AdminPanel: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    fetchAdmins();
+    const loadAdmins = async () => {
+      await fetchAdmins();
+    };
+
+    loadAdmins();
   }, [fetchAdmins]);
 
   const totalCount = admins.length;
@@ -153,11 +218,10 @@ const AdminPanel: React.FC = () => {
       filtered = filtered.filter(
         (admin) =>
           admin.user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          admin.email.toLowerCase().includes(searchTerm.toLowerCase()),
+          admin.email.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    if (roleFilter !== "all")
-      filtered = filtered.filter((admin) => admin.role === roleFilter);
+    if (roleFilter !== "all") filtered = filtered.filter((admin) => admin.role === roleFilter);
     if (statusFilter !== "all") {
       const isActive = statusFilter === "active";
       filtered = filtered.filter((admin) => admin.is_active === isActive);
@@ -181,35 +245,23 @@ const AdminPanel: React.FC = () => {
     try {
       await api.toggleStatus(id, currentActive);
       setAdmins((prev) =>
-        prev.map((admin) =>
-          admin.id === id ? { ...admin, is_active: !currentActive } : admin,
-        ),
+        prev.map((admin) => (admin.id === id ? { ...admin, is_active: !currentActive } : admin))
       );
-      showToast(
-        `User ${!currentActive ? "activated" : "deactivated"}`,
-        "success",
-      );
+      showToast(`User ${!currentActive ? "activated" : "deactivated"}`, "success");
     } catch (error) {
-      showToast(
-        error instanceof Error ? error.message : "Failed to toggle status",
-        "error",
-      );
+      showToast(error instanceof Error ? error.message : "Failed to toggle status", "error");
     }
   };
 
   const handleView = (admin: Admin) => navigate(`/dashboard/user/${admin.id}`);
-  const handleEdit = (admin: Admin) =>
-    navigate(`/dashboard/user/${admin.id}/edit`);
+  const handleEdit = (admin: Admin) => navigate(`/dashboard/user/${admin.id}/edit`);
   const handleDelete = async (id: string) => {
     try {
       await api.deleteAdmin(id);
       setAdmins((prev) => prev.filter((admin) => admin.id !== id));
       showToast("User deleted successfully", "success");
     } catch (error) {
-      showToast(
-        error instanceof Error ? error.message : "Failed to delete admin",
-        "error",
-      );
+      showToast(error instanceof Error ? error.message : "Failed to delete admin", "error");
     }
   };
 
@@ -238,8 +290,7 @@ const AdminPanel: React.FC = () => {
     if (!formData.name.trim()) return "Name is required";
     if (!formData.email.trim()) return "Email is required";
     if (!formData.password) return "Password is required";
-    if (formData.password.length < 8)
-      return "Password must be at least 8 characters";
+    if (formData.password.length < 8) return "Password must be at least 8 characters";
     return "";
   };
 
@@ -260,27 +311,20 @@ const AdminPanel: React.FC = () => {
         role: formData.role,
         is_active: formData.active,
       });
-
-      console.log("Created user:", newUser); // Debug: should show id as public_id
       if (newUser && newUser.id) {
         showToast("User created successfully", "success");
         closeDrawerWithAnimation();
-        // Navigate to assignment page (make sure route is defined!)
         navigate(`/dashboard/user/${newUser.id}/assign-projects`);
       } else {
         throw new Error("User ID missing from API response");
       }
     } catch (error) {
       console.error("Create error:", error);
-      showToast(
-        error instanceof Error ? error.message : "Failed to create admin",
-        "error",
-      );
+      showToast(error instanceof Error ? error.message : "Failed to create admin", "error");
       setCreating(false);
     }
   };
 
-  // Dropdown outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (openDropdownId && !(e.target as Element).closest(".actionMenu")) {
@@ -306,6 +350,7 @@ const AdminPanel: React.FC = () => {
         return styles.roleUser;
     }
   };
+
   const getRoleDisplay = (role: string) => {
     switch (role) {
       case "SUPER_ADMIN":
@@ -317,7 +362,7 @@ const AdminPanel: React.FC = () => {
     }
   };
 
-  if (loading) return <Loader />;
+  if (loading) return <SkeletonLoader />;
 
   return (
     <div className={styles.container}>
@@ -445,9 +490,7 @@ const AdminPanel: React.FC = () => {
                     <td className={styles.colNo}>{serialNumber}</td>
                     <td className={styles.colUser}>
                       <div className={styles.userCell}>
-                        <div className={styles.userAvatar}>
-                          {getInitials(admin.user_name)}
-                        </div>
+                        <div className={styles.userAvatar}>{getInitials(admin.user_name)}</div>
                         <span className={styles.userName}>{admin.user_name}</span>
                       </div>
                     </td>
@@ -500,9 +543,7 @@ const AdminPanel: React.FC = () => {
                 <td colSpan={6} className={styles.noData}>
                   <img src={fetchError ? errorImg : noDataImg} alt="No data" className={styles.noDataImg} />
                   <p>
-                    {fetchError
-                      ? "Unable to load users. Please try again."
-                      : "No users found"}
+                    {fetchError ? "Unable to load users. Please try again." : "No users found"}
                   </p>
                   {fetchError && (
                     <button onClick={fetchAdmins} className={styles.retryBtn}>
@@ -518,7 +559,11 @@ const AdminPanel: React.FC = () => {
 
       {totalPages > 1 && (
         <div className={styles.pagination}>
-          <button className={styles.pageBtn} disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}>
+          <button
+            className={styles.pageBtn}
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage((p) => p - 1)}
+          >
             <ChevronLeft size={14} /> Prev
           </button>
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
@@ -530,10 +575,16 @@ const AdminPanel: React.FC = () => {
               {page}
             </button>
           ))}
-          <button className={styles.pageBtn} disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => p + 1)}>
+          <button
+            className={styles.pageBtn}
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage((p) => p + 1)}
+          >
             Next <ChevronRight size={14} />
           </button>
-          <span className={styles.pageInfo}>Page {currentPage} of {totalPages}</span>
+          <span className={styles.pageInfo}>
+            Page {currentPage} of {totalPages}
+          </span>
         </div>
       )}
 
@@ -554,7 +605,9 @@ const AdminPanel: React.FC = () => {
               {formError && <div className={styles.formError}>{formError}</div>}
 
               <div className={styles.formGroup}>
-                <label>Full Name <span className={styles.requiredStar}>*</span></label>
+                <label>
+                  Full Name <span className={styles.requiredStar}>*</span>
+                </label>
                 <input
                   type="text"
                   placeholder="Enter full name"
@@ -565,7 +618,9 @@ const AdminPanel: React.FC = () => {
               </div>
 
               <div className={styles.formGroup}>
-                <label>Email <span className={styles.requiredStar}>*</span></label>
+                <label>
+                  Email <span className={styles.requiredStar}>*</span>
+                </label>
                 <input
                   type="email"
                   placeholder="user@example.com"
@@ -575,7 +630,10 @@ const AdminPanel: React.FC = () => {
               </div>
 
               <div className={styles.formGroup}>
-                <label>Password <span className={styles.requiredStar}>*</span> <span className={styles.passwordHint}>(min 8 characters)</span></label>
+                <label>
+                  Password <span className={styles.requiredStar}>*</span>{" "}
+                  <span className={styles.passwordHint}>(min 8 characters)</span>
+                </label>
                 <div className={styles.passwordWrapper}>
                   <Lock size={16} className={styles.passwordIcon} />
                   <input
@@ -588,7 +646,9 @@ const AdminPanel: React.FC = () => {
               </div>
 
               <div className={styles.formGroup}>
-                <label>Role <span className={styles.requiredStar}>*</span></label>
+                <label>
+                  Role <span className={styles.requiredStar}>*</span>
+                </label>
                 <select
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value as never })}
@@ -600,7 +660,9 @@ const AdminPanel: React.FC = () => {
               </div>
 
               <div className={styles.formGroup}>
-                <label>Status <span className={styles.requiredStar}>*</span></label>
+                <label>
+                  Status <span className={styles.requiredStar}>*</span>
+                </label>
                 <select
                   value={formData.active ? "active" : "inactive"}
                   onChange={(e) => setFormData({ ...formData, active: e.target.value === "active" })}
@@ -615,7 +677,13 @@ const AdminPanel: React.FC = () => {
                   Cancel
                 </button>
                 <button type="submit" className={styles.submitBtn} disabled={creating}>
-                  {creating ? "Creating..." : "Create User"}
+                  {creating ? (
+                    <>
+                      <Loader2 size={16} className={styles.spinner} /> Creating...
+                    </>
+                  ) : (
+                    "Create User"
+                  )}
                 </button>
               </div>
             </form>
