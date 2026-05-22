@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { Check, X } from "lucide-react";
+import {  XCircle, CheckCircle} from "lucide-react";
 
 interface ToastProps {
   message: string;
@@ -22,7 +22,7 @@ export default function Toast({ message, type, onClose }: ToastProps) {
     };
   }, [isHovered, onClose]);
 
-  const Icon = type === "success" ? Check : X;
+  const Icon = type === "success" ? CheckCircle : XCircle;
 
   return (
     <div

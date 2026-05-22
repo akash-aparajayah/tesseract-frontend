@@ -17,12 +17,11 @@ import {
   AlertCircle,
   X,
   Lock,
-  Loader2, // fixed import (was Loder2)
+  Loader2,
 } from "lucide-react";
 
 import noDataImg from "../assets/illustration/No data.gif";
 import errorImg from "../assets/illustration/error.svg";
-// import Loader from "@/components/common/Loader"; // not used anymore
 import { useToast } from "../hooks/useToast";
 
 import {
@@ -106,7 +105,6 @@ const api = {
 
 const getInitials = (name: string) => name?.charAt(0)?.toUpperCase() || "";
 
-/* ---------- SKELETON LOADER (MOVED OUTSIDE COMPONENT) ---------- */
 const SkeletonLoader: React.FC = () => {
   const skeletonPulse = {
     animation: "skeletonPulse 1.5s ease-in-out infinite",
@@ -159,10 +157,9 @@ const SkeletonLoader: React.FC = () => {
   );
 };
 
-/* ---------- MAIN COMPONENT ---------- */
 const AdminPanel: React.FC = () => {
   const navigate = useNavigate();
-  const { showToast } = useToast();
+  const { showToast, ToastContainer } = useToast();
 
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [loading, setLoading] = useState(true);
@@ -204,7 +201,6 @@ const AdminPanel: React.FC = () => {
     const loadAdmins = async () => {
       await fetchAdmins();
     };
-
     loadAdmins();
   }, [fetchAdmins]);
 
@@ -286,13 +282,31 @@ const AdminPanel: React.FC = () => {
     }, 400);
   };
 
-  const validateForm = () => {
-    if (!formData.name.trim()) return "Name is required";
-    if (!formData.email.trim()) return "Email is required";
-    if (!formData.password) return "Password is required";
-    if (formData.password.length < 8) return "Password must be at least 8 characters";
-    return "";
-  };
+const passwordRegex =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+const validateForm = () => {
+  if (!formData.name.trim()) {
+    return "Name is required";
+  }
+
+  if (!formData.email.trim()) {
+    return "Email is required";
+  }
+
+  if (!formData.password) {
+    return "Password is required";
+  }
+
+  if (formData.password.length < 8) {
+    return "Password must be at least 8 characters";
+  }
+
+  if (!passwordRegex.test(formData.password)) {
+    return "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character";
+  }
+
+  return null;
+};
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -318,9 +332,19 @@ const AdminPanel: React.FC = () => {
       } else {
         throw new Error("User ID missing from API response");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Create error:", error);
-      showToast(error instanceof Error ? error.message : "Failed to create admin", "error");
+      let errorMessage = "Failed to create admin";
+      if (error.response?.data) {
+        // Backend sends { success: false, message: "...", error: "Email already exists" }
+        errorMessage =
+          error.response.data.error ||
+          error.response.data.message ||
+          errorMessage;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      showToast(errorMessage, "error");
       setCreating(false);
     }
   };
@@ -366,6 +390,9 @@ const AdminPanel: React.FC = () => {
 
   return (
     <div className={styles.container}>
+      {/* Render ToastContainer so toasts appear */}
+      <ToastContainer />
+
       {fetchError && (
         <div className={styles.errorBanner}>
           <AlertCircle size={16} />
@@ -377,6 +404,7 @@ const AdminPanel: React.FC = () => {
       )}
 
       <div className={styles.statsGrid}>
+        {/* stats cards – unchanged */}
         <div className={`${styles.statCard} ${styles.cardTotal}`}>
           <div className={styles.leftArt}></div>
           <div className={styles.leftDots}></div>
@@ -424,6 +452,7 @@ const AdminPanel: React.FC = () => {
       </div>
 
       <div className={styles.toolbar}>
+        {/* search and filters – unchanged */}
         <div className={styles.searchBox}>
           <Search size={16} className={styles.searchIcon} />
           <input
