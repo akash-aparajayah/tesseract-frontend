@@ -46,3 +46,8 @@ export const getUserDetailsWithProjectsAndEnvironments = async (id: string) => {
   return response?.data;
 }
 
+export const removeEnvironmentFromUser = async (data: { user_id: string; environment_id: string, project_id: string }) => {
+  const response = await api.patch(`/users/remove-environment-from-user`, data);
+  return response?.data;
+}
+
