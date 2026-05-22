@@ -576,3 +576,19 @@
     grid-column: span 1;
   }
 }
+
+/* ========== SKELETON LOADER ========== */
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+/* Ensure the skeleton blocks don't break layout */
+.dashboard .statCard,
+.dashboard .aadharCard,
+.dashboard .hero .heroContent,
+.dashboard .hero .heroCompany > div,
+.dashboard .hero .companyLogo {
+  overflow: hidden;
+  background-clip: padding-box;
+}

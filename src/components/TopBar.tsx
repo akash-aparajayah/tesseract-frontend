@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   FaUserAlt,
   FaSearch,
@@ -14,7 +14,7 @@ import { jwtDecode } from "jwt-decode";
 
 import styles from "../componentStyles/Topbar.module.css";
 import Toast from "./common/Toast";
-import { resetPasswordApi } from "@/services/authApi";
+import { updatePasswordApi } from "@/services/authApi";
 
 interface ToastState {
   id: number;
@@ -22,21 +22,14 @@ interface ToastState {
   type: "success" | "error";
 }
 
-/* ===============================
-   TOKEN TYPE
-================================ */
 interface DecodedToken {
   name?: string;
   email?: string;
   role?: string;
 }
 
-/* ===============================
-   FORMAT USER ROLE
-================================ */
 const formatRole = (role?: string) => {
   if (!role) return "";
-
   return role
     .toLowerCase()
     .split("_")
@@ -44,154 +37,108 @@ const formatRole = (role?: string) => {
     .join(" ");
 };
 
-/* ===============================
-   GET USER FROM TOKEN
-================================ */
 const getUserFromToken = () => {
   const token = localStorage.getItem("accessToken");
-
   if (!token) {
-    return {
-      name: "User",
-      role: "",
-    };
+    return { name: "User", role: "" };
   }
-
   try {
     const decoded: DecodedToken = jwtDecode(token);
-
     return {
-      name:
-        decoded.name ||
-        decoded.email?.split("@")[0] ||
-        "User",
-
+      name: decoded.name || decoded.email?.split("@")[0] || "User",
       role: formatRole(decoded.role),
     };
   } catch (e) {
     console.error("Error decoding token:", e);
-
-    return {
-      name: "User",
-      role: "",
-    };
+    return { name: "User", role: "" };
   }
 };
 
 export default function TopBar() {
-  /* ===============================
-     STATES
-  =============================== */
   const [search, setSearch] = useState("");
-
   const [bellActive, setBellActive] = useState(false);
-
-  const [showPasswordModal, setShowPasswordModal] =
-    useState(false);
-
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newPassword, setNewPassword] = useState("");
-
-  const [confirmPassword, setConfirmPassword] =
-    useState("");
-
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
-
-  const [showNewPassword, setShowNewPassword] =
-    useState(false);
-
-  const [showConfirmPassword, setShowConfirmPassword] =
-    useState(false);
-
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [toasts, setToasts] = useState<ToastState[]>([]);
 
-  /* ===============================
-     USER DETAILS
-  =============================== */
-  const { name: userName, role: userRole } =
-    getUserFromToken();
-
-  /* ===============================
-     SHOW TOAST
-  =============================== */
-  const showToast = (message: string, type: "success" | "error" = "error") => {
-    const id = Date.now();
-    setToasts((prev) => [...prev, { id, message, type }]);
-  };
+  const { name: userName, role: userRole } = getUserFromToken();
 
   const removeToast = (id: number) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
   };
 
-  /* ===============================
-     BELL ANIMATION
-  =============================== */
-  const handleBell = () => {
-    setBellActive(true);
-
-    setTimeout(() => {
-      setBellActive(false);
-    }, 600);
+  const showToast = (message: string, type: "success" | "error" = "error") => {
+    const id = Date.now();
+    setToasts((prev) => [...prev, { id, message, type }]);
   };
 
-  /* ===============================
-     SEARCH
-  =============================== */
+  // Auto‑remove toasts after 5 seconds
+  useEffect(() => {
+    if (toasts.length === 0) return;
+    const timers = toasts.map((toast) =>
+      setTimeout(() => removeToast(toast.id), 5000)
+    );
+    return () => timers.forEach((timer) => clearTimeout(timer));
+  }, [toasts]);
+
+  const handleBell = () => {
+    setBellActive(true);
+    setTimeout(() => setBellActive(false), 600);
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-
     console.log("Search:", search);
   };
 
-  /* ===============================
-     PASSWORD CHANGE
-  =============================== */
-  const handlePasswordChange = async (
-    e: React.FormEvent
-  ) => {
+  const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
-
+ 
     if (newPassword !== confirmPassword) {
       showToast("Passwords do not match", "error");
       return;
     }
+    
+    if (newPassword.length < 8) {
+      showToast("Password must be at least 8 characters", "error");
+      return;
+    }
+    
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    
+    if (!passwordRegex.test(newPassword)) {
+      showToast("Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character", "error");
+      return;
+    }
+    
 
     setIsUpdating(true);
-
     try {
       const token = localStorage.getItem("accessToken");
-      const password = newPassword;
+      if (!token) throw new Error("Token not found");
 
-      if (!token) {
-        throw new Error("Token not found");
+      const response = await updatePasswordApi({ password: newPassword });
+
+      // Assuming API returns success status 200 or 201
+      if (response.status !== 200 && response.status !== 201) {
+        throw new Error(response.data?.message || "Failed to update password");
       }
 
-      /* UPDATE PASSWORD */
-      const response = await resetPasswordApi({
-        token,
-        password,
-      });
-
-      if (response.status !== 200) {
-        throw new Error(response.data.message);
-      }
-
+      // ✅ Success: toast + close modal + reset form
       showToast("Password updated successfully", "success");
-
-      /* RESET */
       setShowPasswordModal(false);
-
       setNewPassword("");
       setConfirmPassword("");
-
       setShowNewPassword(false);
       setShowConfirmPassword(false);
-    } catch (error: unknown) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "An unexpected error occurred";
-
-      showToast(message, "error");
+    } catch (err) {
+      console.error("Password update error:", err);
+      const errorMessage = err instanceof Error ? err.message : "Failed to update password";
+      showToast(errorMessage, "error");
     } finally {
       setIsUpdating(false);
     }
@@ -199,10 +146,8 @@ export default function TopBar() {
 
   return (
     <>
-      {/* ===============================
-          TOASTS
-      =============================== */}
-      <div className="toast-container">
+      {/* Toast container with proper z-index */}
+      <div className="toast-container" style={{ position: "fixed", top: "20px", right: "20px", zIndex: 9999 }}>
         {toasts.map((toast) => (
           <Toast
             key={toast.id}
@@ -213,200 +158,109 @@ export default function TopBar() {
         ))}
       </div>
 
-      {/* ===============================
-          TOPBAR
-      =============================== */}
       <header className={styles.topBar}>
-        {/* LEFT SIDE */}
         <div className={styles.topBarLeft}>
-          <form
-            className={styles.searchForm}
-            onSubmit={handleSearch}
-          >
+          <form className={styles.searchForm} onSubmit={handleSearch}>
             <FaSearch className={styles.searchIcon} />
-
             <input
               type="text"
               placeholder="Search..."
               value={search}
-              onChange={(e) =>
-                setSearch(e.target.value)
-              }
+              onChange={(e) => setSearch(e.target.value)}
             />
           </form>
         </div>
 
-        {/* RIGHT SIDE */}
         <div className={styles.topBarRight}>
-          {/* CHANGE PASSWORD */}
           <button
             className={styles.passwordButton}
-            onClick={() =>
-              setShowPasswordModal(true)
-            }
+            onClick={() => setShowPasswordModal(true)}
             title="Change Password"
           >
             <FaKey />
           </button>
 
-          {/* NOTIFICATION */}
           <div
-            className={`${styles.bell} ${bellActive ? styles.animate : ""
-              }`}
+            className={`${styles.bell} ${bellActive ? styles.animate : ""}`}
             onClick={handleBell}
             title="Notifications"
           >
             <FaBell />
-
             <span className={styles.badge}></span>
           </div>
 
-          {/* SETTINGS */}
-          <div
-            className={styles.settingsIcon}
-            title="Settings"
-          >
+          <div className={styles.settingsIcon} title="Settings">
             <FaCog />
           </div>
 
-          {/* PROFILE */}
           <div className={styles.profile}>
             <div className={styles.avatar}>
               <FaUserAlt />
             </div>
-
             <div className={styles.info}>
-              <span className={styles.name}>
-                {userName}
-              </span>
-
-              <span className={styles.role}>
-                {userRole || "Member"}
-              </span>
+              <span className={styles.name}>{userName}</span>
+              <span className={styles.role}>{userRole || "Member"}</span>
             </div>
           </div>
         </div>
       </header>
 
-      {/* ===============================
-          PASSWORD MODAL
-      =============================== */}
       {showPasswordModal && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalBox}>
-            {/* CLOSE BUTTON */}
             <button
               className={styles.closeButton}
-              onClick={() =>
-                setShowPasswordModal(false)
-              }
+              onClick={() => setShowPasswordModal(false)}
               title="Close"
             >
               <FaTimes />
             </button>
-
             <h2>Change Password</h2>
-
-            {/* FORM */}
             <form onSubmit={handlePasswordChange}>
-              {/* NEW PASSWORD */}
               <div className={styles.passwordWrapper}>
                 <input
-                  type={
-                    showNewPassword
-                      ? "text"
-                      : "password"
-                  }
+                  type={showNewPassword ? "text" : "password"}
                   placeholder="New Password"
                   value={newPassword}
-                  onChange={(e) =>
-                    setNewPassword(e.target.value)
-                  }
+                  onChange={(e) => setNewPassword(e.target.value)}
                   required
                 />
-
                 <button
                   type="button"
                   className={styles.eyeButton}
-                  onClick={() =>
-                    setShowNewPassword(
-                      !showNewPassword
-                    )
-                  }
-                  title={
-                    showNewPassword
-                      ? "Hide Password"
-                      : "Show Password"
-                  }
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  title={showNewPassword ? "Hide Password" : "Show Password"}
                 >
-                  {showNewPassword ? (
-                    <FaEyeSlash />
-                  ) : (
-                    <FaEye />
-                  )}
+                  {showNewPassword ? <FaEyeSlash /> : <FaEye />}
                 </button>
               </div>
-
-              {/* CONFIRM PASSWORD */}
               <div className={styles.passwordWrapper}>
                 <input
-                  type={
-                    showConfirmPassword
-                      ? "text"
-                      : "password"
-                  }
+                  type={showConfirmPassword ? "text" : "password"}
                   placeholder="Confirm Password"
                   value={confirmPassword}
-                  onChange={(e) =>
-                    setConfirmPassword(
-                      e.target.value
-                    )
-                  }
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                 />
-
                 <button
                   type="button"
                   className={styles.eyeButton}
-                  onClick={() =>
-                    setShowConfirmPassword(
-                      !showConfirmPassword
-                    )
-                  }
-                  title={
-                    showConfirmPassword
-                      ? "Hide Password"
-                      : "Show Password"
-                  }
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  title={showConfirmPassword ? "Hide Password" : "Show Password"}
                 >
-                  {showConfirmPassword ? (
-                    <FaEyeSlash />
-                  ) : (
-                    <FaEye />
-                  )}
+                  {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
                 </button>
               </div>
-
-              {/* ACTION BUTTONS */}
               <div className={styles.modalActions}>
                 <button
                   type="button"
                   className={styles.cancelButton}
-                  onClick={() =>
-                    setShowPasswordModal(false)
-                  }
+                  onClick={() => setShowPasswordModal(false)}
                 >
                   Cancel
                 </button>
-
-                <button
-                  type="submit"
-                  className={styles.saveButton}
-                  disabled={isUpdating}
-                >
-                  {isUpdating
-                    ? "Updating..."
-                    : "Update Password"}
+                <button type="submit" className={styles.saveButton} disabled={isUpdating}>
+                  {isUpdating ? "Updating..." : "Update Password"}
                 </button>
               </div>
             </form>

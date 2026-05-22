@@ -2,12 +2,66 @@ import React, { useState, useEffect, useMemo } from "react";
 import styles from "../styles/dashboard.module.css";
 import { useToast } from "../hooks/useToast";
 import { getUserApi, healthCheckApi } from "../services/authApi";
-import Loader from "@/components/common/Loader";
+// import Loader from "@/components/common/Loader"; // removed – replaced with skeleton
 
 type ServiceStatus = {
   api: string;
   database: string;
   redis: string;
+};
+
+/* ---------- SKELETON COMPONENT ---------- */
+const DashboardSkeleton: React.FC = () => {
+  const skeletonPulse = {
+    animation: "skeletonPulse 1.5s ease-in-out infinite",
+    background: "#e2e8f0",
+    borderRadius: "0.75rem",
+  };
+  return (
+    <>
+      <style>{`
+        @keyframes skeletonPulse {
+          0%, 100% { opacity: 0.4; }
+          50% { opacity: 0.8; }
+        }
+      `}</style>
+      <div className={styles.dashboard}>
+        {/* Hero skeleton */}
+        <div className={styles.hero}>
+          <div className={styles.heroContent}>
+            <div style={{ ...skeletonPulse, width: "120px", height: "28px", borderRadius: "20px" }} />
+            <div style={{ ...skeletonPulse, width: "220px", height: "16px", borderRadius: "12px", marginTop: "8px" }} />
+          </div>
+          <div className={styles.heroCompany}>
+            <div style={{ ...skeletonPulse, width: "48px", height: "48px", borderRadius: "12px" }} />
+            <div style={{ marginLeft: "12px" }}>
+              <div style={{ ...skeletonPulse, width: "240px", height: "20px", borderRadius: "8px" }} />
+              <div style={{ ...skeletonPulse, width: "180px", height: "14px", borderRadius: "6px", marginTop: "8px" }} />
+            </div>
+          </div>
+        </div>
+
+        {/* Stats cards skeleton */}
+        <div className={styles.statsGrid}>
+          {[1, 2, 3].map((i) => (
+            <div key={i} className={styles.statCard} style={{ ...skeletonPulse, height: "100px" }} />
+          ))}
+        </div>
+
+        {/* Two columns skeleton */}
+        <div className={styles.twoColumns}>
+          {/* Left column – profile card */}
+          <div className={styles.leftCol}>
+            <div className={styles.aadharCard} style={{ ...skeletonPulse, height: "360px" }} />
+          </div>
+          {/* Right column – system health card */}
+          <div className={styles.rightCol}>
+            <div className={styles.aadharCard} style={{ ...skeletonPulse, height: "360px" }} />
+          </div>
+        </div>
+      </div>
+    </>
+  );
 };
 
 const Dashboard: React.FC = () => {
@@ -23,14 +77,14 @@ const Dashboard: React.FC = () => {
     status: "Active",
   });
   const [stats, setStats] = useState([
-    { label: "Admins", value: 0, icon: "👥", color: "#4f8ef7", bg: "#e8f0ff" },
+    { label: "Users", value: 0, icon: "👥", color: "#4f8ef7", bg: "#e8f0ff" },
     { label: "Services", value: 0, icon: "⚙️", color: "#00c896", bg: "#e0faf3" },
     { label: "Projects", value: 0, icon: "📁", color: "#f5a623", bg: "#fff4e0" },
   ]);
   const [distribution, setDistribution] = useState([
     { name: "Services", value: 0, color: "#00c896", percent: 0 },
     { name: "Projects", value: 0, color: "#f5a623", percent: 0 },
-    { name: "Admins", value: 0, color: "#4f8ef7", percent: 0 },
+    { name: "Users", value: 0, color: "#4f8ef7", percent: 0 },
   ]);
   const [uptime, setUptime] = useState("0");
   const [services, setServices] = useState<ServiceStatus>({
@@ -56,7 +110,7 @@ const Dashboard: React.FC = () => {
         });
 
         setStats([
-          { label: "Admins", value: profileData.data.statsData.totalAdmins, icon: "👥", color: "#4f8ef7", bg: "#e8f0ff" },
+          { label: "Users", value: profileData.data.statsData.totalAdmins, icon: "👥", color: "#4f8ef7", bg: "#e8f0ff" },
           { label: "Services", value: profileData.data.statsData.totalServices, icon: "⚙️", color: "#00c896", bg: "#e0faf3" },
           { label: "Projects", value: profileData.data.statsData.totalActiveProjects, icon: "📁", color: "#f5a623", bg: "#fff4e0" },
         ]);
@@ -67,7 +121,7 @@ const Dashboard: React.FC = () => {
         setDistribution([
           { name: "Services", value: profileData.data.statsData.totalServices, color: "#00c896", percent: (profileData.data.statsData.totalServices / total) * 100 },
           { name: "Projects", value: profileData.data.statsData.totalActiveProjects, color: "#f5a623", percent: (profileData.data.statsData.totalActiveProjects / total) * 100 },
-          { name: "Admins", value: profileData.data.statsData.totalAdmins, color: "#4f8ef7", percent: (profileData.data.statsData.totalAdmins / total) * 100 },
+          { name: "Users", value: profileData.data.statsData.totalAdmins, color: "#4f8ef7", percent: (profileData.data.statsData.totalAdmins / total) * 100 },
         ]);
 
         setUptime(healthData?.data?.uptimeFormatted ?? "0");
@@ -134,7 +188,7 @@ const Dashboard: React.FC = () => {
   };
 
   if (loading) {
-    return <Loader />;
+    return <DashboardSkeleton />;
   }
 
   return (
@@ -214,7 +268,7 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
               <div className={styles.aadharFooter}>
-                <div className={styles.aadharId}>Admin ID: ADI-{profile.id}</div>
+                <div className={styles.aadharId}>User ID: ADI-{profile.id}</div>
                 <div className={styles.aadharSignature}>Authorised Signature</div>
               </div>
             </div>

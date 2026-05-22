@@ -35,3 +35,7 @@ export const getUserApi = () => {
 export const healthCheckApi = () => {
   return api.get("/health");
 };
+
+export const updatePasswordApi = (data: { password: string }) => {
+  return api.patch("/auth/update-password", data);
+};
