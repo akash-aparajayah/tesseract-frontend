@@ -302,20 +302,16 @@ export default function ProjectView() {
   const [providersList, setProvidersList] = useState<any[]>([]);
 
 
-  const fetchUsersForEnvironment = async () => {
-    if (!projectId || !selectedEnv) return;
+  const fetchUsersForEnvironment = async (env?: any) => {
+    if (!projectId) return;
+
+    const environment = env || environments.find((e: any) => e.environment_name === selectedEnv);
+    if (!environment?.public_id) return;
 
     try {
       setUsersLoading(true);
-      const env = environments.find((e: any) => e.environment_name === selectedEnv);
-      if (!env?.public_id) return;
-
-      const res = await getAssignedUnassignedEmployees(projectId, env.public_id);
-      console.log("Assigned/Unassigned:", res);
-
+      const res = await getAssignedUnassignedEmployees(projectId, environment.public_id);
       const data = res.data || res;
-
-      // Map API response fields
       const mapUsers = (users: any[]) => users.map((u: any) => ({
         id: u.public_id,
         name: u.user_name,
@@ -324,11 +320,12 @@ export default function ProjectView() {
         status: u.is_active ? 'active' : 'inactive',
       }));
 
-
       const unassigned = mapUsers(data.unassignedEmployees || []);
       const assigned = mapUsers(data.assignedEmployees || []);
-      setAvailableUsers(assigned);    // Assign tab = assignedEmployees
-      setAssignedUsers(unassigned);
+
+      // FIXED
+      setAvailableUsers(unassigned);
+      setAssignedUsers(assigned);
     } catch (error) {
       console.error("Failed to fetch users:", error);
     } finally {
@@ -488,9 +485,6 @@ export default function ProjectView() {
   const [availableUsers, setAvailableUsers] = useState<any[]>([]);
   const [assignedUsers, setAssignedUsers] = useState<any[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
-  const unassignedUsers = (Array.isArray(availableUsers) ? availableUsers : []).filter(
-    u => !assignedUsers.some(au => au.id === u.id)
-  );
 
 
 
@@ -535,6 +529,7 @@ export default function ProjectView() {
       const envs = res?.data || [];
       if (envs.length > 0) {
         setEnvironments(envs);
+        await loadApiKeys();
         const firstEnv = envs[0].environment_name;
         if (!selectedEnv) {
           setSelectedEnv(firstEnv);
@@ -583,29 +578,59 @@ export default function ProjectView() {
   // };
 
   const handleAddEnvironment = async () => {
+    console.log("HANDLE ADD ENV CALLED");
     if (!projectId) return;
 
     let name = newEnvName;
-    if (isCustomEnv && customEnvInput.trim()) name = customEnvInput.trim();
+
+    if (isCustomEnv && customEnvInput.trim()) {
+      name = customEnvInput.trim();
+    }
+
     if (!name) return;
 
     try {
-      await createEnvironment(projectId, { environment_name: name });
+      await createEnvironment(projectId, {
+        environment_name: name,
+      });
 
-      showToast(`Environment "${name}" created successfully`, "success");
+      showToast(
+        `Environment "${name}" created successfully`,
+        "success"
+      );
 
-      // ✅ Use loadEnvironments instead of calling API directly
-      await loadEnvironments();
+      // Reload environments from backend
+      const res = await getEnvironmentsByProjectId(projectId);
 
-      setSelectedEnv(name);
-      await loadProviders();
+      const envs = res?.data || [];
 
+      setEnvironments(envs);
+
+      // Find newly created environment
+      const newEnv = envs.find(
+        (e: any) => e.environment_name === name
+      );
+
+      if (newEnv) {
+        setSelectedEnv(newEnv.environment_name);
+
+        // IMPORTANT
+        await loadProvidersForEnv(newEnv);
+        await fetchUsersForEnvironment(newEnv);
+      }
+
+      // Reset modal states
       setShowAddEnvModal(false);
       setNewEnvName("");
       setIsCustomEnv(false);
       setCustomEnvInput("");
+
     } catch (error: any) {
-      showToast(error?.response?.data?.message || "Failed to create environment", "error");
+      showToast(
+        error?.response?.data?.message ||
+        "Failed to create environment",
+        "error"
+      );
     }
   };
 
@@ -634,8 +659,8 @@ export default function ProjectView() {
     deleteToken(projectId, deletingEnvName, 'Live');
     setAllTokens(prev => {
       const updated = { ...prev };
-      delete updated[`${deletingEnvName}_Sandbox`];
-      delete updated[`${deletingEnvName}_Live`];
+      delete updated[`${deletingEnvName}_SANDBOX`];
+      delete updated[`${deletingEnvName}_LIVE`];
       return updated;
     });
     const updated = environments.filter(e => e !== deletingEnvName);
@@ -824,35 +849,51 @@ export default function ProjectView() {
     if (!tokenName.trim() || !selectedEnv || !projectId || !tokenMode) return;
 
     try {
+      const env = environments.find(
+        (e: any) => e.environment_name === selectedEnv
+      );
+
+      if (!env?.public_id) {
+        showToast("Environment not found", "error");
+        return;
+      }
+
       const payload = {
-        projectId: projectId || "",
-        environment_name: selectedEnv,
-        mode: tokenMode,
-        name: tokenName.trim(),
-        expires_in_days: getExpiryDays(
-          tokenExpiration,
-          tokenCustomDays
-        ),
+        project_id: projectId,
+        environment_id: env.public_id,
+        note: tokenName.trim(),
+        mode: tokenMode.toUpperCase(),
+        expires_in_days:
+          tokenExpiration === "never"
+            ? null
+            : tokenExpiration === "7days"
+              ? 7
+              : tokenExpiration === "30days"
+                ? 30
+                : Number(tokenCustomDays),
       };
 
       let res;
 
       // REGENERATE
       if (isRegenerating && currentToken?.id) {
-        res = await regenerateApiKey(currentToken.id);
+        res = await regenerateApiKey(
+          currentToken.id,
+
+        );
       } else {
         // CREATE
         res = await createApiKey(payload);
       }
 
-      const tokenData = res.data;
+      const tokenData = res.data.data;
 
       const token: ApiToken = {
         id: tokenData.public_id || "",
-        name: tokenData.name || "",
-        token: tokenData.api_key || "",
+        name: tokenData.note || "",
+        token: tokenData.key || tokenData.api_key || "",
         projectId: projectId || "",
-        environmentName: tokenData.environment_name || "",
+        environmentName: selectedEnv,
         mode: tokenData.mode || "",
         created: tokenData.created_at || "",
         expires: tokenData.expires_at || "",
@@ -862,10 +903,13 @@ export default function ProjectView() {
 
       setAllTokens((prev) => ({
         ...prev,
-        [`${selectedEnv}_${tokenMode}`]: token,
+        [`${selectedEnv}_${token.mode}`]: token,
       }));
 
       setGeneratedToken(token);
+
+      await loadApiKeys();
+
       setShowTokenFormModal(false);
 
       showToast(
@@ -927,8 +971,8 @@ export default function ProjectView() {
     const q = tokenSearchTerm.toLowerCase();
     const envName = env.environment_name || env;
     return envName.toLowerCase().includes(q) ||
-      allTokens[`${envName}_Sandbox`]?.name?.toLowerCase().includes(q) ||
-      allTokens[`${envName}_Live`]?.name?.toLowerCase().includes(q);
+      allTokens[`${envName}_SANDBOX`]?.name?.toLowerCase().includes(q) ||
+      allTokens[`${envName}_LIVE`]?.name?.toLowerCase().includes(q);
   });
 
   // ---- DRAG & DROP ----
@@ -982,53 +1026,87 @@ export default function ProjectView() {
 
   const handleAssignUsers = async () => {
     if (!projectId || !selectedEnv) return;
-    const env = environments.find((e: any) => e.environment_name === selectedEnv);
+
+    const env = environments.find(
+      (e: any) => e.environment_name === selectedEnv
+    );
+
     if (!env?.public_id) return;
 
-    const usersToAssign = assignedUsers.filter(u => selectedUsers.has(u.id));
+    // IMPORTANT
+    // Assign comes from availableUsers
+    const usersToAssign = availableUsers.filter((u) =>
+      selectedUsers.has(u.id)
+    );
+
     if (usersToAssign.length === 0) return;
 
     try {
       await assignUnassignEmployee({
         project_id: projectId,
         environment_id: env.public_id,
-        user_id: usersToAssign.map(u => u.id),
+        user_id: usersToAssign.map((u) => u.id),
         status: true,
       });
 
-      setAvailableUsers(prev => [...usersToAssign, ...prev]);
-      setAssignedUsers(prev => prev.filter(u => !selectedUsers.has(u.id)));
+      await fetchUsersForEnvironment(env);
+
       setSelectedUsers(new Set());
       setSelectAll(false);
-      showToast(`${usersToAssign.length} user(s) assigned`, "success");
+
+      showToast(
+        `${usersToAssign.length} user(s) assigned`,
+        "success"
+      );
     } catch (error: any) {
-      showToast(error?.response?.data?.message || "Failed to assign users", "error");
+      showToast(
+        error?.response?.data?.message ||
+        "Failed to assign users",
+        "error"
+      );
     }
   };
 
   const handleUnassignUsers = async () => {
     if (!projectId || !selectedEnv) return;
-    const env = environments.find((e: any) => e.environment_name === selectedEnv);
+
+    const env = environments.find(
+      (e: any) => e.environment_name === selectedEnv
+    );
+
     if (!env?.public_id) return;
 
-    const usersToUnassign = availableUsers.filter(u => selectedUsers.has(u.id));
+    // IMPORTANT
+    // Unassign comes from assignedUsers
+    const usersToUnassign = assignedUsers.filter((u) =>
+      selectedUsers.has(u.id)
+    );
+
     if (usersToUnassign.length === 0) return;
 
     try {
       await assignUnassignEmployee({
         project_id: projectId,
         environment_id: env.public_id,
-        user_id: usersToUnassign.map(u => u.id),
+        user_id: usersToUnassign.map((u) => u.id),
         status: false,
       });
 
-      setAssignedUsers(prev => [...usersToUnassign, ...prev]);
-      setAvailableUsers(prev => prev.filter(u => !selectedUsers.has(u.id)));
+      await fetchUsersForEnvironment(env);
+
       setSelectedUsers(new Set());
       setSelectAll(false);
-      showToast(`${usersToUnassign.length} user(s) unassigned`, "success");
+
+      showToast(
+        `${usersToUnassign.length} user(s) unassigned`,
+        "success"
+      );
     } catch (error: any) {
-      showToast(error?.response?.data?.message || "Failed to unassign users", "error");
+      showToast(
+        error?.response?.data?.message ||
+        "Failed to unassign users",
+        "error"
+      );
     }
   };
 
@@ -1108,32 +1186,47 @@ export default function ProjectView() {
     try {
       const res = await getApiKeys(projectId);
 
+      const apiKeys = res?.data?.data || [];
+
       const mapped: Record<string, ApiToken> = {};
 
-      (res.data || []).forEach((token: any) => {
-        mapped[`${token.environment_name}_${token.mode}`] = {
-          id: token.public_id,
-          name: token.name,
-          token: token.api_key,
-          projectId: projectId || "",
-          environmentName: token.environment_name,
-          mode: token.mode,
-          created: token.created_at,
-          expires: token.expires_at,
-          expiresInDays: token.expires_in_days,
+      apiKeys.forEach((token: any) => {
+
+        // find environment name from frontend environments state
+        const env = environments.find(
+          (e: any) => e.public_id === token.environment_id
+        );
+
+        const environmentName =
+          env?.environment_name || "Unknown";
+
+        mapped[`${environmentName}_${token.mode}`] = {
+          id: token.public_id || token.id || "",
+          name: token.note || "",
+          token: token.key || token.api_key || "",
+          projectId: token.project_id || "",
+          environmentName,
+          mode: token.mode || "",
+          created: token.created_at || "",
+          expires: token.expires_at || "",
+          expiresInDays: token.expires_in_days || null,
           revealed: false,
         };
       });
 
       setAllTokens(mapped);
+
     } catch (error) {
-      console.error(error);
+      console.error("Failed to load API keys:", error);
     }
   };
 
+
   useEffect(() => {
-    loadApiKeys();
-  }, [projectId]);
+    if (projectId && environments.length > 0) {
+      loadApiKeys();
+    }
+  }, [projectId, environments]);
 
   useEffect(() => { if (selectedEnv && activeMainTab === 'environments') loadProviders(); }, [selectedEnv, activeService, activeMainTab]);
   useEffect(() => { if (selectedEnv && activeMainTab === 'environments') updateAllServiceCounts(); }, [selectedEnv, activeService, modeFilter, activeMainTab]);
@@ -1278,7 +1371,7 @@ export default function ProjectView() {
                     )}
                   </div>
                   {isCustomEnv && <input type="text" placeholder="Enter environment name" value={customEnvInput} onChange={e => setCustomEnvInput(e.target.value)} className={styles["pc-input"]} autoFocus />}
-                  <button className={styles["pc-create-first-env-btn"]} onClick={handleAddEnvironment} disabled={(!isCustomEnv && !newEnvName) || (isCustomEnv && !customEnvInput.trim())}>
+                  <button className={styles["pc-create-first-env-btn"]} onClick={handleAddEnvironment} disabled={false}>
                     Create Environment <Rocket size={16} />
                   </button>
                 </div>
@@ -1299,8 +1392,11 @@ export default function ProjectView() {
                           console.log("env.public_id:", env.public_id);
                           setSelectedEnv(env.environment_name);
                           setProviders([]);
+                          setAvailableUsers([]);
+                          setAssignedUsers([]);
                           console.log("Calling loadProviders...");
                           loadProvidersForEnv(env);
+                          fetchUsersForEnvironment(env);
                         }}
                       >
                         {editingTabEnv === env ? (
@@ -1327,10 +1423,29 @@ export default function ProjectView() {
                               {env.environment_name}
                             </span>
                             <div className={styles["env-tab-menu"]} onClick={(e) => e.stopPropagation()}>
-                              <button className={styles["env-menu-trigger"]} data-env-menu onClick={() => setOpenEnvMenu(openEnvMenu === env ? null : env)}>
+                              <button
+                                className={styles["env-menu-trigger"]}
+                                data-env-menu
+                                onClick={(e) => {
+                                  e.stopPropagation();
+
+                                  // IMPORTANT
+                                  setSelectedEnv(env.environment_name);
+
+                                  // Reload environment-specific data
+                                  loadProvidersForEnv(env);
+                                  fetchUsersForEnvironment(env);
+
+                                  setOpenEnvMenu(
+                                    openEnvMenu === env.environment_name
+                                      ? null
+                                      : env.environment_name
+                                  );
+                                }}
+                              >
                                 <Settings size={14} />
                               </button>
-                              {openEnvMenu === env && (
+                              {openEnvMenu === env.environment_name && (
                                 <div className={styles["env-menu-dropdown"]} ref={envMenuRef} data-env-menu>
                                   <button onClick={() => {
                                     setEditingTabEnv(env);
@@ -1342,7 +1457,18 @@ export default function ProjectView() {
                                   <button onClick={() => { setCloneTarget(""); setCloneCustomMode(false); setShowCloneModal(true); setOpenEnvMenu(null); }}>
                                     <Copy size={14} /><span className={styles["env-menu-tooltip"]}>Clone</span>
                                   </button>
-                                  <button onClick={() => { setShowUserPanel(true); setOpenEnvMenu(null); setUserSearchTerm(""); setSelectedUsers(new Set()); setSelectAll(false); setUserFilter("all"); fetchUsersForEnvironment(); }}>
+                                  <button onClick={() => {
+                                    setShowUserPanel(true);
+                                    setOpenEnvMenu(null);
+                                    setUserSearchTerm("");
+                                    setSelectedUsers(new Set());
+                                    setSelectAll(false);
+                                    setUserFilter("all");
+                                    setAvailableUsers([]);
+                                    setAssignedUsers([]);
+                                    const env = environments.find((e: any) => e.environment_name === selectedEnv);
+                                    fetchUsersForEnvironment(env);
+                                  }}>
                                     <User size={14} /><span className={styles["env-menu-tooltip"]}>Users</span>
                                   </button>
                                   <button onClick={() => {
@@ -1350,7 +1476,7 @@ export default function ProjectView() {
                                     const email = JSON.parse(localStorage.getItem(`env_${projectId}_${env.environment_name}_email_providers`) || '{"providers":[]}');
                                     const wa = JSON.parse(localStorage.getItem(`env_${projectId}_${env.environment_name}_whatsapp_providers`) || '{"providers":[]}');
                                     const total = (sms.providers?.length || 0) + (email.providers?.length || 0) + (wa.providers?.length || 0);
-                                    setDeletingEnvName(env);
+                                    setDeletingEnvName(env.environment_name);
                                     if (total > 0) setBlockedDeleteCounts({ sms: sms.providers?.length || 0, email: email.providers?.length || 0, whatsapp: wa.providers?.length || 0 });
                                     else setShowDeleteEnvModal(true);
                                     setOpenEnvMenu(null);
@@ -1380,7 +1506,7 @@ export default function ProjectView() {
                   {/* Sandbox */}
                   <div className={styles["token-status-item"]}>
                     {(() => {
-                      const sandboxToken = allTokens[`${selectedEnv}_Sandbox`];
+                      const sandboxToken = allTokens[`${selectedEnv}_SANDBOX`];
                       const isExpiring = sandboxToken?.expiresInDays != null && sandboxToken.expiresInDays <= 7;
                       if (sandboxToken) {
                         return isExpiring ? (
@@ -1394,7 +1520,7 @@ export default function ProjectView() {
                     <Wrench size={14} />
                     <span className={styles["token-status-name"]}>Sandbox</span>
                     {(() => {
-                      const sandboxToken = allTokens[`${selectedEnv}_Sandbox`];
+                      const sandboxToken = allTokens[`${selectedEnv}_SANDBOX`];
                       if (sandboxToken) {
                         return (
                           <span className={styles["token-status-expiry"]}>
@@ -1413,7 +1539,7 @@ export default function ProjectView() {
                   {/* Live */}
                   <div className={styles["token-status-item"]}>
                     {(() => {
-                      const liveToken = allTokens[`${selectedEnv}_Live`];
+                      const liveToken = allTokens[`${selectedEnv}_LIVE`];
                       const isExpiring = liveToken?.expiresInDays != null && liveToken.expiresInDays <= 7;
                       if (liveToken) {
                         return isExpiring ? (
@@ -1427,7 +1553,7 @@ export default function ProjectView() {
                     <Rocket size={14} />
                     <span className={styles["token-status-name"]}>Live</span>
                     {(() => {
-                      const liveToken = allTokens[`${selectedEnv}_Live`];
+                      const liveToken = allTokens[`${selectedEnv}_LIVE`];
                       if (liveToken) {
                         return (
                           <span className={styles["token-status-expiry"]}>
@@ -1691,8 +1817,8 @@ export default function ProjectView() {
               ) : (
                 filteredTokens.map(env => {
                   const envName = env.environment_name || env;
-                  const sandboxToken = allTokens[`${envName}_Sandbox`];
-                  const liveToken = allTokens[`${envName}_Live`];
+                  const sandboxToken = allTokens[`${envName}_SANDBOX`];
+                  const liveToken = allTokens[`${envName}_LIVE`];
                   return (
                     <div key={env.public_id || envName} className={styles["token-env-card-full"]}>
                       <div className={styles["token-card-header"]}><Globe size={18} /><span className={styles["token-card-env-name"]}>{env.environment_name || env}</span></div>
@@ -2098,18 +2224,18 @@ export default function ProjectView() {
 
                 const res = await regenerateApiKey(currentToken.id);
 
-                const tokenData = res.data;
+                const tokenData = res.data.data;
 
                 const token: ApiToken = {
-                  id: tokenData.public_id,
-                  name: tokenData.name,
-                  token: tokenData.api_key,
+                  id: tokenData.public_id || "",
+                  name: tokenData.note || "",
+                  token: tokenData.key || "",
                   projectId: projectId || "",
-                  environmentName: tokenData.environment_name,
-                  mode: tokenData.mode,
-                  created: tokenData.created_at,
-                  expires: tokenData.expires_at,
-                  expiresInDays: tokenData.expires_in_days,
+                  environmentName: selectedEnv,
+                  mode: tokenData.mode || "",
+                  created: tokenData.created_at || "",
+                  expires: tokenData.expires_at || "",
+                  expiresInDays: tokenData.expires_in_days || 0,
                   revealed: false,
                 };
 
@@ -2150,8 +2276,8 @@ export default function ProjectView() {
             <div className={styles["user-panel"]} onClick={e => e.stopPropagation()}>
               <div className={styles["user-panel-header"]}><div className={styles["user-panel-header-left"]}><User size={20} /><h3>Manage Users - {selectedEnv}</h3></div><button className={styles["user-panel-close"]} onClick={() => setShowUserPanel(false)}><X size={20} /></button></div>
               <div className={styles["user-panel-tabs"]}>
-                <button className={`${styles["user-panel-tab"]} ${userActiveTab === 'assign' ? styles["active"] : ''}`} onClick={() => { setUserActiveTab('assign'); setSelectedUsers(new Set()); setSelectAll(false); }}><UserPlus size={14} /> Assign User</button>
-                <button className={`${styles["user-panel-tab"]} ${userActiveTab === 'unassign' ? styles["active"] : ''}`} onClick={() => { setUserActiveTab('unassign'); setSelectedUsers(new Set()); setSelectAll(false); }}><UserMinus size={14} /> Unassign User</button>
+                <button className={`${styles["user-panel-tab"]} ${userActiveTab === 'assign' ? styles["active"] : ''}`} onClick={() => { setUserActiveTab('assign'); setSelectedUsers(new Set()); setSelectAll(false); }}><UserPlus size={14} /> Unassigned Users</button>
+                <button className={`${styles["user-panel-tab"]} ${userActiveTab === 'unassign' ? styles["active"] : ''}`} onClick={() => { setUserActiveTab('unassign'); setSelectedUsers(new Set()); setSelectAll(false); }}><UserMinus size={14} /> Assigned Users</button>
               </div>
               <div className={styles["user-panel-search-row"]}>
                 <div className={styles["user-panel-search"]}>
@@ -2281,14 +2407,29 @@ export default function ProjectView() {
               <div className={styles["user-panel-footer"]}>
                 <button
                   className={styles["user-panel-action-btn"]}
-                  onClick={userActiveTab === 'assign' ? handleUnassignUsers : handleAssignUsers}
+                  onClick={
+                    userActiveTab === 'assign'
+                      ? handleAssignUsers
+                      : handleUnassignUsers
+                  }
                   disabled={selectedUsers.size === 0}
-                  style={{ background: userActiveTab === 'assign' ? '#ef4444' : '#6366f1' }}
+                  style={{
+                    background:
+                      userActiveTab === 'assign'
+                        ? '#6366f1'
+                        : '#ef4444'
+                  }}
                 >
                   {userActiveTab === 'assign' ? (
-                    <><UserMinus size={16} /> Unassign Selected ({selectedUsers.size})</>
+                    <>
+                      <UserPlus size={16} />
+                      Assign Selected ({selectedUsers.size})
+                    </>
                   ) : (
-                    <><UserPlus size={16} /> Assign Selected ({selectedUsers.size})</>
+                    <>
+                      <UserMinus size={16} />
+                      Unassign Selected ({selectedUsers.size})
+                    </>
                   )}
                 </button>
               </div>

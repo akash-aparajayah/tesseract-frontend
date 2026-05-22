@@ -154,13 +154,13 @@ export const assignUnassignEmployee = async (data: {
 };
 
 export const createApiKey = (data: any) =>
-  api.post("/create-api-key", data);
+  api.post("/token/create-api-key", data);
 
 export const getApiKeys = (projectId: string) =>
-  api.get(`/get-api-keys?project_id=${projectId}`);
+  api.get(`/token/get-api-keys?project_id=${projectId}`);
 
 export const regenerateApiKey = (id: string) =>
-  api.patch(`/regenerate-api-key/${id}`);
+  api.patch(`/token/regenerate-api-key/${id}`);
 
 export const deleteApiKey = (id: string) =>
-  api.delete(`/delete-api-key/${id}`);
+  api.delete(`/token/delete-api-key/${id}`);
