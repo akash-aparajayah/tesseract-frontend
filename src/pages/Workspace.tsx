@@ -2,39 +2,29 @@ import React, { useEffect, useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
-  FolderOpen,
+  Folder,
   Server,
-  Activity,
-  Copy,
-  CheckCircle,
   Search,
-  Layers,
   Zap,
-  Code,
-  User,
-  Boxes,
+  Code2,
+  Database,
+  Layers3,
 } from "lucide-react";
 
 import styles from "../styles/Workspace.module.css";
 
-// ======================================================
-// TYPES
-// ======================================================
-
+/* ==============================
+   TYPES
+============================== */
 interface Service {
   id: string;
   name: string;
-  description: string;
-  endpoint: string;
-  method: string;
-  status: "active" | "inactive";
-  lastDeployed: string;
 }
 
 interface Environment {
   public_id: string;
   environment_name: string;
-  services?: Service[];
+  services: Service[];
 }
 
 interface Project {
@@ -43,110 +33,72 @@ interface Project {
   environments: Environment[];
 }
 
-// ======================================================
-// MOCK SERVICES
-// ======================================================
-
-const generateServicesForEnv = (
-  envName: string
-): Service[] => {
-  return [
-    {
-      id: "1",
-      name: "User API",
-      description:
-        "Manage users and authentication",
-      endpoint: "/api/v1/users",
-      method: "REST",
-      status: "active",
-      lastDeployed: "2026-05-20",
-    },
-    {
-      id: "2",
-      name: "Payment Gateway",
-      description:
-        "Handle billing and payments",
-      endpoint: "/api/v1/payments",
-      method: "REST",
-      status: "active",
-      lastDeployed: "2026-05-18",
-    },
-    {
-      id: "3",
-      name: "Notification Service",
-      description:
-        "Email and push notifications",
-      endpoint: "/api/v1/notifications",
-      method: "REST",
-      status: "active",
-      lastDeployed: "2026-05-17",
-    },
-  ];
-};
-
-// ======================================================
-// MOCK DATA
-// ======================================================
-
-const mockProjects: Project[] = [
+/* ==============================
+   MOCK DATA
+============================== */
+const projectsData: Project[] = [
   {
     public_id: "1",
-    project_name: "Tesseract",
+    project_name: "Internal CRM",
     environments: [
       {
-        public_id: "11",
+        public_id: "e1",
         environment_name: "Development",
-        services: generateServicesForEnv(
-          "Development"
-        ),
+        services: [
+          { id: "s1", name: "User API" },
+          { id: "s2", name: "Payment API" },
+          { id: "s3", name: "Notification API" },
+        ],
       },
       {
-        public_id: "12",
+        public_id: "e2",
         environment_name: "Staging",
-        services:
-          generateServicesForEnv("Staging"),
+        services: [
+          { id: "s4", name: "Auth Service" },
+          { id: "s5", name: "Gateway API" },
+        ],
       },
       {
-        public_id: "13",
+        public_id: "e3",
         environment_name: "Production",
-        services:
-          generateServicesForEnv("Production"),
+        services: [
+          { id: "s6", name: "Billing API" },
+          { id: "s7", name: "Analytics API" },
+        ],
       },
     ],
   },
 
   {
     public_id: "2",
-    project_name: "Internal CRM",
+    project_name: "E-Commerce",
     environments: [
       {
-        public_id: "21",
-        environment_name: "Development",
-        services: generateServicesForEnv(
-          "Development"
-        ),
+        public_id: "e4",
+        environment_name: "Production",
+        services: [
+          { id: "s8", name: "Checkout API" },
+          { id: "s9", name: "Orders API" },
+        ],
       },
     ],
   },
 ];
 
-// ======================================================
-// COMPONENT
-// ======================================================
-
+/* ==============================
+   COMPONENT
+============================== */
 const Workspace = () => {
-  const [projects, setProjects] = useState<
-    Project[]
-  >([]);
+  const [projects, setProjects] =
+    useState<Project[]>([]);
 
-  const [expanded, setExpanded] = useState<
-    Set<string>
-  >(new Set());
+  const [expandedProjects, setExpandedProjects] =
+    useState<Set<string>>(new Set());
 
-  const [selectedEnv, setSelectedEnv] =
+  const [selectedEnvironment, setSelectedEnvironment] =
     useState<{
       project: Project;
-      env: Environment;
+      environment: Environment;
     } | null>(null);
 
   const [selectedService, setSelectedService] =
@@ -154,38 +106,67 @@ const Workspace = () => {
 
   const [search, setSearch] = useState("");
 
-  const [copiedId, setCopiedId] = useState<
-    string | null
-  >(null);
-
-  // ======================================================
-  // INIT
-  // ======================================================
-
+  /* ==============================
+     LOAD DATA
+  ============================== */
   useEffect(() => {
-    setProjects(mockProjects);
+    setProjects(projectsData);
 
-    const firstProject = mockProjects[0];
-
-    setExpanded(new Set([firstProject.public_id]));
-
-    const firstEnv =
+    const firstProject = projectsData[0];
+    const firstEnvironment =
       firstProject.environments[0];
 
-    setSelectedEnv({
+    setExpandedProjects(
+      new Set([firstProject.public_id])
+    );
+
+    setSelectedEnvironment({
       project: firstProject,
-      env: firstEnv,
+      environment: firstEnvironment,
     });
 
     setSelectedService(
-      firstEnv.services?.[0] || null
+      firstEnvironment.services[0]
     );
   }, []);
 
-  // ======================================================
-  // FILTER PROJECTS
-  // ======================================================
+  /* ==============================
+     TOGGLE PROJECT
+  ============================== */
+  const toggleProject = (id: string) => {
+    setExpandedProjects((prev) => {
+      const updated = new Set(prev);
 
+      if (updated.has(id)) {
+        updated.delete(id);
+      } else {
+        updated.add(id);
+      }
+
+      return updated;
+    });
+  };
+
+  /* ==============================
+     SELECT ENVIRONMENT
+  ============================== */
+  const handleSelectEnvironment = (
+    project: Project,
+    environment: Environment
+  ) => {
+    setSelectedEnvironment({
+      project,
+      environment,
+    });
+
+    setSelectedService(
+      environment.services[0]
+    );
+  };
+
+  /* ==============================
+     FILTER PROJECTS
+  ============================== */
   const filteredProjects = projects.filter(
     (project) =>
       project.project_name
@@ -193,82 +174,13 @@ const Workspace = () => {
         .includes(search.toLowerCase())
   );
 
-  // ======================================================
-  // TOGGLE PROJECT
-  // ======================================================
-
-  const toggleProject = (id: string) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-
-      return next;
-    });
-  };
-
-  // ======================================================
-  // SELECT ENVIRONMENT
-  // ======================================================
-
-  const selectEnvironment = (
-    project: Project,
-    env: Environment
-  ) => {
-    setSelectedEnv({ project, env });
-
-    setSelectedService(
-      env.services?.[0] || null
-    );
-  };
-
-  // ======================================================
-  // COPY
-  // ======================================================
-
-  const copyToClipboard = async (
-    text: string,
-    id: string
-  ) => {
-    await navigator.clipboard.writeText(
-      text
-    );
-
-    setCopiedId(id);
-
-    setTimeout(() => {
-      setCopiedId(null);
-    }, 2000);
-  };
-
-  // ======================================================
-  // CURRENT SERVICES
-  // ======================================================
-
-  const currentServices =
-    selectedEnv?.env.services || [];
-
   return (
     <div className={styles.container}>
-      {/* ======================================================
+      {/* ==============================
           SIDEBAR
-      ====================================================== */}
-
+      ============================== */}
       <aside className={styles.sidebar}>
-        {/* LOGO */}
-
-        <div className={styles.workspaceLogo}>
-          <Layers size={20} />
-
-          <span>Tesseract</span>
-        </div>
-
         {/* SEARCH */}
-
         <div className={styles.sidebarSearch}>
           <Search size={16} />
 
@@ -283,18 +195,20 @@ const Workspace = () => {
         </div>
 
         {/* PROJECTS */}
-
-        <div className={styles.projectList}>
+        <div className={styles.projectWrapper}>
           {filteredProjects.map((project) => {
-            const isExpanded =
-              expanded.has(project.public_id);
+            const expanded =
+              expandedProjects.has(
+                project.public_id
+              );
 
             return (
               <div
                 key={project.public_id}
-                className={styles.projectGroup}
+                className={styles.projectCard}
               >
-                <div
+                {/* PROJECT HEADER */}
+                <button
                   className={styles.projectHeader}
                   onClick={() =>
                     toggleProject(
@@ -302,55 +216,60 @@ const Workspace = () => {
                     )
                   }
                 >
-                  <FolderOpen
-                    size={18}
-                    className={styles.folderIcon}
-                  />
-
-                  <span
-                    className={styles.projectName}
+                  <div
+                    className={
+                      styles.projectLeft
+                    }
                   >
-                    {project.project_name}
-                  </span>
+                    <Folder size={18} />
 
-                  <span className={styles.chevron}>
-                    {isExpanded ? (
-                      <ChevronDown size={16} />
-                    ) : (
-                      <ChevronRight size={16} />
-                    )}
-                  </span>
-                </div>
+                    <span>
+                      {project.project_name}
+                    </span>
+                  </div>
 
-                {isExpanded && (
+                  {expanded ? (
+                    <ChevronDown size={16} />
+                  ) : (
+                    <ChevronRight size={16} />
+                  )}
+                </button>
+
+                {/* ENVIRONMENTS */}
+                {expanded && (
                   <div
                     className={
                       styles.environmentList
                     }
                   >
                     {project.environments.map(
-                      (env) => (
+                      (environment) => (
                         <button
-                          key={env.public_id}
-                          className={`${
-                            styles.envButton
-                          } ${
-                            selectedEnv?.env
+                          key={
+                            environment.public_id
+                          }
+                          className={`${styles.environmentButton} ${
+                            selectedEnvironment
+                              ?.environment
                               .public_id ===
-                            env.public_id
-                              ? styles.activeEnv
+                            environment.public_id
+                              ? styles.activeEnvironment
                               : ""
                           }`}
                           onClick={() =>
-                            selectEnvironment(
+                            handleSelectEnvironment(
                               project,
-                              env
+                              environment
                             )
                           }
                         >
-                          <Server size={14} />
+                          <Server size={15} />
 
-                          {env.environment_name}
+                          <span>
+                            {
+                              environment.environment_name
+                            }
+                          </span>
                         </button>
                       )
                     )}
@@ -362,224 +281,126 @@ const Workspace = () => {
         </div>
       </aside>
 
-      {/* ======================================================
-          RIGHT AREA
-      ====================================================== */}
+      {/* ==============================
+          RIGHT SECTION
+      ============================== */}
+      <div className={styles.rightSection}>
+        {/* TOPBAR */}
+        <header className={styles.topbar}>
+          {/* LEFT */}
+          <div className={styles.topbarLeft}>
+            <div
+              className={styles.breadcrumb}
+            >
+              <span>
+                {
+                  selectedEnvironment?.project
+                    .project_name
+                }
+              </span>
 
-      <div className={styles.rightArea}>
-        {/* ======================================================
-            TOP BAR
-        ====================================================== */}
+              <ChevronRight size={14} />
 
-        <div className={styles.topBar}>
-          <div className={styles.envIndicator}>
-            {selectedEnv
-              ? `${selectedEnv.project.project_name} / ${selectedEnv.env.environment_name}`
-              : "No Environment"}
-          </div>
-
-          <div className={styles.topBarServices}>
-            {currentServices.map((service) => (
-              <button
-                key={service.id}
-                className={`${
-                  styles.servicePill
-                } ${
-                  selectedService?.id ===
-                  service.id
-                    ? styles.activeService
-                    : ""
-                }`}
-                onClick={() =>
-                  setSelectedService(service)
+              <span
+                className={
+                  styles.activeBreadcrumb
                 }
               >
-                <Zap size={14} />
+                {
+                  selectedEnvironment
+                    ?.environment
+                    .environment_name
+                }
+              </span>
+            </div>
 
-                {service.name}
-              </button>
-            ))}
+            {/* SERVICES */}
+            <div
+              className={
+                styles.servicesWrapper
+              }
+            >
+              {selectedEnvironment?.environment.services.map(
+                (service) => (
+                  <button
+                    key={service.id}
+                    className={`${styles.serviceButton} ${
+                      selectedService?.id ===
+                      service.id
+                        ? styles.activeService
+                        : ""
+                    }`}
+                    onClick={() =>
+                      setSelectedService(
+                        service
+                      )
+                    }
+                  >
+                    <Zap size={13} />
+
+                    <span>
+                      {service.name}
+                    </span>
+                  </button>
+                )
+              )}
+            </div>
           </div>
-        </div>
+        </header>
 
-        {/* ======================================================
-            MAIN CONTENT
-        ====================================================== */}
-
+        {/* CENTER AREA */}
         <main className={styles.mainContent}>
-          {selectedService && (
-            <div className={styles.contentCard}>
-              {/* HEADER */}
+          <div className={styles.centerCard}>
+            <div className={styles.serviceIcon}>
+              <Code2 size={34} />
+            </div>
 
-              <div className={styles.serviceHeader}>
-                <div
-                  className={styles.serviceTitle}
-                >
-                  <div
-                    className={styles.serviceIcon}
-                  >
-                    <Code size={28} />
-                  </div>
+            <div className={styles.serviceContent}>
+              <h1>
+                {selectedService?.name}
+              </h1>
 
-                  <div>
-                    <h1>
-                      {selectedService.name}
-                    </h1>
+              <p>
+                Service configuration and
+                environment details.
+              </p>
+            </div>
+          </div>
 
-                    <p>
-                      {
-                        selectedService.description
-                      }
-                    </p>
-                  </div>
-                </div>
+          {/* STATS */}
+          <div className={styles.statsGrid}>
+            <div className={styles.statCard}>
+              <Layers3 size={20} />
 
-                <div
-                  className={
-                    styles.serviceStatus
-                  }
-                >
-                  <Activity size={14} />
+              <div>
+                <span>Total Services</span>
 
-                  Operational
-                </div>
-              </div>
-
-              {/* DETAILS */}
-
-              <div className={styles.detailsGrid}>
-                {/* ENDPOINT */}
-
-                <div
-                  className={styles.detailCard}
-                >
-                  <label>Endpoint</label>
-
-                  <div
-                    className={styles.copyRow}
-                  >
-                    <code>
-                      {
-                        selectedService.endpoint
-                      }
-                    </code>
-
-                    <button
-                      className={
-                        styles.copyBtn
-                      }
-                      onClick={() =>
-                        copyToClipboard(
-                          selectedService.endpoint,
-                          "endpoint"
-                        )
-                      }
-                    >
-                      {copiedId ===
-                      "endpoint" ? (
-                        <CheckCircle
-                          size={16}
-                        />
-                      ) : (
-                        <Copy size={16} />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                {/* METHOD */}
-
-                <div
-                  className={styles.detailCard}
-                >
-                  <label>Method</label>
-
-                  <div
-                    className={
-                      styles.methodBadge
-                    }
-                  >
-                    {selectedService.method}
-                  </div>
-                </div>
-
-                {/* DEPLOYED */}
-
-                <div
-                  className={styles.detailCard}
-                >
-                  <label>
-                    Last Deployed
-                  </label>
-
-                  <div
-                    className={
-                      styles.valueWithIcon
-                    }
-                  >
-                    <Boxes size={15} />
-
-                    {
-                      selectedService.lastDeployed
-                    }
-                  </div>
-                </div>
-
-                {/* OWNER */}
-
-                <div
-                  className={styles.detailCard}
-                >
-                  <label>Owner</label>
-
-                  <div
-                    className={
-                      styles.valueWithIcon
-                    }
-                  >
-                    <User size={15} />
-
-                    Platform Team
-                  </div>
-                </div>
-              </div>
-
-              {/* DESCRIPTION */}
-
-              <div
-                className={styles.descriptionBox}
-              >
                 <h3>
-                  Service Documentation
+                  {
+                    selectedEnvironment
+                      ?.environment.services
+                      .length
+                  }
                 </h3>
-
-                <p>
-                  This service belongs to{" "}
-                  <strong>
-                    {
-                      selectedEnv?.env
-                        .environment_name
-                    }
-                  </strong>{" "}
-                  environment in{" "}
-                  <strong>
-                    {
-                      selectedEnv?.project
-                        .project_name
-                    }
-                  </strong>
-                  . Use endpoint{" "}
-                  <code>
-                    {
-                      selectedService.endpoint
-                    }
-                  </code>{" "}
-                  for integration and API
-                  operations.
-                </p>
               </div>
             </div>
-          )}
+
+            <div className={styles.statCard}>
+              <Database size={20} />
+
+              <div>
+                <span>Environment</span>
+
+                <h3>
+                  {
+                    selectedEnvironment
+                      ?.environment
+                      .environment_name
+                  }
+                </h3>
+              </div>
+            </div>
+          </div>
         </main>
       </div>
     </div>
