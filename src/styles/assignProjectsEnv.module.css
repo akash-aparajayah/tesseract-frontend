@@ -262,7 +262,7 @@
   overflow: hidden;
   background: white;
   border-radius: 20px;
-  border: 1px solid #e7edf5;
+  border: 1.5px solid #cfe3fe;
   transition: all 0.28s ease;
   animation: fadeUp 0.4s ease;
   box-shadow:
@@ -456,7 +456,7 @@
 }
 
 .envCard {
-  border: 1px solid #e5e7eb;
+  border: 1.5px solid #d4dff6;
   border-radius: 14px;
   padding: 1rem;
   cursor: pointer;
@@ -640,4 +640,98 @@
   .emptyImage {
     width: 180px;
   }
+}
+
+
+/* ========== SKELETON LOADING ========== */
+.skeletonContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.skeletonHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.skeletonTitle {
+  width: 300px;
+  height: 32px;
+  background: #e2e8f0;
+  border-radius: 0.75rem;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.skeletonButton {
+  width: 100px;
+  height: 44px;
+  background: #e2e8f0;
+  border-radius: 1rem;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.skeletonToolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.skeletonSearch {
+  flex: 1;
+  height: 48px;
+  background: #e2e8f0;
+  border-radius: 1rem;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.skeletonStats {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.skeletonStat {
+  width: 110px;
+  height: 80px;
+  background: #e2e8f0;
+  border-radius: 1.25rem;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.skeletonCard {
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(4px);
+  border-radius: 1.5rem;
+  padding: 1rem;
+}
+
+.skeletonCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.skeletonIcon {
+  width: 48px;
+  height: 48px;
+  background: #e2e8f0;
+  border-radius: 1rem;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.skeletonText {
+  flex: 1;
+  height: 48px;
+  background: #e2e8f0;
+  border-radius: 0.75rem;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
 }
