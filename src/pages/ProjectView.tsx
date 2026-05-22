@@ -50,137 +50,9 @@ interface ApiToken {
   revealed: boolean;
 }
 
-const PROVIDER_FIELDS_MAP: Record<string, { name: string; label: string; type: string; required?: boolean; readOnly?: boolean }[]> = {
-  MSG91: [
-    { name: "mode", label: "Selected Mode", type: "select", required: true },
-    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
-    { name: "apiKey", label: "MSG91 API Key", type: "password", required: true },
-    { name: "senderId", label: "MSG91 Sender ID", type: "text", required: true },
-    { name: "templateId", label: "MSG91 Template ID (DLT)", type: "text", required: true },
-  ],
-  Twilio: [
-    { name: "mode", label: "Selected Mode", type: "select", required: true },
-    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
-    { name: "accountSid", label: "Twilio Account SID", type: "text", required: true },
-    { name: "authToken", label: "Twilio Auth Token", type: "password", required: true },
-    { name: "phoneNumber", label: "Twilio Phone Number", type: "text", required: true },
-  ],
-  Gupshup: [
-    { name: "mode", label: "Selected Mode", type: "select", required: true },
-    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
-    { name: "apiKey", label: "Gupshup API Key", type: "password", required: true },
-    { name: "appName", label: "Gupshup App Name", type: "text", required: true },
-    { name: "sourceNumber", label: "Gupshup Source Number", type: "text", required: true },
-  ],
-  Vonage: [
-    { name: "mode", label: "Selected Mode", type: "select", required: true },
-    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
-    { name: "apiKey", label: "Vonage API Key", type: "text", required: true },
-    { name: "apiSecret", label: "Vonage API Secret", type: "password", required: true },
-    { name: "fromNumber", label: "Vonage From Number", type: "text", required: true },
-  ],
-  Kaleyra: [
-    { name: "mode", label: "Selected Mode", type: "select", required: true },
-    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
-    { name: "apiKey", label: "Kaleyra API Key", type: "password", required: true },
-    { name: "sid", label: "Kaleyra SID", type: "text", required: true },
-    { name: "senderId", label: "Kaleyra Sender ID", type: "text", required: true },
-  ],
-  Textlocal: [
-    { name: "mode", label: "Selected Mode", type: "select", required: true },
-    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
-    { name: "apiKey", label: "Textlocal API Key", type: "password", required: true },
-    { name: "senderId", label: "Textlocal Sender ID", type: "text", required: true },
-  ],
-  TrueDialog: [
-    { name: "mode", label: "Selected Mode", type: "select", required: true },
-    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
-    { name: "apiKey", label: "TrueDialog API Key", type: "password", required: true },
-    { name: "accountId", label: "TrueDialog Account ID", type: "text", required: true },
-    { name: "fromNumber", label: "TrueDialog From Number", type: "text", required: true },
-  ],
-  SendGrid: [
-    { name: "mode", label: "Selected Mode", type: "select", required: true },
-    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
-    { name: "apiKey", label: "SendGrid API Key", type: "password", required: true },
-    { name: "fromEmail", label: "From Email", type: "email", required: true },
-    { name: "fromName", label: "From Name", type: "text", required: false },
-  ],
-  AWS_SES: [
-    { name: "mode", label: "Selected Mode", type: "select", required: true },
-    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
-    { name: "accessKeyId", label: "AWS Access Key ID", type: "text", required: true },
-    { name: "secretAccessKey", label: "AWS Secret Access Key", type: "password", required: true },
-    { name: "region", label: "AWS Region", type: "text", required: true },
-    { name: "fromEmail", label: "From Email", type: "email", required: true },
-    { name: "fromName", label: "From Name", type: "text", required: false },
-  ],
-  Mailgun: [
-    { name: "mode", label: "Selected Mode", type: "select", required: true },
-    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
-    { name: "apiKey", label: "Mailgun API Key", type: "password", required: true },
-    { name: "domain", label: "Mailgun Domain", type: "text", required: true },
-    { name: "fromEmail", label: "From Email", type: "email", required: true },
-  ],
-  SMTP: [
-    { name: "mode", label: "Selected Mode", type: "select", required: true },
-    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
-    { name: "host", label: "SMTP Host", type: "text", required: true },
-    { name: "port", label: "SMTP Port", type: "text", required: true },
-    { name: "username", label: "SMTP Username", type: "text", required: true },
-    { name: "password", label: "SMTP Password", type: "password", required: true },
-    { name: "fromEmail", label: "From Email", type: "email", required: true },
-    { name: "fromName", label: "From Name", type: "text", required: false },
-    { name: "encryption", label: "Encryption", type: "text", required: false },
-  ],
-  Postmark: [
-    { name: "mode", label: "Selected Mode", type: "select", required: true },
-    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
-    { name: "serverToken", label: "Postmark Server Token", type: "password", required: true },
-    { name: "fromEmail", label: "From Email", type: "email", required: true },
-    { name: "fromName", label: "From Name", type: "text", required: false },
-  ],
-  WhatsApp_Twilio: [
-    { name: "mode", label: "Selected Mode", type: "select", required: true },
-    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
-    { name: "accountSid", label: "Twilio Account SID", type: "text", required: true },
-    { name: "authToken", label: "Twilio Auth Token", type: "password", required: true },
-    { name: "phoneNumber", label: "Twilio WhatsApp Number", type: "text", required: true },
-  ],
-  WhatsApp_Gupshup: [
-    { name: "mode", label: "Selected Mode", type: "select", required: true },
-    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
-    { name: "apiKey", label: "Gupshup API Key", type: "password", required: true },
-    { name: "appName", label: "Gupshup App Name", type: "text", required: true },
-    { name: "phoneNumber", label: "Gupshup WhatsApp Number", type: "text", required: true },
-  ],
-  Meta_Cloud: [
-    { name: "mode", label: "Selected Mode", type: "select", required: true },
-    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
-    { name: "phoneNumberId", label: "Meta Phone Number ID", type: "text", required: true },
-    { name: "accessToken", label: "Meta Access Token", type: "password", required: true },
-    { name: "businessAccountId", label: "Meta Business Account ID", type: "text", required: true },
-  ],
-  WhatsApp_Kaleyra: [
-    { name: "mode", label: "Selected Mode", type: "select", required: true },
-    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
-    { name: "apiKey", label: "Kaleyra API Key", type: "password", required: true },
-    { name: "sid", label: "Kaleyra SID", type: "text", required: true },
-    { name: "phoneNumber", label: "Kaleyra WhatsApp Number", type: "text", required: true },
-  ],
-  WhatsApp_Vonage: [
-    { name: "mode", label: "Selected Mode", type: "select", required: true },
-    { name: "endpoint", label: "Endpoint URL", type: "endpoint", required: false },
-    { name: "apiKey", label: "Vonage API Key", type: "text", required: true },
-    { name: "apiSecret", label: "Vonage API Secret", type: "password", required: true },
-    { name: "phoneNumber", label: "Vonage WhatsApp Number", type: "text", required: true },
-  ],
-};
-
-const SERVICE_TYPES = ["SMS", "Email", "Whatsapp"];
-const SERVICE_COLORS: Record<string, string> = { SMS: "#10b981", Email: "#6366f1", Whatsapp: "#25D366" };
+const SERVICE_COLORS: Record<string, string> = { SMS: "#10b981", Email: "#6366f1", Whatsapp: "#25D366", WhatsApp: "#25D366" };
 const SERVICE_ICONS: Record<string, React.ReactNode> = {
-  SMS: <MessageSquare size={18} />, Email: <Mail size={18} />, Whatsapp: <MessageCircle size={18} />
+  SMS: <MessageSquare size={18} />, Email: <Mail size={18} />, Whatsapp: <MessageCircle size={18} />, WhatsApp: <MessageCircle size={18} />
 };
 
 
@@ -221,6 +93,10 @@ export default function ProjectView() {
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
   const [expandedProviders, setExpandedProviders] = useState<Record<string, boolean>>({});
   const [openEnvMenu, setOpenEnvMenu] = useState<string | null>(null);
+  const [menuPosition, setMenuPosition] = useState({
+    top: 0,
+    left: 0,
+  });
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ name: "", description: "", status: "active" as "active" | "inactive" });
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -262,8 +138,9 @@ export default function ProjectView() {
   const [userFilter, setUserFilter] = useState("all");
 
   // Main tab state
-  const [activeMainTab, setActiveMainTab] = useState<"environments" | "tokens">("environments");
-
+  const [activeMainTab, setActiveMainTab] = useState<"environments" | "tokens">(() => {
+    return (localStorage.getItem(`activeTab_${projectId}`) as "environments" | "tokens") || "environments";
+  });
   // Token states
   const [allTokens, setAllTokens] = useState<Record<string, ApiToken>>({});
   const [tokenSearchTerm, setTokenSearchTerm] = useState("");
@@ -305,7 +182,7 @@ export default function ProjectView() {
   const fetchUsersForEnvironment = async (env?: any) => {
     if (!projectId) return;
 
-    const environment = env || environments.find((e: any) => e.environment_name === selectedEnv);
+    const environment = env || environments.find((e: any) => e.public_id === selectedEnv);
     if (!environment?.public_id) return;
 
     try {
@@ -395,7 +272,7 @@ export default function ProjectView() {
 
   const loadProvidersForEnv = (env: any) => {
     if (!projectId || !serviceData) return;
-    const service = serviceData.find((s: any) => s.name === activeService);
+    const service = serviceData.find((s: any) => s.name?.toLowerCase() === activeService?.toLowerCase());
     if (!env?.public_id || !service?.public_id) return;
 
     getProvidersByEnvironmentId(env.public_id, service.public_id)
@@ -407,7 +284,10 @@ export default function ProjectView() {
           name: p.provider_name || p.name,
           fields: { ...(p.credentials || {}), mode: p.mode, endpoint: p.endpoint },
         })));
-        setServiceProviderCounts(prev => ({ ...prev, [activeService]: allProviders.length }));
+        setServiceProviderCounts(prev => ({
+          ...prev,
+          [activeService]: allProviders.length
+        }));
       })
       .catch(() => { });
   };
@@ -516,8 +396,7 @@ export default function ProjectView() {
         const parsed = JSON.parse(cached);
         if (parsed.length > 0) {
           setEnvironments(parsed);
-          const firstEnv = parsed[0].environment_name;
-          setSelectedEnv(firstEnv);
+          setSelectedEnv(parsed[0].public_id);
           // ✅ Load providers for the first environment
           loadProvidersForEnv(parsed[0]);
         }
@@ -530,11 +409,11 @@ export default function ProjectView() {
       if (envs.length > 0) {
         setEnvironments(envs);
         await loadApiKeys();
-        const firstEnv = envs[0].environment_name;
         if (!selectedEnv) {
-          setSelectedEnv(firstEnv);
+          setSelectedEnv(envs[0].public_id);
           // ✅ Load providers for the first environment
           loadProvidersForEnv(envs[0]);
+          loadAllServiceCounts(envs[0].public_id);
         }
       }
     } catch (error) {
@@ -543,7 +422,7 @@ export default function ProjectView() {
   };
 
   const loadProviders = () => {
-    const env = environments.find((e: any) => e.environment_name === selectedEnv);
+    const env = environments.find((e: any) => e.public_id === selectedEnv);
     if (env) loadProvidersForEnv(env);
   };
 
@@ -589,6 +468,12 @@ export default function ProjectView() {
 
     if (!name) return;
 
+
+    if (environments.some((e: any) => e.environment_name?.toLowerCase() === name.toLowerCase())) {
+      showToast(`Environment "${name}" already exists`, "error");
+      return;
+    }
+
     try {
       await createEnvironment(projectId, {
         environment_name: name,
@@ -612,7 +497,7 @@ export default function ProjectView() {
       );
 
       if (newEnv) {
-        setSelectedEnv(newEnv.environment_name);
+        setSelectedEnv(newEnv.public_id);
 
         // IMPORTANT
         await loadProvidersForEnv(newEnv);
@@ -679,6 +564,11 @@ export default function ProjectView() {
     let target = cloneCustomMode && cloneCustomName.trim() ? cloneCustomName.trim() : cloneTarget;
     if (!target) return;
 
+    if (environments.some((e: any) => e.environment_name?.toLowerCase() === target.toLowerCase())) {
+      showToast(`Environment "${target}" already exists`, "error");
+      return;
+    }
+
     ['sms', 'email', 'whatsapp'].forEach(s => {
       const src = localStorage.getItem(`env_${projectId}_${selectedEnv}_${s}_providers`);
       if (src) localStorage.setItem(`env_${projectId}_${target}_${s}_providers`, JSON.stringify({ ...JSON.parse(src), timestamp: Date.now() }));
@@ -694,6 +584,9 @@ export default function ProjectView() {
     setSelectedEnv(target);
     loadProviders();
     setShowCloneModal(false);
+    setCloneTarget("");
+    setCloneCustomName("");
+    setCloneCustomMode(false);
     showToast(`Environment cloned to "${target}"`, "success");
   };
 
@@ -703,7 +596,7 @@ export default function ProjectView() {
     setSaving(true);
 
     try {
-      const env = environments.find((e: any) => e.environment_name === selectedEnv);
+      const env = environments.find((e: any) => e.public_id === selectedEnv);
 
       if (editingProvider) {
         // UPDATE
@@ -760,7 +653,7 @@ export default function ProjectView() {
       // Refresh
       setTimeout(async () => {
         const refreshedEnv = environments.find(
-          (e: any) => e.environment_name === selectedEnv
+          (e: any) => e.public_id === selectedEnv
         );
 
         if (refreshedEnv) {
@@ -785,7 +678,7 @@ export default function ProjectView() {
     try {
       await deleteProvider(showDeleteProviderModal.id.toString());
 
-      const env = environments.find((e: any) => e.environment_name === selectedEnv);
+      const env = environments.find((e: any) => e.public_id === selectedEnv);
       if (env) await loadProvidersForEnv(env);
 
       setShowDeleteProviderModal(null);
@@ -850,7 +743,7 @@ export default function ProjectView() {
 
     try {
       const env = environments.find(
-        (e: any) => e.environment_name === selectedEnv
+        (e: any) => e.public_id === selectedEnv
       );
 
       if (!env?.public_id) {
@@ -912,9 +805,10 @@ export default function ProjectView() {
 
       setShowTokenFormModal(false);
 
+      const envName = environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv;
       showToast(
         `Token ${isRegenerating ? "regenerated" : "generated"
-        } for ${selectedEnv}`,
+        } for ${envName}`,
         "success"
       );
 
@@ -1028,7 +922,7 @@ export default function ProjectView() {
     if (!projectId || !selectedEnv) return;
 
     const env = environments.find(
-      (e: any) => e.environment_name === selectedEnv
+      (e: any) => e.public_id === selectedEnv
     );
 
     if (!env?.public_id) return;
@@ -1071,7 +965,7 @@ export default function ProjectView() {
     if (!projectId || !selectedEnv) return;
 
     const env = environments.find(
-      (e: any) => e.environment_name === selectedEnv
+      (e: any) => e.public_id === selectedEnv
     );
 
     if (!env?.public_id) return;
@@ -1180,6 +1074,38 @@ export default function ProjectView() {
 
   // On load, check localStorage first:
 
+
+  const loadAllServiceCounts = async (envPublicId: string) => {
+    if (!serviceData || !envPublicId) return;
+
+    console.log("Loading counts for env:", envPublicId);
+
+    const counts: Record<string, number> = {};
+
+    for (const service of serviceData) {
+      try {
+        const res = await getProvidersByEnvironmentId(envPublicId, service.public_id);
+        const data = res.data || {};
+        const total = (data.sandbox?.length || 0) + (data.live?.length || 0);
+        counts[service.name] = total;
+        console.log(`Count for ${service.name}:`, total);
+      } catch (error) {
+        console.error(`Failed to get count for ${service.name}:`, error);
+        counts[service.name] = 0;
+      }
+    }
+
+    console.log("Final counts:", counts);
+    setServiceProviderCounts(counts);
+  };
+
+  useEffect(() => {
+    if (selectedEnv && serviceData && activeMainTab === 'environments') {
+      loadAllServiceCounts(selectedEnv);
+    }
+  }, [selectedEnv, serviceData]);
+
+
   const loadApiKeys = async () => {
     if (!projectId) return;
 
@@ -1234,7 +1160,7 @@ export default function ProjectView() {
 
   useEffect(() => {
     if (selectedEnv && activeMainTab === 'environments' && serviceData) {
-      const env = environments.find((e: any) => e.environment_name === selectedEnv);
+      const env = environments.find((e: any) => e.public_id === selectedEnv);
       if (env) {
         loadProvidersForEnv(env);
       }
@@ -1327,10 +1253,22 @@ export default function ProjectView() {
         </div>
         {/* Main Tabs */}
         <div className={styles["main-tabs-wrapper"]}>
-          <button className={`${styles["main-tab"]} ${activeMainTab === 'environments' ? styles["active"] : ''}`} onClick={() => setActiveMainTab('environments')}>
+          <button
+            className={`${styles["main-tab"]} ${activeMainTab === 'environments' ? styles["active"] : ''}`}
+            onClick={() => {
+              setActiveMainTab('environments');
+              localStorage.setItem(`activeTab_${projectId}`, 'environments');
+            }}
+          >
             <Globe size={16} /> Environments
           </button>
-          <button className={`${styles["main-tab"]} ${activeMainTab === 'tokens' ? styles["active"] : ''}`} onClick={() => setActiveMainTab('tokens')}>
+          <button
+            className={`${styles["main-tab"]} ${activeMainTab === 'tokens' ? styles["active"] : ''}`}
+            onClick={() => {
+              setActiveMainTab('tokens');
+              localStorage.setItem(`activeTab_${projectId}`, 'tokens');
+            }}
+          >
             <Key size={16} /> Manage Token
           </button>
         </div>
@@ -1386,15 +1324,23 @@ export default function ProjectView() {
                     {environments.map((env) => (
                       <div
                         key={env.public_id}
-                        className={`${styles["env-tab"]} ${selectedEnv === env.environment_name ? styles["active"] : ''}`}
-                        onClick={() => {
+                        className={`${styles["env-tab"]} ${selectedEnv === env.public_id ? styles["active"] : ''}`}
+                        onClick={(e) => {
+                          if ((e.target as HTMLElement).closest(`.${styles["env-menu-trigger"]}`)) {
+                            return;
+                          }
+
                           console.log("Clicked env:", env.environment_name);
                           console.log("env.public_id:", env.public_id);
-                          setSelectedEnv(env.environment_name);
+                          loadAllServiceCounts(env.public_id);
+                          setSelectedEnv(env.public_id);
                           setProviders([]);
                           setAvailableUsers([]);
-                          setAssignedUsers([]);
+                          setAssignedUsers([]); setCustomEnvInput("");   // ← ADD THIS
+                          setNewEnvName("");
+
                           console.log("Calling loadProviders...");
+
                           loadProvidersForEnv(env);
                           fetchUsersForEnvironment(env);
                         }}
@@ -1429,24 +1375,37 @@ export default function ProjectView() {
                                 onClick={(e) => {
                                   e.stopPropagation();
 
-                                  // IMPORTANT
-                                  setSelectedEnv(env.environment_name);
+                                  const rect = e.currentTarget.getBoundingClientRect();
 
-                                  // Reload environment-specific data
+                                  setMenuPosition({
+                                    top: rect.bottom - 80,
+                                    left: rect.right - 80,
+                                  });
+
+                                  setSelectedEnv(env.public_id);
+
+                                  setProviders([]);
+                                  setAvailableUsers([]);
+                                  setAssignedUsers([]);
+
                                   loadProvidersForEnv(env);
                                   fetchUsersForEnvironment(env);
 
-                                  setOpenEnvMenu(
-                                    openEnvMenu === env.environment_name
-                                      ? null
-                                      : env.environment_name
-                                  );
+                                  setTimeout(() => {
+                                    setOpenEnvMenu((prev) =>
+                                      prev === env.public_id ? null : env.public_id
+                                    );
+                                  }, 0);
                                 }}
                               >
                                 <Settings size={14} />
                               </button>
-                              {openEnvMenu === env.environment_name && (
-                                <div className={styles["env-menu-dropdown"]} ref={envMenuRef} data-env-menu>
+                              {openEnvMenu === env.public_id && (
+                                <div className={styles["env-menu-dropdown"]}
+                                  style={{
+                                    top: menuPosition.top,
+                                    left: menuPosition.left,
+                                  }} ref={envMenuRef} data-env-menu>
                                   <button onClick={() => {
                                     setEditingTabEnv(env);
                                     setEditingTabName(env.environment_name);
@@ -1454,7 +1413,18 @@ export default function ProjectView() {
                                   }}>
                                     <Pencil size={14} /><span className={styles["env-menu-tooltip"]}>Edit</span>
                                   </button>
-                                  <button onClick={() => { setCloneTarget(""); setCloneCustomMode(false); setShowCloneModal(true); setOpenEnvMenu(null); }}>
+                                  <button onClick={() => {
+                                    setShowCloneModal(false);
+
+                                    setTimeout(() => {
+                                      setCloneTarget("");
+                                      setCloneCustomMode(false);
+                                      setCloneCustomName("");
+
+                                      setShowCloneModal(true);
+                                      setOpenEnvMenu(null);
+                                    }, 0);
+                                  }}>
                                     <Copy size={14} /><span className={styles["env-menu-tooltip"]}>Clone</span>
                                   </button>
                                   <button onClick={() => {
@@ -1466,7 +1436,7 @@ export default function ProjectView() {
                                     setUserFilter("all");
                                     setAvailableUsers([]);
                                     setAssignedUsers([]);
-                                    const env = environments.find((e: any) => e.environment_name === selectedEnv);
+                                    const env = environments.find((e: any) => e.public_id === selectedEnv);
                                     fetchUsersForEnvironment(env);
                                   }}>
                                     <User size={14} /><span className={styles["env-menu-tooltip"]}>Users</span>
@@ -1491,7 +1461,17 @@ export default function ProjectView() {
                       </div>
                     ))}
                   </div>
-                  <button className={`${styles["pc-add-env-btn"]} ${styles["sticky-add-env"]}`} onClick={() => { setNewEnvName(""); setIsCustomEnv(false); setCustomEnvInput(""); setShowAddEnvModal(true); }}>
+                  <button className={`${styles["pc-add-env-btn"]} ${styles["sticky-add-env"]}`} onClick={() => {
+                    setShowAddEnvModal(false);
+
+                    setTimeout(() => {
+                      setNewEnvName("");
+                      setIsCustomEnv(false);
+                      setCustomEnvInput("");
+
+                      setShowAddEnvModal(true);
+                    }, 0);
+                  }}>
                     <Plus size={14} /> New Environment
                   </button>
                 </div>
@@ -1501,7 +1481,9 @@ export default function ProjectView() {
               <div className={styles["env-content-container"]}>
                 {/* Token Status Strip */}
                 <div className={styles["token-status-strip"]}>
-                  <span className={styles["token-status-title"]}><strong>{selectedEnv}</strong> Token Details -</span>
+                  <span className={styles["token-status-title"]}>
+                    <strong>{environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv}</strong> Token Details -
+                  </span>
 
                   {/* Sandbox */}
                   <div className={styles["token-status-item"]}>
@@ -1572,7 +1554,11 @@ export default function ProjectView() {
                   {/* Active/Inactive Toggle */}
                   {/* Environment Status Toggle */}
                   <div className={styles["env-status-wrapper"]}>
-                    <span className={styles["env-status-label"]}><strong>{selectedEnv}</strong> Environment is:</span>
+                    <span className={styles["env-status-label"]}>
+                      <strong>{
+                        environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv
+                      }</strong> Environment is:
+                    </span>
                     <button
                       className={`${styles["env-status-toggle"]} ${(envStatus[selectedEnv] || 'active') === 'active' ? styles["status-active"] : styles["status-inactive"]}`}
                       onClick={() => {
@@ -1605,51 +1591,75 @@ export default function ProjectView() {
 
                       <span>Services</span>
                       <span className={styles["pc-separator-dash"]}>-</span>
-                      <span className={styles["pc-service-label"]}>{activeService}</span>
+                      <span className={styles["pc-service-label"]}>{serviceData?.find((s: any) => s.slug?.toLowerCase() === activeService?.toLowerCase() || s.name?.toLowerCase() === activeService?.toLowerCase())?.name || activeService}</span>
 
 
                     </div>
                     <div className={styles["pc-sidebar"]}>
-                      {SERVICE_TYPES.map((service) => (
+                      {serviceData && serviceData.map((service: any) => (
                         <div
-                          key={service}
-                          className={`${styles["pc-sidebar-item"]} ${activeService === service ? styles["active"] : ''}`}
+                          key={service.public_id}
+                          className={`${styles["pc-sidebar-item"]} ${activeService === service.name ? styles["active"] : ''}`}
                           onClick={() => {
-                            setActiveService(service);
+                            setActiveService(service.name);
                             setmodeFilter("Sandbox");
                             setProviders([]);
-                            const env = environments.find((e: any) => e.environment_name === selectedEnv);
-                            if (env && serviceData) {
-                              const svc = serviceData.find((s: any) => s.name === service);
-                              if (svc?.public_id && env?.public_id) {
-                                getProvidersByEnvironmentId(env.public_id, svc.public_id)
-                                  .then(res => {
-                                    const data = res.data || {};
-                                    const allProviders = [...(data.sandbox || []), ...(data.live || [])];
-                                    const providerList = allProviders.map((p: any) => ({
-                                      id: p.public_id || p.id,
-                                      name: p.provider_name || p.name,
-                                      fields: { ...(p.credentials || {}), mode: p.mode, endpoint: p.endpoint },
-                                    }));
-                                    setProviders(providerList);
-                                    setServiceProviderCounts(prev => ({ ...prev, [service]: providerList.length }));
-                                  })
-                                  .catch(() => { });
-                              }
+
+                            const env = environments.find((e: any) => e.public_id === selectedEnv);
+                            console.log("Clicked service:", service.name, "Env:", env?.environment_name);
+
+                            if (env?.public_id && service?.public_id) {
+                              // First, update counts for ALL services
+                              loadAllServiceCounts(env.public_id);
+
+                              // Then load providers for the clicked service
+                              console.log("Fetching providers for service:", service.public_id, "env:", env.public_id);
+
+                              setProvidersLoading(true);
+                              getProvidersByEnvironmentId(env.public_id, service.public_id)
+                                .then(res => {
+                                  console.log("Providers response:", res.data);
+                                  const data = res.data || {};
+                                  const allProviders = [...(data.sandbox || []), ...(data.live || [])];
+                                  const providerList = allProviders.map((p: any) => ({
+                                    id: p.public_id || p.id,
+                                    name: p.provider_name || p.name,
+                                    fields: { ...(p.credentials || {}), mode: p.mode, endpoint: p.endpoint },
+                                  }));
+                                  console.log("Setting providers:", providerList.length);
+                                  setProviders(providerList);
+                                  setServiceProviderCounts(prev => ({
+                                    ...prev,
+                                    [service.name]: providerList.length
+                                  }));
+                                })
+                                .catch((error) => {
+                                  console.error("Failed to load providers:", error);
+                                  setProviders([]);
+                                  setServiceProviderCounts(prev => ({ ...prev, [service.name]: 0 }));
+                                })
+                                .finally(() => {
+                                  setProvidersLoading(false);
+                                });
                             }
                           }}
                           style={{
-                            borderLeftColor: activeService === service ? SERVICE_COLORS[service] : 'transparent',
-                            backgroundColor: activeService === service ? `${SERVICE_COLORS[service]}10` : 'transparent'
+                            borderLeftColor: activeService === service.name ? SERVICE_COLORS[service.name] : 'transparent',
+                            backgroundColor: activeService === service.name ? `${SERVICE_COLORS[service.name]}10` : 'transparent'
                           }}
                         >
-                          <span className={styles["pc-sidebar-icon"]}>{SERVICE_ICONS[service]}</span>
+                          <span className={styles["pc-sidebar-icon"]}>{SERVICE_ICONS[service.name]}</span>
                           <div className={styles["pc-sidebar-info"]}>
-                            <div className={styles["pc-sidebar-name"]}>{service}</div>
-                            <div className={styles["pc-sidebar-count"]}>{serviceProviderCounts[service] || 0} providers</div>
+                            <div className={styles["pc-sidebar-name"]}>{service.name}</div>
+                            <div className={styles["pc-sidebar-count"]}>
+                              {activeService === service.name ? providers.length : (() => {
+                                // Need to track counts per service separately
+                                return serviceProviderCounts[service.name] || 0;
+                              })()} providers
+                            </div>
                           </div>
-                          {activeService === service && (
-                            <div className={styles["pc-sidebar-active-indicator"]} style={{ background: SERVICE_COLORS[service] }} />
+                          {activeService === service.name && (
+                            <div className={styles["pc-sidebar-active-indicator"]} style={{ background: SERVICE_COLORS[service.name] }} />
                           )}
                         </div>
                       ))}
@@ -1744,14 +1754,14 @@ export default function ProjectView() {
                                     .filter(([key]) => key !== 'endpoint' && key !== 'id')
                                     .sort(([a], [b]) => a === 'mode' ? -1 : b === 'mode' ? 1 : 0)
                                     .map(([key, value]) => {
-                                      const fc = PROVIDER_FIELDS_MAP[provider.name]?.find((f: any) => f.name === key);
-                                      const isPwd = fc?.type === "password" || key.includes("Key") || key.includes("Token");
-                                      const ismode = fc?.type === "select";
+                                      const isPwd = key.toLowerCase().includes("key") || key.toLowerCase().includes("token") || key.toLowerCase().includes("secret") || key.toLowerCase().includes("password");
+                                      const ismode = key === 'mode';
                                       const pk = `${provider.id}_${key}`;
                                       return (
                                         <div className={styles["pc-credential-row"]} key={key}>
-                                          <span className={styles["pc-credential-label"]}>{ismode ? "Mode" : fc?.label || key}</span>
-                                          {ismode ? (
+                                          <span className={styles["pc-credential-label"]}>
+                                            {ismode ? "Mode" : key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').replace(/^./, s => s.toUpperCase())}
+                                          </span>                                          {ismode ? (
                                             <span className={`${styles["pc-mode-badge"]} ${value === 'Live' ? styles["live"] : styles["sandbox"]}`}>{value === 'Live' ? <Rocket size={12} /> : <Wrench size={12} />}{value || "—"}</span>
                                           ) : (
                                             <>
@@ -1839,14 +1849,14 @@ export default function ProjectView() {
                                 <div className={`${styles["mode-token-row"]} ${styles["token-expiry-row"]}`}>
                                   <div className={styles["expiry-left"]}><Clock size={12} /><span className={sandboxToken.expiresInDays && sandboxToken.expiresInDays <= 7 ? styles["expiring-soon"] : ''}>{calculateExpiryLabel(sandboxToken.expires, sandboxToken.expiresInDays)}</span></div>
                                   <div className={styles["mode-token-actions"]}>
-                                    <button className={`${styles["token-action-btn"]} ${styles["regenerate"]}`} onClick={() => { setSelectedEnv(env.environment_name); setCurrentToken(sandboxToken); setShowRegenModal(true); }}><RefreshCw size={12} />Regenerate</button>
-                                    <button className={`${styles["token-action-btn"]} ${styles["delete"]}`} onClick={() => { setSelectedEnv(env.environment_name); setCurrentToken(sandboxToken); setShowTokenDeleteModal(true); }}><Trash2 size={12} />Delete</button>
+                                    <button className={`${styles["token-action-btn"]} ${styles["regenerate"]}`} onClick={() => { setSelectedEnv(env.public_id); setCurrentToken(sandboxToken); setShowRegenModal(true); }}><RefreshCw size={12} />Regenerate</button>
+                                    <button className={`${styles["token-action-btn"]} ${styles["delete"]}`} onClick={() => { setSelectedEnv(env.public_id); setCurrentToken(sandboxToken); setShowTokenDeleteModal(true); }}><Trash2 size={12} />Delete</button>
                                   </div>
                                 </div>
                               </div>
                             </div>
                           ) : (
-                            <button className={`${styles["mode-generate-btn"]} ${styles["sandbox"]}`} onClick={() => { setSelectedEnv(env.environment_name); setTokenMode('Sandbox'); setTokenName(""); setTokenExpiration("30"); setTokenCustomDays(""); setTokenCustomDate(""); setIsRegenerating(false); setCurrentToken(null); setShowTokenFormModal(true); }}>
+                            <button className={`${styles["mode-generate-btn"]} ${styles["sandbox"]}`} onClick={() => { setSelectedEnv(env.public_id); setTokenMode('Sandbox'); setTokenName(""); setTokenExpiration("30"); setTokenCustomDays(""); setTokenCustomDate(""); setIsRegenerating(false); setCurrentToken(null); setShowTokenFormModal(true); }}>
                               <Wrench size={18} /><span>Generate Sandbox Token</span><Plus size={16} />
                             </button>
                           )}
@@ -1867,14 +1877,14 @@ export default function ProjectView() {
                                 <div className={`${styles["mode-token-row"]} ${styles["token-expiry-row"]}`}>
                                   <div className={styles["expiry-left"]}><Clock size={12} /><span className={liveToken.expiresInDays && liveToken.expiresInDays <= 7 ? styles["expiring-soon"] : ''}>{calculateExpiryLabel(liveToken.expires, liveToken.expiresInDays)}</span></div>
                                   <div className={styles["mode-token-actions"]}>
-                                    <button className={`${styles["token-action-btn"]} ${styles["regenerate"]}`} onClick={() => { setSelectedEnv(env.environment_name); setCurrentToken(liveToken); setShowRegenModal(true); }}><RefreshCw size={12} />Regenerate</button>
-                                    <button className={`${styles["token-action-btn"]} ${styles["delete"]}`} onClick={() => { setSelectedEnv(env.environment_name); setCurrentToken(liveToken); setShowTokenDeleteModal(true); }}><Trash2 size={12} />Delete</button>
+                                    <button className={`${styles["token-action-btn"]} ${styles["regenerate"]}`} onClick={() => { setSelectedEnv(env.public_id); setCurrentToken(liveToken); setShowRegenModal(true); }}><RefreshCw size={12} />Regenerate</button>
+                                    <button className={`${styles["token-action-btn"]} ${styles["delete"]}`} onClick={() => { setSelectedEnv(env.public_id); setCurrentToken(liveToken); setShowTokenDeleteModal(true); }}><Trash2 size={12} />Delete</button>
                                   </div>
                                 </div>
                               </div>
                             </div>
                           ) : (
-                            <button className={`${styles["mode-generate-btn"]} ${styles["live"]}`} onClick={() => { setSelectedEnv(env.environment_name); setTokenMode('Live'); setTokenName(""); setTokenExpiration("30"); setTokenCustomDays(""); setTokenCustomDate(""); setIsRegenerating(false); setCurrentToken(null); setShowTokenFormModal(true); }}>
+                            <button className={`${styles["mode-generate-btn"]} ${styles["live"]}`} onClick={() => { setSelectedEnv(env.public_id); setTokenMode('Live'); setTokenName(""); setTokenExpiration("30"); setTokenCustomDays(""); setTokenCustomDate(""); setIsRegenerating(false); setCurrentToken(null); setShowTokenFormModal(true); }}>
                               <Rocket size={18} /><span>Generate Live Token</span><Plus size={16} />
                             </button>
                           )}
@@ -1920,12 +1930,13 @@ export default function ProjectView() {
                 <button className={styles["pc-btn-cancel"]} onClick={() => {
                   setPendingCloseAction(() => () => { setShowAddProviderModal(false); setEditingProvider(null); });
                   setShowUnsavedModal(true);
+                  setCustomEnvInput('');
                 }}>
                   Cancel
                 </button>
                 <button
                   className={styles["pc-btn-primary"]}
-                  onClick={saveProvider}
+                  onClick={handleAddEnvironment}
                   disabled={saving}
                   style={{ backgroundColor: SERVICE_COLORS[activeService], border: 'none' }}
                 >
@@ -1963,7 +1974,10 @@ export default function ProjectView() {
                 <div className={styles["clone-source-info"]}><label>Source Environment</label><div className={styles["clone-source-name"]}>{getEnvIcon(selectedEnv)} {selectedEnv}</div></div>
                 <div className={styles["pc-form-group"]}><label>Select Target Environment</label>
                   <div className={styles["pc-env-options"]}>
-                    {['Local', 'Dev', 'Staging', 'Live'].filter(env => env !== selectedEnv && !environments.includes(env)).map(env => (
+                    {['Local', 'Dev', 'Staging', 'Live'].filter(env =>
+                      env !== selectedEnv &&
+                      !environments.some((e: any) => e.environment_name === env)
+                    ).map(env => (
                       <div key={env} className={`${styles["pc-env-option"]} ${cloneTarget === env && !cloneCustomMode ? styles["selected"] : ''}`} onClick={() => { setCloneTarget(env); setCloneCustomMode(false); }}>
                         <span className={styles["pc-env-option-icon"]}>{getEnvIcon(env)}</span><span>{env}</span>{cloneTarget === env && !cloneCustomMode && <Check size={18} />}
                       </div>
@@ -1999,16 +2013,16 @@ export default function ProjectView() {
               <div className={styles["pc-modal-env-info-row"]}>
                 <div className={styles["pc-modal-env-info"]}>
                   <Globe size={14} />
-                  <span>Environment: <strong>{selectedEnv}</strong></span>
+                  <span>Environment: <strong>{environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv}</strong></span>
                 </div>
-                {!editingProvider && (
-                  <div className={styles["pc-modal-mode-info"]}>
-                    <span className={`${styles["pc-mode-badge"]} ${modeFilter === 'Live' ? styles["live"] : styles["sandbox"]}`}>
-                      {modeFilter === 'Live' ? <Rocket size={14} /> : <Wrench size={14} />}
-                      {modeFilter} Mode
-                    </span>
-                  </div>
-                )}
+
+                <div className={styles["pc-modal-mode-info"]}>
+                  <span className={`${styles["pc-mode-badge"]} ${modeFilter === 'Live' ? styles["live"] : styles["sandbox"]}`}>
+                    {modeFilter === 'Live' ? <Rocket size={14} /> : <Wrench size={14} />}
+                    {modeFilter} Mode
+                  </span>
+                </div>
+
               </div>
               <div className={styles["pc-modal-body"]}>
                 <div className={styles["pc-form-group"]}><label>Select Provider *</label>
@@ -2036,16 +2050,22 @@ export default function ProjectView() {
                       ))}
                   </select>
                 </div>
-                {selectedProvider && (() => {
-                  const shortName = selectedProvider.replace(" SMS", "").replace(" Email", "").replace(" WhatsApp", "");
-                  const schema = PROVIDER_FIELDS_MAP[selectedProvider] || PROVIDER_FIELDS_MAP[shortName];
-
-                  if (!schema) return null;
+                {selectedProvider && providerFields && Object.keys(providerFields).length > 0 && (() => {
+                  const schema = Object.keys(providerFields)
+                    .filter(key => key !== "mode" && key !== "endpoint")
+                    .map(key => {
+                      return {
+                        name: key,
+                        label: key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').replace(/^./, s => s.toUpperCase()),
+                        type: key.toLowerCase().includes("key") || key.toLowerCase().includes("token") || key.toLowerCase().includes("secret") || key.toLowerCase().includes("password") ? "password" : "text",
+                        required: true,
+                      };
+                    });
 
                   return (
                     <div className={styles["pc-credentials-section"]}>
                       <h4><Lock size={14} /> Credentials</h4>
-                      {schema.filter((f: any) => f.type !== "select" && f.type !== "endpoint").map((field: any) => (
+                      {schema.map((field: any) => (
                         <div className={styles["pc-form-group"]} key={field.name}>
                           <label>{field.label}{field.required && " *"}</label>
                           <div className={styles["pc-input-wrapper"]}>
@@ -2072,7 +2092,7 @@ export default function ProjectView() {
                 <button
                   className={styles["pc-btn-cancel"]}
                   onClick={() => {
-                    setPendingCloseAction(() => () => { setShowAddProviderModal(false); setEditingProvider(null); });
+                    setPendingCloseAction(() => () => { setShowAddProviderModal(false); setNewEnvName(""); setEditingProvider(null); });
                     setShowUnsavedModal(true);
                   }}
                 >
@@ -2151,8 +2171,9 @@ export default function ProjectView() {
               <div className={styles["pc-modal-header"]}><h3>{isRegenerating ? 'Regenerate Token' : 'Generate Token'}</h3><button className={styles["pc-modal-close"]} onClick={() => setShowTokenFormModal(false)}><X size={20} /></button></div>
               <div className={styles["pc-modal-body"]}>
                 <div className={styles["modal-token-info"]}>
-                  <div><Globe size={14} /> Environment: <strong>{selectedEnv}</strong></div>
-                  <div>{tokenMode === 'Sandbox' ? <Wrench size={14} /> : <Rocket size={14} />} Mode: <strong>{tokenMode}</strong></div>
+                  <div><Globe size={14} /> Environment: <strong>{
+                    environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv
+                  }</strong></div>
                 </div>
                 <div className={styles["pc-form-group"]}><label>Note</label><input type="text" placeholder="What's this token for?" value={tokenName} onChange={(e) => setTokenName(e.target.value)} className={styles["pc-input"]} autoFocus /></div>
                 <div className={styles["pc-form-group"]}><label>Expiration</label>
@@ -2199,7 +2220,9 @@ export default function ProjectView() {
                   </button>
                 </div>
                 <div className={styles["reveal-token-meta"]}>
-                  <div><Globe size={14} />{generatedToken.environmentName}</div>
+                  <div><Globe size={14} />{
+                    environments.find((e: any) => e.public_id === generatedToken.environmentName)?.environment_name || generatedToken.environmentName
+                  }</div>
                   <div><Calendar size={14} />{generatedToken.name} · {formatDate(generatedToken.created)}</div>
                   <div><Clock size={14} />Expires: {formatDate(generatedToken.expires)}</div>
                 </div>
@@ -2248,7 +2271,8 @@ export default function ProjectView() {
 
                 setShowRegenModal(false);
 
-                showToast("Token regenerated successfully", "success");
+                const envName = environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv;
+                showToast(`Token regenerated for ${envName}`, "success");
 
               } catch (error) {
                 console.error(error);
@@ -2482,7 +2506,9 @@ export default function ProjectView() {
             </div>
             <div className={styles["pc-modal-body"]}>
               <p>
-                Are you sure you want to <strong>{pendingStatusChange.newStatus === 'active' ? 'activate' : 'deactivate'}</strong> the <strong>{pendingStatusChange.env}</strong> environment?
+                Are you sure you want to <strong>{pendingStatusChange.newStatus === 'active' ? 'activate' : 'deactivate'}</strong> the <strong>{
+                  environments.find((e: any) => e.public_id === pendingStatusChange.env)?.environment_name || pendingStatusChange.env
+                }</strong> environment?
               </p>
               {pendingStatusChange.newStatus === 'inactive' && (
                 <div className={styles["warning-text"]}>
@@ -2503,8 +2529,10 @@ export default function ProjectView() {
                       ...prev,
                       [pendingStatusChange.env]: pendingStatusChange.newStatus
                     }));
+                    // Get environment name for toast
+                    const envName = environments.find((e: any) => e.public_id === pendingStatusChange.env)?.environment_name || pendingStatusChange.env;
                     showToast(
-                      `Environment "${pendingStatusChange.env}" ${pendingStatusChange.newStatus === 'active' ? 'activated' : 'deactivated'}`,
+                      `Environment "${envName}" ${pendingStatusChange.newStatus === 'active' ? 'activated' : 'deactivated'}`,
                       pendingStatusChange.newStatus === 'active' ? 'success' : 'error'
                     );
                   }

@@ -61,7 +61,7 @@ export const deleteProject = async (projectId: string) => {
 ======================================================== */
 
 /* -------- CREATE ENVIRONMENT -------- */
-export const createEnvironment = async (projectId: string, data: { environment_name: string }) => {
+export const createEnvironment = async (projectId: string, data: { environment_name: string; public_id?: string }) => {
   const response = await api.post(`/project/create-environment/${projectId}`, data);
   return response.data;
 };
