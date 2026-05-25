@@ -9,6 +9,7 @@ import noDataImg from "../assets/illustration/No data.gif";
 import errorImg from "../assets/illustration/error.svg";
 import { useToast } from "../hooks/useToast";
 import { createProject, getProjects, updateProjectStatus, } from "../services/projectApi";
+import SkeletonLoader from "@/components/common/SkeletonLoader";
 
 interface Project {
   id: string;
@@ -399,52 +400,57 @@ export default function ProjectDashboard() {
 
 
       {/* Abstract Cards */}
-      <div className={styles["statsGrid"]}>
-        <div className={`${styles["statCard"]} ${styles["cardTotal"]}`}>
-          <div className={styles["leftArt"]}></div>
-          <div className={styles["leftDots"]}></div>
-          <div className={styles["leftLine"]}></div>
-          <div className={styles["lineOverlay"]}></div>
-          <div className={styles["statLeft"]}>
-            <div className={styles["statLabel"]}>Total Projects</div>
-            <div className={styles["statNumber"]}>{projects.length}</div>
+      {isLoading ? (
+        <SkeletonLoader variant="stats" count={3} />
+      ) : (
+        <div className={styles["statsGrid"]}>
+          <div className={`${styles["statCard"]} ${styles["cardTotal"]}`}>
+            <div className={styles["leftArt"]}></div>
+            <div className={styles["leftDots"]}></div>
+            <div className={styles["leftLine"]}></div>
+            <div className={styles["lineOverlay"]}></div>
+            <div className={styles["statLeft"]}>
+              <div className={styles["statLabel"]}>Total Projects</div>
+              <div className={styles["statNumber"]}>{projects.length}</div>
+            </div>
+            <div className={styles["centerGem"]}></div>
+            <div className={styles["statIcon"]}>
+              <Users size={26} />
+            </div>
           </div>
-          <div className={styles["centerGem"]}></div>
-          <div className={styles["statIcon"]}>
-            <Users size={26} />
-          </div>
-        </div>
 
-        <div className={`${styles["statCard"]} ${styles["cardActive"]}`}>
-          <div className={styles["leftArt"]}></div>
-          <div className={styles["leftDots"]}></div>
-          <div className={styles["leftLine"]}></div>
-          <div className={styles["lineOverlay"]}></div>
-          <div className={styles["statLeft"]}>
-            <div className={styles["statLabel"]}>Active</div>
-            <div className={styles["statNumber"]}>{activeCount}</div>
+          <div className={`${styles["statCard"]} ${styles["cardActive"]}`}>
+            <div className={styles["leftArt"]}></div>
+            <div className={styles["leftDots"]}></div>
+            <div className={styles["leftLine"]}></div>
+            <div className={styles["lineOverlay"]}></div>
+            <div className={styles["statLeft"]}>
+              <div className={styles["statLabel"]}>Active</div>
+              <div className={styles["statNumber"]}>{activeCount}</div>
+            </div>
+            <div className={styles["centerGem"]}></div>
+            <div className={styles["statIcon"]}>
+              <CheckCircle size={26} />
+            </div>
           </div>
-          <div className={styles["centerGem"]}></div>
-          <div className={styles["statIcon"]}>
-            <CheckCircle size={26} />
-          </div>
-        </div>
 
-        <div className={`${styles["statCard"]} ${styles["cardInactive"]}`}>
-          <div className={styles["leftArt"]}></div>
-          <div className={styles["leftDots"]}></div>
-          <div className={styles["leftLine"]}></div>
-          <div className={styles["lineOverlay"]}></div>
-          <div className={styles["statLeft"]}>
-            <div className={styles["statLabel"]}>Inactive</div>
-            <div className={styles["statNumber"]}>{inactiveCount}</div>
-          </div>
-          <div className={styles["centerGem"]}></div>
-          <div className={styles["statIcon"]}>
-            <XCircle size={26} />
+          <div className={`${styles["statCard"]} ${styles["cardInactive"]}`}>
+            <div className={styles["leftArt"]}></div>
+            <div className={styles["leftDots"]}></div>
+            <div className={styles["leftLine"]}></div>
+            <div className={styles["lineOverlay"]}></div>
+            <div className={styles["statLeft"]}>
+              <div className={styles["statLabel"]}>Inactive</div>
+              <div className={styles["statNumber"]}>{inactiveCount}</div>
+            </div>
+            <div className={styles["centerGem"]}></div>
+            <div className={styles["statIcon"]}>
+              <XCircle size={26} />
+            </div>
           </div>
         </div>
-      </div>
+      )
+      }
 
       {/* Toolbar */}
       <div className={styles["toolbar"]}>
@@ -481,8 +487,10 @@ export default function ProjectDashboard() {
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={6} className={styles["noData"]}>
-                  <p>Loading projects...</p>
+                <td colSpan={6} style={{ padding: "0" }}>
+                  <div style={{ padding: "24px" }}>
+                    <SkeletonLoader variant="table" rows={5} columns={6} />
+                  </div>
                 </td>
               </tr>
             ) : paginatedProjects.length > 0 ? (

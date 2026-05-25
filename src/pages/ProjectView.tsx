@@ -16,6 +16,8 @@ import {
   createEnvironment, getEnvironmentsByProjectId, getProvidersByEnvironmentId, updateProvider, getAssignedUnassignedEmployees, assignUnassignEmployee,
   getApiKeys, regenerateApiKey, createApiKey, deleteApiKey
 } from "../services/projectApi";
+import SkeletonLoader from "@/components/common/SkeletonLoader";
+import FormValidation, { hasErrors } from "@/components/common/FormValidation";
 
 interface Project {
   id: string;
@@ -177,6 +179,10 @@ export default function ProjectView() {
   const [serviceData, setServiceData] = useState<any>(null);
 
   const [providersList, setProvidersList] = useState<any[]>([]);
+
+  const [pageLoading, setPageLoading] = useState(true);
+  const [environmentsLoading, setEnvironmentsLoading] = useState(true);
+  const [tokensLoading, setTokensLoading] = useState(false);
 
 
   const fetchUsersForEnvironment = async (env?: any) => {
@@ -387,8 +393,65 @@ export default function ProjectView() {
   //   }
   // };
 
-  const loadEnvironments = async () => {
+
+  const loadApiKeysWithEnvs = async (envs: any[]) => {
     if (!projectId) return;
+    setTokensLoading(true);
+
+    try {
+      const res = await getApiKeys(projectId);
+      const apiKeys = res?.data?.data || [];
+
+      const mapped: Record<string, ApiToken> = {};
+
+      apiKeys.forEach((token: any) => {
+        // Use passed envs instead of state
+        const env = envs.find(
+          (e: any) => e.public_id === token.environment_id
+        );
+
+        if (!env) {
+          console.log("Skipping token - environment not found:", token.environment_id);
+          return;
+        }
+
+        const environmentName = env.environment_name;
+
+        mapped[`${environmentName}_${token.mode}`] = {
+          id: token.public_id || token.id || "",
+          name: token.note || "",
+          token: token.key || token.api_key || "",
+          projectId: token.project_id || "",
+          environmentName,
+          mode: token.mode || "",
+          created: token.created_at || "",
+          expires: token.expires_at || "",
+          expiresInDays: token.expires_in_days || null,
+          revealed: false,
+        };
+      });
+
+      console.log("Mapped tokens:", mapped);
+
+      if (Object.keys(mapped).length > 0) {
+        setAllTokens(mapped);
+      }
+
+    } catch (error) {
+      console.error("Failed to load API keys:", error);
+    } finally {
+      setTokensLoading(false);
+    }
+  };
+
+  const loadEnvironments = async () => {
+    if (!projectId) {
+      setEnvironmentsLoading(false);
+      setPageLoading(false);
+      return;
+    }
+
+    setEnvironmentsLoading(true);
 
     const cached = localStorage.getItem(`env_data_${projectId}`);
     if (cached) {
@@ -397,8 +460,6 @@ export default function ProjectView() {
         if (parsed.length > 0) {
           setEnvironments(parsed);
           setSelectedEnv(parsed[0].public_id);
-          // ✅ Load providers for the first environment
-          loadProvidersForEnv(parsed[0]);
         }
       } catch { }
     }
@@ -408,16 +469,44 @@ export default function ProjectView() {
       const envs = res?.data || [];
       if (envs.length > 0) {
         setEnvironments(envs);
-        await loadApiKeys();
+
+        // Wait for API keys to load
+        await loadApiKeysWithEnvs(envs);
+
+        const firstEnv = envs[0];
         if (!selectedEnv) {
-          setSelectedEnv(envs[0].public_id);
-          // ✅ Load providers for the first environment
-          loadProvidersForEnv(envs[0]);
-          loadAllServiceCounts(envs[0].public_id);
+          setSelectedEnv(firstEnv.public_id);
+        }
+
+        // Wait for service counts to load
+        await loadAllServiceCounts(firstEnv.public_id);
+
+        // Wait for providers to load for the first environment
+        if (serviceData) {
+          const service = serviceData.find(
+            (s: any) => s.name?.toLowerCase() === activeService?.toLowerCase()
+          );
+          if (service?.public_id) {
+            await getProvidersByEnvironmentId(firstEnv.public_id, service.public_id)
+              .then(res => {
+                const data = res.data || {};
+                const allProviders = [...(data.sandbox || []), ...(data.live || [])];
+                setProviders(allProviders.map((p: any) => ({
+                  id: p.public_id || p.id,
+                  name: p.provider_name || p.name,
+                  fields: { ...(p.credentials || {}), mode: p.mode, endpoint: p.endpoint },
+                })));
+              })
+              .catch(() => { });
+          }
         }
       }
     } catch (error) {
       console.error("Failed to load environments", error);
+    } finally {
+      // Only set loading to false AFTER everything is loaded
+      setEnvironmentsLoading(false);
+      setPageLoading(false);
     }
   };
 
@@ -1007,6 +1096,7 @@ export default function ProjectView() {
   // ---- EFFECTS ----
   useEffect(() => {
     const loadProject = () => {
+      setPageLoading(true);
       const allProjects = JSON.parse(localStorage.getItem('allProjects') || '[]');
       const currentProject = JSON.parse(localStorage.getItem('currentProject') || 'null');
       let projectToLoad = allProjects.find((p: any) => String(p.id) === String(projectId));
@@ -1014,10 +1104,15 @@ export default function ProjectView() {
       if (projectToLoad) {
         setProject({ ...projectToLoad, createdBy: projectToLoad.createdBy || "Admin User", updatedAt: projectToLoad.updatedAt || projectToLoad.created, updatedBy: projectToLoad.updatedBy || "Admin User" });
         setEditForm({ name: projectToLoad.name || "", description: projectToLoad.description || "", status: projectToLoad.status || "active" });
+        // REMOVED setPageLoading(false) from here - let loadEnvironments handle it
+      } else {
+        setPageLoading(false);
+        setEnvironmentsLoading(false);
       }
     };
     loadProject();
     loadEnvironments();
+
     const handleProjectUpdate = (event: Event) => {
       const customEvent = event as CustomEvent;
       const updatedProject = customEvent.detail;
@@ -1039,6 +1134,16 @@ export default function ProjectView() {
     };
     fetchServices();
   }, []);
+
+  useEffect(() => {
+    if (serviceData && selectedEnv && activeMainTab === 'environments') {
+      const env = environments.find((e: any) => e.public_id === selectedEnv);
+      if (env) {
+        loadProvidersForEnv(env);
+        loadAllServiceCounts(selectedEnv);
+      }
+    }
+  }, [serviceData, selectedEnv]);
 
   // Dropdown click outside - FIXED with ref
   useEffect(() => {
@@ -1108,23 +1213,26 @@ export default function ProjectView() {
 
   const loadApiKeys = async () => {
     if (!projectId) return;
+    setTokensLoading(true);
 
     try {
       const res = await getApiKeys(projectId);
-
       const apiKeys = res?.data?.data || [];
 
       const mapped: Record<string, ApiToken> = {};
 
       apiKeys.forEach((token: any) => {
-
-        // find environment name from frontend environments state
         const env = environments.find(
           (e: any) => e.public_id === token.environment_id
         );
 
-        const environmentName =
-          env?.environment_name || "Unknown";
+        // Skip if environment not found
+        if (!env) {
+          console.log("Skipping token - environment not found:", token.environment_id);
+          return;
+        }
+
+        const environmentName = env.environment_name;
 
         mapped[`${environmentName}_${token.mode}`] = {
           id: token.public_id || token.id || "",
@@ -1140,10 +1248,17 @@ export default function ProjectView() {
         };
       });
 
-      setAllTokens(mapped);
+      console.log("Mapped tokens:", mapped);
+
+      // Only update if we have valid mappings
+      if (Object.keys(mapped).length > 0) {
+        setAllTokens(prev => ({ ...prev, ...mapped })); // Merge instead of overwrite
+      }
 
     } catch (error) {
       console.error("Failed to load API keys:", error);
+    } finally {
+      setTokensLoading(false);
     }
   };
 
@@ -1152,7 +1267,7 @@ export default function ProjectView() {
     if (projectId && environments.length > 0) {
       loadApiKeys();
     }
-  }, [projectId, environments]);
+  }, [projectId]);
 
   useEffect(() => { if (selectedEnv && activeMainTab === 'environments') loadProviders(); }, [selectedEnv, activeService, activeMainTab]);
   useEffect(() => { if (selectedEnv && activeMainTab === 'environments') updateAllServiceCounts(); }, [selectedEnv, activeService, modeFilter, activeMainTab]);
@@ -1185,7 +1300,21 @@ export default function ProjectView() {
   };
   const handleCancelEdit = () => { if (project) setEditForm({ name: project.name, description: project.description || "", status: project.status }); setIsEditing(false); };
 
-  if (!project) return <div className={styles["loading"]}>Loading...</div>;
+  if (pageLoading || !project) {
+    return (
+      <div className={styles["project-view-page"]}>
+        <div style={{ padding: "24px" }}>
+          <SkeletonLoader variant="detail" />
+        </div>
+        <div style={{ padding: "0 24px", marginTop: "24px" }}>
+          <SkeletonLoader variant="stats" count={3} />
+        </div>
+        <div style={{ padding: "0 24px", marginTop: "24px" }}>
+          <SkeletonLoader variant="table" rows={4} columns={5} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles["project-view-page"]}>
@@ -1277,7 +1406,19 @@ export default function ProjectView() {
       {/* Content Section */}
       {activeMainTab === 'environments' ? (
         <div className={styles["environment-section-new"]}>
-          {environments.length === 0 ? (
+          {environmentsLoading ? (
+            <div style={{ padding: "24px" }}>
+              <SkeletonLoader variant="stats" count={2} />
+              <div style={{ marginTop: "24px", display: "flex", gap: "16px" }}>
+                <div style={{ width: "250px" }}>
+                  <SkeletonLoader variant="list" count={3} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <SkeletonLoader variant="card" count={2} />
+                </div>
+              </div>
+            </div>
+          ) : environments.length === 0 ? (
             <div className={styles["pc-simple-first-time"]}>
               <div className={styles["pc-simple-card"]}>
                 <div className={styles["pc-card-icon"]}><Globe size={40} color="#6366f1" /></div>
@@ -1488,7 +1629,8 @@ export default function ProjectView() {
                   {/* Sandbox */}
                   <div className={styles["token-status-item"]}>
                     {(() => {
-                      const sandboxToken = allTokens[`${selectedEnv}_SANDBOX`];
+                      const envName = environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv;
+                      const sandboxToken = allTokens[`${envName}_SANDBOX`];
                       const isExpiring = sandboxToken?.expiresInDays != null && sandboxToken.expiresInDays <= 7;
                       if (sandboxToken) {
                         return isExpiring ? (
@@ -1502,7 +1644,8 @@ export default function ProjectView() {
                     <Wrench size={14} />
                     <span className={styles["token-status-name"]}>Sandbox</span>
                     {(() => {
-                      const sandboxToken = allTokens[`${selectedEnv}_SANDBOX`];
+                      const envName = environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv;
+                      const sandboxToken = allTokens[`${envName}_SANDBOX`];
                       if (sandboxToken) {
                         return (
                           <span className={styles["token-status-expiry"]}>
@@ -1521,7 +1664,8 @@ export default function ProjectView() {
                   {/* Live */}
                   <div className={styles["token-status-item"]}>
                     {(() => {
-                      const liveToken = allTokens[`${selectedEnv}_LIVE`];
+                      const envName = environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv;
+                      const liveToken = allTokens[`${envName}_LIVE`];
                       const isExpiring = liveToken?.expiresInDays != null && liveToken.expiresInDays <= 7;
                       if (liveToken) {
                         return isExpiring ? (
@@ -1596,7 +1740,9 @@ export default function ProjectView() {
 
                     </div>
                     <div className={styles["pc-sidebar"]}>
-                      {serviceData && serviceData.map((service: any) => (
+                      {!serviceData ? (
+                        <SkeletonLoader variant="list" count={3} />
+                      ) : serviceData && serviceData.map((service: any) => (
                         <div
                           key={service.public_id}
                           className={`${styles["pc-sidebar-item"]} ${activeService === service.name ? styles["active"] : ''}`}
@@ -1785,6 +1931,15 @@ export default function ProjectView() {
             </>
           )}
         </div>
+      ) : tokensLoading ? (
+        <div className={styles["token-section-wrapper"]}>
+          <div style={{ padding: "24px" }}>
+            <SkeletonLoader variant="detail" />
+            <div style={{ marginTop: "24px" }}>
+              <SkeletonLoader variant="card" count={3} />
+            </div>
+          </div>
+        </div>
       ) : (
         /* Token Generation Section */
         <div className={styles["token-section-wrapper"]}>
@@ -1827,6 +1982,7 @@ export default function ProjectView() {
               ) : (
                 filteredTokens.map(env => {
                   const envName = env.environment_name || env;
+                  console.log("Looking for tokens:", envName, "Sandbox:", allTokens[`${envName}_SANDBOX`], "Live:", allTokens[`${envName}_LIVE`]);
                   const sandboxToken = allTokens[`${envName}_SANDBOX`];
                   const liveToken = allTokens[`${envName}_LIVE`];
                   return (
@@ -1906,7 +2062,17 @@ export default function ProjectView() {
         showAddEnvModal && (
           <div className={`${styles["pc-modal-overlay"]} ${styles["slide-panel"]}`}>
             <div className={styles["pc-modal"]} onClick={e => e.stopPropagation()}>
-              <div className={styles["pc-modal-header"]}><h3><Plus size={18} /> Add Environment</h3><button className={styles["pc-modal-close"]} onClick={() => { setShowAddEnvModal(false); setNewEnvName(""); setIsCustomEnv(false); setCustomEnvInput(""); }}><X size={20} /></button></div>
+              <div className={styles["pc-modal-header"]}><h3><Plus size={18} /> Add Environment</h3><button className={styles["pc-modal-close"]} onClick={() => {
+                setPendingCloseAction(() => () => {
+                  setShowAddEnvModal(false);
+                  setNewEnvName("");
+                  setIsCustomEnv(false);
+                  setCustomEnvInput("");
+                });
+                setShowUnsavedModal(true);
+              }}>
+                <X size={20} />
+              </button></div>
               <div className={styles["pc-modal-body"]}>
                 <p className={styles["pc-modal-desc"]}>Select an environment or create a custom one</p>
                 <div className={styles["pc-env-options"]}>
@@ -1928,9 +2094,13 @@ export default function ProjectView() {
               </div>
               <div className={styles["pc-modal-footer"]}>
                 <button className={styles["pc-btn-cancel"]} onClick={() => {
-                  setPendingCloseAction(() => () => { setShowAddProviderModal(false); setEditingProvider(null); });
+                  setPendingCloseAction(() => () => {
+                    setShowAddEnvModal(false);
+                    setNewEnvName("");
+                    setIsCustomEnv(false);
+                    setCustomEnvInput("");
+                  });
                   setShowUnsavedModal(true);
-                  setCustomEnvInput('');
                 }}>
                   Cancel
                 </button>
@@ -1940,7 +2110,7 @@ export default function ProjectView() {
                   disabled={saving}
                   style={{ backgroundColor: SERVICE_COLORS[activeService], border: 'none' }}
                 >
-                  {saving ? 'Saving...' : editingProvider ? 'Update Provider' : 'Add Provider'}
+                  {saving ? 'Creating...' : 'Create Environment'}
                 </button>
               </div>
             </div>
@@ -1971,7 +2141,15 @@ export default function ProjectView() {
             <div className={styles["pc-modal"]} onClick={e => e.stopPropagation()}>
               <div className={styles["pc-modal-header"]}><h3><Copy size={18} /> Clone Environment</h3><button className={styles["pc-modal-close"]} onClick={() => setShowCloneModal(false)}><X size={20} /></button></div>
               <div className={styles["pc-modal-body"]}>
-                <div className={styles["clone-source-info"]}><label>Source Environment</label><div className={styles["clone-source-name"]}>{getEnvIcon(selectedEnv)} {selectedEnv}</div></div>
+                <div className={styles["clone-source-info"]}>
+                  <label>Source Environment</label>
+                  <div className={styles["clone-source-name"]}>
+                    {getEnvIcon(
+                      environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv
+                    )}{" "}
+                    {environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv}
+                  </div>
+                </div>
                 <div className={styles["pc-form-group"]}><label>Select Target Environment</label>
                   <div className={styles["pc-env-options"]}>
                     {['Local', 'Dev', 'Staging', 'Live'].filter(env =>
@@ -2050,57 +2228,39 @@ export default function ProjectView() {
                       ))}
                   </select>
                 </div>
-                {selectedProvider && providerFields && Object.keys(providerFields).length > 0 && (() => {
-                  const schema = Object.keys(providerFields)
-                    .filter(key => key !== "mode" && key !== "endpoint")
-                    .map(key => {
-                      return {
-                        name: key,
-                        label: key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').replace(/^./, s => s.toUpperCase()),
-                        type: key.toLowerCase().includes("key") || key.toLowerCase().includes("token") || key.toLowerCase().includes("secret") || key.toLowerCase().includes("password") ? "password" : "text",
-                        required: true,
-                      };
-                    });
-
-                  return (
-                    <div className={styles["pc-credentials-section"]}>
-                      <h4><Lock size={14} /> Credentials</h4>
-                      {schema.map((field: any) => (
-                        <div className={styles["pc-form-group"]} key={field.name}>
-                          <label>{field.label}{field.required && " *"}</label>
-                          <div className={styles["pc-input-wrapper"]}>
-                            <input
-                              type={field.type === "password" && !showPasswords[field.name] ? "password" : "text"}
-                              value={providerFields[field.name] || ""}
-                              onChange={(e) => handleFieldChange(field.name, e.target.value)}
-                              placeholder={`Enter ${field.label}`}
-                              className={styles["pc-input"]}
-                            />
-                            {field.type === "password" && (
-                              <button type="button" className={styles["pc-eye-btn"]} onClick={() => togglePasswordVisibility(field.name)}>
-                                {showPasswords[field.name] ? <FaEyeSlash /> : <FaEye />}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()}
+                {selectedProvider && providerFields && Object.keys(providerFields).length > 0 && (
+                  <FormValidation
+                    fields={providerFields}
+                    onChange={handleFieldChange}
+                  />
+                )}
               </div>
               <div className={styles["pc-modal-footer"]}>
-                <button
-                  className={styles["pc-btn-cancel"]}
-                  onClick={() => {
-                    setPendingCloseAction(() => () => { setShowAddProviderModal(false); setNewEnvName(""); setEditingProvider(null); });
-                    setShowUnsavedModal(true);
-                  }}
-                >
+                <button className={styles["pc-btn-cancel"]} onClick={() => {
+                  setPendingCloseAction(() => () => {
+                    setShowAddProviderModal(false);
+                    setEditingProvider(null);
+                    setSelectedProvider("");
+                    setProviderFields({});
+                  });
+                  setShowUnsavedModal(true);
+                }}>
                   Cancel
                 </button>
                 <button
                   className={styles["pc-btn-primary"]}
-                  onClick={saveProvider}
+                  onClick={() => {
+                    // Trigger validation for ALL fields by dispatching a custom event
+                    window.dispatchEvent(new CustomEvent('validateAllFields'));
+
+                    // Small delay to let validation show
+                    setTimeout(() => {
+                      if (hasErrors(providerFields)) {
+                        return; // Just show field errors, no toast
+                      }
+                      saveProvider();
+                    }, 100);
+                  }}
                   disabled={saving}
                   style={{ backgroundColor: SERVICE_COLORS[activeService], border: 'none' }}
                 >
@@ -2140,28 +2300,32 @@ export default function ProjectView() {
       }
 
       {/* Unsaved Changes Modal */}
-      {
-        showUnsavedModal && (
-          <div className={styles["pc-modal-overlay"]} onClick={() => setShowUnsavedModal(false)}>
-            <div className={`${styles["pc-modal"]} ${styles["pc-modal-small"]}`} onClick={e => e.stopPropagation()}>
-              <div className={styles["pc-modal-header"]}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <AlertTriangle size={22} color="#f59e0b" />
-                  <h3 style={{ margin: 0 }}>Discard Changes?</h3>
-                </div>
-              </div>
-              <div className={styles["pc-modal-body"]}>
-                <p>You have unsaved changes. If you leave now, your entered credentials will be lost.</p>
-                <div className={styles["warning-text"]}><AlertTriangle size={14} /> This action cannot be undone.</div>
-              </div>
-              <div className={styles["pc-modal-footer"]}>
-                <button className={styles["pc-btn-cancel"]} onClick={() => setShowUnsavedModal(false)}>Continue Editing</button>
-                <button className={styles["pc-btn-danger"]} onClick={() => { setShowUnsavedModal(false); if (pendingCloseAction) pendingCloseAction(); setPendingCloseAction(null); }}><Trash2 size={16} /> Discard Changes</button>
+      {showUnsavedModal && (
+        <div className={styles["pc-modal-overlay"]} onClick={() => setShowUnsavedModal(false)}>
+          <div className={`${styles["pc-modal"]} ${styles["pc-modal-small"]}`} onClick={e => e.stopPropagation()}>
+            <div className={styles["pc-modal-header"]}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <AlertTriangle size={22} color="#f59e0b" />
+                <h3 style={{ margin: 0 }}>Discard Changes?</h3>
               </div>
             </div>
+            <div className={styles["pc-modal-body"]}>
+              <p>You have unsaved changes. If you leave now, your entered credentials will be lost.</p>
+              <div className={styles["warning-text"]}><AlertTriangle size={14} /> This action cannot be undone.</div>
+            </div>
+            <div className={styles["pc-modal-footer"]}>
+              <button className={styles["pc-btn-cancel"]} onClick={() => setShowUnsavedModal(false)}>Continue Editing</button>
+              <button className={styles["pc-btn-danger"]} onClick={() => {
+                setShowUnsavedModal(false);
+                if (pendingCloseAction) pendingCloseAction();
+                setPendingCloseAction(null);
+              }}>
+                <Trash2 size={16} /> Discard Changes
+              </button>
+            </div>
           </div>
-        )
-      }
+        </div>
+      )}
 
       {/* Token Generate Form Modal */}
       {
@@ -2241,7 +2405,7 @@ export default function ProjectView() {
       {
         showRegenModal && (
           <div className={styles["pc-modal-overlay"]} onClick={() => setShowRegenModal(false)}>
-            <div className={`${styles["pc-modal"]} ${styles["pc-modal-small"]}`} onClick={e => e.stopPropagation()}><div className={styles["pc-modal-header"]}><RefreshCw size={22} color="#6366f1" /><h3>Regenerate Token?</h3></div><div className={styles["pc-modal-body"]}><div className={styles["modal-token-info"]}><div><Globe size={14} /> Environment: <strong>{selectedEnv}</strong></div>{currentToken && <><div><Key size={14} /> Token: <strong>{currentToken.name}</strong></div><div><Calendar size={14} /> Created: {formatDate(currentToken.created)}</div></>}</div><p className={styles["warning-text"]}>Regenerating will revoke the old token.</p></div><div className={styles["pc-modal-footer"]}><button className={styles["pc-btn-cancel"]} onClick={() => setShowRegenModal(false)}>Cancel</button><button className={styles["pc-btn-primary"]} onClick={async () => {
+            <div className={`${styles["pc-modal"]} ${styles["pc-modal-small"]}`} onClick={e => e.stopPropagation()}><div className={styles["pc-modal-header"]}><RefreshCw size={22} color="#6366f1" /><h3>Regenerate Token?</h3></div><div className={styles["pc-modal-body"]}><div className={styles["modal-token-info"]}><div><Globe size={14} /> Environment: <strong>{environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv}</strong></div>{currentToken && <><div><Key size={14} /> Token: <strong>{currentToken.name}</strong></div><div><Calendar size={14} /> Created: {formatDate(currentToken.created)}</div></>}</div><p className={styles["warning-text"]}>Regenerating will revoke the old token.</p></div><div className={styles["pc-modal-footer"]}><button className={styles["pc-btn-cancel"]} onClick={() => setShowRegenModal(false)}>Cancel</button><button className={styles["pc-btn-primary"]} onClick={async () => {
               try {
                 if (!currentToken?.id) return;
 
@@ -2288,7 +2452,7 @@ export default function ProjectView() {
       {
         showTokenDeleteModal && (
           <div className={styles["pc-modal-overlay"]} onClick={() => setShowTokenDeleteModal(false)}>
-            <div className={`${styles["pc-modal"]} ${styles["pc-modal-small"]}`} onClick={e => e.stopPropagation()}><div className={styles["pc-modal-header"]}><Trash2 size={22} color="#ef4444" /><h3>Delete Token?</h3></div><div className={styles["pc-modal-body"]}><div className={styles["modal-token-info"]}><div><Globe size={14} /> Environment: <strong>{selectedEnv}</strong></div>{currentToken && <><div><Key size={14} /> Token: <strong>{currentToken.name}</strong></div><div><Calendar size={14} /> Created: {formatDate(currentToken.created)}</div></>}</div><p className={styles["warning-text"]}>This will permanently revoke API access.</p></div><div className={styles["pc-modal-footer"]}><button className={styles["pc-btn-cancel"]} onClick={() => setShowTokenDeleteModal(false)}>Cancel</button><button className={styles["pc-btn-primary"]} onClick={handleTokenDelete} style={{ background: '#ef4444' }}>Delete Token</button></div></div>
+            <div className={`${styles["pc-modal"]} ${styles["pc-modal-small"]}`} onClick={e => e.stopPropagation()}><div className={styles["pc-modal-header"]}><Trash2 size={22} color="#ef4444" /><h3>Delete Token?</h3></div><div className={styles["pc-modal-body"]}><div className={styles["modal-token-info"]}><div><Globe size={14} /> Environment: <strong>{environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv}</strong></div>{currentToken && <><div><Key size={14} /> Token: <strong>{currentToken.name}</strong></div><div><Calendar size={14} /> Created: {formatDate(currentToken.created)}</div></>}</div><p className={styles["warning-text"]}>This will permanently revoke API access.</p></div><div className={styles["pc-modal-footer"]}><button className={styles["pc-btn-cancel"]} onClick={() => setShowTokenDeleteModal(false)}>Cancel</button><button className={styles["pc-btn-primary"]} onClick={handleTokenDelete} style={{ background: '#ef4444' }}>Delete Token</button></div></div>
           </div>
         )
       }
@@ -2298,7 +2462,7 @@ export default function ProjectView() {
         showUserPanel && (
           <div className={styles["user-panel-overlay"]} onClick={() => setShowUserPanel(false)}>
             <div className={styles["user-panel"]} onClick={e => e.stopPropagation()}>
-              <div className={styles["user-panel-header"]}><div className={styles["user-panel-header-left"]}><User size={20} /><h3>Manage Users - {selectedEnv}</h3></div><button className={styles["user-panel-close"]} onClick={() => setShowUserPanel(false)}><X size={20} /></button></div>
+              <div className={styles["user-panel-header"]}><div className={styles["user-panel-header-left"]}><User size={20} /><h3>Manage Users - {environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv}</h3><h3>Manage Users - {selectedEnv}</h3></div><button className={styles["user-panel-close"]} onClick={() => setShowUserPanel(false)}><X size={20} /></button></div>
               <div className={styles["user-panel-tabs"]}>
                 <button className={`${styles["user-panel-tab"]} ${userActiveTab === 'assign' ? styles["active"] : ''}`} onClick={() => { setUserActiveTab('assign'); setSelectedUsers(new Set()); setSelectAll(false); }}><UserPlus size={14} /> Unassigned Users</button>
                 <button className={`${styles["user-panel-tab"]} ${userActiveTab === 'unassign' ? styles["active"] : ''}`} onClick={() => { setUserActiveTab('unassign'); setSelectedUsers(new Set()); setSelectAll(false); }}><UserMinus size={14} /> Assigned Users</button>

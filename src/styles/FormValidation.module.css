@@ -1,0 +1,126 @@
+.container {
+    margin-top: 8px;
+}
+
+.title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.fieldGroup {
+    margin-bottom: 20px;
+}
+
+.label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 6px;
+}
+
+.required {
+    color: #ef4444;
+    margin-left: 2px;
+}
+
+.inputWrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    border: 1.5px solid #334155;
+    border-radius: 8px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+/* Default focus - subtle blue */
+.inputWrapper:focus-within {
+    outline: none;
+}
+
+/* Error state - red border */
+.inputWrapper.error {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+}
+
+/* Valid state - green border */
+.inputWrapper.valid {
+    border-color: #10b981 !important;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
+}
+
+.input {
+    width: 100%;
+    padding: 10px 40px 10px 12px;
+    border: none;
+    outline: none;
+    font-size: 0.875rem;
+
+    background: transparent;
+    border-radius: 8px;
+}
+
+.input::placeholder {
+    color: #64748b;
+}
+
+.eyeBtn {
+    position: absolute;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    transition: color 0.2s;
+}
+
+.eyeBtn:hover {
+    color: #cbd5e1;
+}
+
+.iconRight {
+    position: absolute;
+    right: 10px;
+    display: flex;
+    align-items: center;
+}
+
+/* Red error text */
+.errorMsg {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    font-size: 0.75rem;
+    color: #ef4444;
+    animation: slideDown 0.2s ease;
+}
+
+/* Green success text */
+.successMsg {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    font-size: 0.75rem;
+    color: #10b981;
+    animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
