@@ -25,7 +25,7 @@ export default function Layout() {
         style={{
           marginLeft: "250px",
           marginTop: "55px",
-          padding: "24px",
+          padding: "18px",
           backgroundColor: "#f9fafb",
           height: "calc(100vh - 55px)",
           overflowY: "auto",
