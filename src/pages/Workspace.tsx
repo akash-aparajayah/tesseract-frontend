@@ -2,17 +2,19 @@ import { useEffect, useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
-  Folder,
   FolderOpenDot,
   FolderClosedIcon,
   Globe,
   Search,
   Wrench,
   ChevronUp,
-  Key,
+  RotateCcwKeyIcon,
   Server,
   Copy,
   Check,
+  Cloud,
+  Zap,
+  Shield,
 } from "lucide-react";
 import styles from "../styles/Workspace.module.css";
 import workspaceIllustration from "../assets/illustration/Empty (1).gif";
@@ -55,8 +57,7 @@ interface Project {
   environments: Environment[];
 }
 
-// ---------- Mock Data (replace with API call) ----------
-// ---------- Minimal Mock Data ----------
+// ---------- Mock Data ----------
 const projectsData: Project[] = [
   {
     public_id: "1",
@@ -216,7 +217,7 @@ const projectsData: Project[] = [
   },
   {
     public_id: "2",
-    project_name: "E-Commerce",
+    project_name: "Enterprise Management System",
     environments: [
       {
         public_id: "env_2_dev",
@@ -259,25 +260,25 @@ const projectsData: Project[] = [
         ],
       },
       {
-        public_id: "env_2_prod",
-        environment_name: "Production",
+        public_id: "env_2_qa",
+        environment_name: "QA",
         services: [
           {
-            id: "svc_2_prod_1",
+            id: "svc_2_qa_1",
             name: "Orders API",
             sandbox: [
               {
-                apiKey: "sb_orders_key",
-                apiSecret: "sb_orders_secret",
-                endpoint: "https://sandbox-api.shop.com/orders/v1",
-                description: "Orders sandbox",
-                clientId: "sb_orders_client",
-                tenantId: "sb_orders_tenant",
+                apiKey: "qa_orders_key",
+                apiSecret: "qa_orders_secret",
+                endpoint: "https://qa-api.shop.com/orders/v1",
+                description: "QA orders",
+                clientId: "qa_orders_client",
+                tenantId: "qa_orders_tenant",
                 region: "ap-southeast-1",
-                authUrl: "https://sandbox-auth.shop.com/orders/token",
+                authUrl: "https://qa-auth.shop.com/orders/token",
                 scope: "read",
-                audience: "sandbox-orders",
-                projectId: "sb_orders_proj",
+                audience: "qa-orders",
+                projectId: "qa_orders_proj",
               },
             ],
             live: [
@@ -302,34 +303,34 @@ const projectsData: Project[] = [
   },
 ];
 
-// ---------- Token storage (minimal) ----------
+// ---------- Token storage (only status, no token string) ----------
 interface EnvToken {
-  token: string | null;
+  isGenerated: boolean;
   expiresAt: string | null;
 }
 
 const environmentTokens: { [envId: string]: { sandbox: EnvToken; live: EnvToken } } = {
   "env_1_dev": {
     sandbox: {
-      token: "generated",
+      isGenerated: true,
       expiresAt: new Date(Date.now() + 30 * 86400000).toISOString(),
     },
     live: {
-      token: "generated",
+      isGenerated: true,
       expiresAt: new Date(Date.now() + 30 * 86400000).toISOString(),
     },
   },
   "env_1_stg": {
-    sandbox: { token: null, expiresAt: null },
-    live: { token: null, expiresAt: null },
+    sandbox: { isGenerated: false, expiresAt: null },
+    live: { isGenerated: false, expiresAt: null },
   },
   "env_2_dev": {
-    sandbox: { token: null, expiresAt: null },
-    live: { token: null, expiresAt: null },
+    sandbox: { isGenerated: false, expiresAt: null },
+    live: { isGenerated: false, expiresAt: null },
   },
-  "env_2_prod": {
-    sandbox: { token: null, expiresAt: null },
-    live: { token: null, expiresAt: null },
+  "env_2_qa": {
+    sandbox: { isGenerated: false, expiresAt: null },
+    live: { isGenerated: false, expiresAt: null },
   },
 };
 
@@ -339,55 +340,80 @@ const formatExpiry = (expiresAt: string | null) => {
     (new Date(expiresAt).getTime() - Date.now()) / 86400000,
   );
   if (daysLeft < 0) return "Expired";
-  return `Expires in ${daysLeft} day${daysLeft !== 1 ? "s" : ""}`;
+  return `${daysLeft} day${daysLeft !== 1 ? "s" : ""}`;
 };
 
-// ---------- Token Details ----------
-const EnvironmentTokenDetails = ({
+// ---------- Instance Selector with Count Badges ----------
+interface InstanceSelectorProps {
+  instanceType: "sandbox" | "live";
+  onInstanceChange: (type: "sandbox" | "live") => void;
+  sandboxToken: EnvToken;
+  liveToken: EnvToken;
+  sandboxCount: number;
+  liveCount: number;
+}
+
+const InstanceSelector = ({
+  instanceType,
+  onInstanceChange,
   sandboxToken,
   liveToken,
-  sandboxExpiry,
-  liveExpiry,
-}: any) => (
-  <div className={styles.tokenSectionSingleLine}>
-    <Key size={14} className={styles.tokenIcon} />
-    <span className={styles.tokenSectionTitle}>Token Details</span>
-    <div className={styles.tokenPair}>
-      <span className={styles.tokenType}>Sandbox</span>
-      <span className={styles.tokenStatus}>
-        {sandboxToken ? (
+  sandboxCount,
+  liveCount,
+}: InstanceSelectorProps) => {
+  const currentToken = instanceType === "sandbox" ? sandboxToken : liveToken;
+  const isGenerated = currentToken.isGenerated;
+  const expiryText = formatExpiry(currentToken.expiresAt);
+
+  return (
+    <div className={styles.environmentHeader}>
+      {/* Segmented Control with Count Badges */}
+      <div className={styles.instanceSegmentedControl}>
+        <button
+          className={`${styles.segmentedButton} ${instanceType === "sandbox" ? styles.segmentedActive : ""}`}
+          onClick={() => onInstanceChange("sandbox")}
+        >
+          <Cloud size={14} />
+          <span>Sandbox</span>
+          <span className={styles.countBadge}>{sandboxCount}</span>
+        </button>
+        <button
+          className={`${styles.segmentedButton} ${instanceType === "live" ? styles.segmentedActive : ""}`}
+          onClick={() => onInstanceChange("live")}
+        >
+          <Zap size={14} />
+          <span>Live</span>
+          <span className={styles.countBadge}>{liveCount}</span>
+        </button>
+      </div>
+
+      {/* Token Status - Single Line, no token value */}
+      <div className={styles.tokenSummary}>
+        <div className={styles.tokenKey}>
+        <RotateCcwKeyIcon size={18}  />
+        </div>
+        <span className={styles.tokenSummaryLabel}>
+          {instanceType === "sandbox" ? "Sandbox" : "Live"} Token
+        </span>
+        {isGenerated ? (
           <>
-            <code>{sandboxToken}</code>
-            {sandboxExpiry && (
-              <span className={`${styles.tokenValidity} ${styles.success}`}>
-                {formatExpiry(sandboxExpiry)}
-              </span>
+            <div className={`${styles.tokenStatusBadge} ${styles.generated}`}>
+              <Shield size={10} />
+              <span>Generated</span>
+            </div>
+            {expiryText && (
+              <span className={styles.tokenExpiry}>Expires {expiryText}</span>
             )}
           </>
         ) : (
-          <span className={styles.tokenNotGenerated}>Not generated</span>
+          <div className={`${styles.tokenStatusBadge} ${styles.notGenerated}`}>
+            Not generated
+          </div>
         )}
-      </span>
+      </div>
     </div>
-    <div className={styles.tokenPair}>
-      <span className={styles.tokenType}>Live</span>
-      <span className={styles.tokenStatus}>
-        {liveToken ? (
-          <>
-            <code>{liveToken}</code>
-            {liveExpiry && (
-              <span className={`${styles.tokenValidity} ${styles.success}`}>
-                {formatExpiry(liveExpiry)}
-              </span>
-            )}
-          </>
-        ) : (
-          <span className={styles.tokenNotGenerated}>Not generated</span>
-        )}
-      </span>
-    </div>
-  </div>
-);
+  );
+};
 
 // ---------- Credential Accordion ----------
 const CredentialAccordion = ({ credential, index, isOpen, onToggle }: any) => {
@@ -478,7 +504,6 @@ const Workspace = () => {
   }>({});
 
   useEffect(() => {
-    // Simulate API call – replace with real fetch
     setTimeout(() => {
       setProjects(projectsData);
       if (projectsData.length > 0) {
@@ -515,11 +540,9 @@ const Workspace = () => {
     p.project_name.toLowerCase().includes(search.toLowerCase()),
   );
 
- // ✅ Use your custom Skeleton component with a layout that matches the workspace
   if (loading) {
     return (
       <div style={{ display: "flex", height: "100vh", width: "100%", background: "#f4f7fb" }}>
-        {/* Sidebar skeleton */}
         <div style={{ width: 280, minWidth: 280, padding: "1.25rem 1rem", display: "flex", flexDirection: "column", gap: "1.25rem" }}>
           <Skeleton height="44px" borderRadius="14px" />
           <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -528,7 +551,6 @@ const Workspace = () => {
             <Skeleton height="80px" borderRadius="18px" />
           </div>
         </div>
-        {/* Main area skeleton */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           <div style={{ padding: "1rem 1.5rem", borderBottom: "1px solid #e2e8f0" }}>
             <Skeleton height="24px" width="300px" borderRadius="6px" style={{ marginBottom: "12px" }} />
@@ -551,7 +573,6 @@ const Workspace = () => {
     );
   }
 
-  // ----- Global empty state: no projects at all -----
   if (projects.length === 0) {
     return (
       <div className={styles.globalEmptyState}>
@@ -564,21 +585,22 @@ const Workspace = () => {
     );
   }
 
-  const serviceCount = selectedEnv?.environment.services.length ?? 0;
+  const envId = selectedEnv?.environment.public_id ?? "";
+  const sandboxData = environmentTokens[envId]?.sandbox ?? {
+    isGenerated: false,
+    expiresAt: null,
+  };
+  const liveData = environmentTokens[envId]?.live ?? {
+    isGenerated: false,
+    expiresAt: null,
+  };
+  const sandboxCount = selectedService?.sandbox.length ?? 0;
+  const liveCount = selectedService?.live.length ?? 0;
   const credentials = selectedService
     ? instanceType === "sandbox"
       ? selectedService.sandbox
       : selectedService.live
     : [];
-  const envId = selectedEnv?.environment.public_id ?? "";
-  const sandboxData = environmentTokens[envId]?.sandbox ?? {
-    token: null,
-    expiresAt: null,
-  };
-  const liveData = environmentTokens[envId]?.live ?? {
-    token: null,
-    expiresAt: null,
-  };
 
   return (
     <div className={styles.container}>
@@ -613,7 +635,7 @@ const Workspace = () => {
                     ) : (
                       <FolderClosedIcon size={18} />
                     )}
-                    <span>{project.project_name}</span>
+                    <span title={project.project_name}>{project.project_name}</span>
                     {isExpanded ? (
                       <ChevronDown size={15} />
                     ) : (
@@ -666,7 +688,6 @@ const Workspace = () => {
             <ChevronRight size={12} />
             <span>{selectedService?.name || "No service"}</span>
           </div>
-          {/* Divider line between breadcrumb and service chips */}
           <div className={styles.divider} />
           <div className={styles.serviceScroll}>
             {selectedEnv?.environment.services.length === 0 ? (
@@ -687,6 +708,7 @@ const Workspace = () => {
             )}
           </div>
         </div>
+
         <div className={styles.content}>
           {!selectedService ? (
             <div className={styles.mainEmptyState}>
@@ -695,27 +717,15 @@ const Workspace = () => {
             </div>
           ) : (
             <>
-              <EnvironmentTokenDetails
-                sandboxToken={sandboxData.token}
-                liveToken={liveData.token}
-                sandboxExpiry={sandboxData.expiresAt}
-                liveExpiry={liveData.expiresAt}
+              <InstanceSelector
+                instanceType={instanceType}
+                onInstanceChange={setInstanceType}
+                sandboxToken={sandboxData}
+                liveToken={liveData}
+                sandboxCount={sandboxCount}
+                liveCount={liveCount}
               />
-              <div className={styles.instanceToggle}>
-                <button
-                  className={`${styles.instanceButton} ${instanceType === "sandbox" ? styles.activeInstance : ""}`}
-                  onClick={() => setInstanceType("sandbox")}
-                >
-                  Sandbox{" "}
-                  <span className={styles.countBadge}>{serviceCount}</span>
-                </button>
-                <button
-                  className={`${styles.instanceButton} ${instanceType === "live" ? styles.activeInstance : ""}`}
-                  onClick={() => setInstanceType("live")}
-                >
-                  Live <span className={styles.countBadge}>{serviceCount}</span>
-                </button>
-              </div>
+
               {credentials.length === 0 ? (
                 <div className={styles.noCredentials}>
                   No credentials found for this instance
