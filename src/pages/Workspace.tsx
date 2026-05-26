@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import {
   ChevronDown,
   ChevronRight,
@@ -20,22 +21,13 @@ import styles from "../styles/Workspace.module.css";
 import workspaceIllustration from "../assets/illustration/Empty (1).gif";
 import sidebarIllustration from "../assets/illustration/error.svg";
 import { Skeleton } from "@/components/common/SkeletonLoader";
+import { userAssignProjectEnv } from "@/services/projectApi";
 
-// ---------- Types ----------
+// ---------- Types (unchanged) ----------
 interface Credentials {
-  apiKey?: string;
-  apiSecret?: string;
+  [key: string]: string | undefined;
   endpoint: string;
   description?: string;
-  clientId?: string;
-  tenantId?: string;
-  region?: string;
-  authUrl?: string;
-  scope?: string;
-  audience?: string;
-  connectionString?: string;
-  projectId?: string;
-  [key: string]: string | undefined;
 }
 
 interface Service {
@@ -49,6 +41,7 @@ interface Environment {
   public_id: string;
   environment_name: string;
   services: Service[];
+  apiKeys?: ApiKey[];
 }
 
 interface Project {
@@ -57,283 +50,52 @@ interface Project {
   environments: Environment[];
 }
 
-// ---------- Mock Data ----------
-const projectsData: Project[] = [
-  {
-    public_id: "1",
-    project_name: "Internal CRM Platform (Long Name Truncation Test)",
-    environments: [
-      {
-        public_id: "env_1_dev",
-        environment_name: "Development",
-        services: [
-          {
-            id: "svc_1_dev_1",
-            name: "User API",
-            sandbox: [
-              {
-                apiKey: "sb_user_key",
-                apiSecret: "sb_user_secret",
-                endpoint: "https://sandbox-api.crm.com/user/v1",
-                description: "User sandbox",
-                clientId: "sb_client",
-                tenantId: "sb_tenant",
-                region: "us-east-1",
-                authUrl: "https://sandbox-auth.crm.com/oauth",
-                scope: "read write",
-                audience: "sandbox-api",
-                connectionString: "mongodb://sandbox:27017/users",
-                projectId: "sb_proj_1",
-              },
-            ],
-            live: [
-              {
-                apiKey: "live_user_key",
-                apiSecret: "live_user_secret",
-                endpoint: "https://api.crm.com/user/v1",
-                description: "User live",
-                clientId: "live_client",
-                tenantId: "live_tenant",
-                region: "us-east-1",
-                authUrl: "https://auth.crm.com/oauth",
-                scope: "read write admin",
-                audience: "api",
-                connectionString: "mongodb://live:27017/users",
-                projectId: "live_proj_1",
-              },
-            ],
-          },
-          {
-            id: "svc_1_dev_2",
-            name: "Payment API",
-            sandbox: [
-              {
-                apiKey: "sb_pay_key",
-                apiSecret: "sb_pay_secret",
-                endpoint: "https://sandbox-api.crm.com/pay/v1",
-                description: "Payment sandbox",
-                clientId: "sb_pay_client",
-                tenantId: "sb_pay_tenant",
-                region: "eu-west-1",
-                authUrl: "https://sandbox-auth.crm.com/pay/token",
-                scope: "charge refund",
-                audience: "sandbox-pay",
-                projectId: "sb_pay_proj",
-              },
-            ],
-            live: [
-              {
-                apiKey: "live_pay_key",
-                apiSecret: "live_pay_secret",
-                endpoint: "https://api.crm.com/pay/v1",
-                description: "Payment live",
-                clientId: "live_pay_client",
-                tenantId: "live_pay_tenant",
-                region: "eu-west-1",
-                authUrl: "https://auth.crm.com/pay/token",
-                scope: "charge refund capture",
-                audience: "api-pay",
-                projectId: "live_pay_proj",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        public_id: "env_1_stg",
-        environment_name: "Staging",
-        services: [
-          {
-            id: "svc_1_stg_1",
-            name: "User API",
-            sandbox: [
-              {
-                apiKey: "stg_user_key",
-                apiSecret: "stg_user_secret",
-                endpoint: "https://staging-api.crm.com/user/v1",
-                description: "Staging user",
-                clientId: "stg_client",
-                tenantId: "stg_tenant",
-                region: "us-west-2",
-                authUrl: "https://staging-auth.crm.com/oauth",
-                scope: "read",
-                audience: "staging-api",
-                projectId: "stg_proj",
-              },
-            ],
-            live: [
-              {
-                apiKey: "live_stg_user_key",
-                apiSecret: "live_stg_user_secret",
-                endpoint: "https://api.crm.com/user/v1",
-                description: "Live (staging)",
-                clientId: "live_client",
-                tenantId: "live_tenant",
-                region: "us-east-1",
-                authUrl: "https://auth.crm.com/oauth",
-                scope: "read write",
-                audience: "api",
-                projectId: "live_proj",
-              },
-            ],
-          },
-          {
-            id: "svc_1_stg_2",
-            name: "Notification API",
-            sandbox: [
-              {
-                apiKey: "stg_notify_key",
-                apiSecret: "stg_notify_secret",
-                endpoint: "https://staging-api.crm.com/notify/v1",
-                description: "Staging notification",
-                clientId: "stg_notify_client",
-                tenantId: "stg_notify_tenant",
-                region: "us-west-2",
-                authUrl: "https://staging-auth.crm.com/notify/token",
-                scope: "send",
-                audience: "staging-notify",
-                projectId: "stg_notify_proj",
-              },
-            ],
-            live: [
-              {
-                apiKey: "live_notify_key",
-                apiSecret: "live_notify_secret",
-                endpoint: "https://api.crm.com/notify/v1",
-                description: "Live notification",
-                clientId: "live_notify_client",
-                tenantId: "live_notify_tenant",
-                region: "us-east-1",
-                authUrl: "https://auth.crm.com/notify/token",
-                scope: "send receive",
-                audience: "api-notify",
-                projectId: "live_notify_proj",
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  },
-  {
-    public_id: "2",
-    project_name: "Enterprise Management System",
-    environments: [
-      {
-        public_id: "env_2_dev",
-        environment_name: "Development",
-        services: [
-          {
-            id: "svc_2_dev_1",
-            name: "Checkout API",
-            sandbox: [
-              {
-                apiKey: "sb_checkout_key",
-                apiSecret: "sb_checkout_secret",
-                endpoint: "https://sandbox-api.shop.com/checkout/v1",
-                description: "Checkout sandbox",
-                clientId: "sb_check_client",
-                tenantId: "sb_check_tenant",
-                region: "ap-southeast-1",
-                authUrl: "https://sandbox-auth.shop.com/checkout/token",
-                scope: "cart order",
-                audience: "sandbox-shop",
-                projectId: "sb_check_proj",
-              },
-            ],
-            live: [
-              {
-                apiKey: "live_checkout_key",
-                apiSecret: "live_checkout_secret",
-                endpoint: "https://api.shop.com/checkout/v1",
-                description: "Checkout live",
-                clientId: "live_check_client",
-                tenantId: "live_check_tenant",
-                region: "ap-southeast-1",
-                authUrl: "https://auth.shop.com/checkout/token",
-                scope: "cart order payment",
-                audience: "api-shop",
-                projectId: "live_check_proj",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        public_id: "env_2_qa",
-        environment_name: "QA",
-        services: [
-          {
-            id: "svc_2_qa_1",
-            name: "Orders API",
-            sandbox: [
-              {
-                apiKey: "qa_orders_key",
-                apiSecret: "qa_orders_secret",
-                endpoint: "https://qa-api.shop.com/orders/v1",
-                description: "QA orders",
-                clientId: "qa_orders_client",
-                tenantId: "qa_orders_tenant",
-                region: "ap-southeast-1",
-                authUrl: "https://qa-auth.shop.com/orders/token",
-                scope: "read",
-                audience: "qa-orders",
-                projectId: "qa_orders_proj",
-              },
-            ],
-            live: [
-              {
-                apiKey: "live_orders_key",
-                apiSecret: "live_orders_secret",
-                endpoint: "https://api.shop.com/orders/v1",
-                description: "Orders live",
-                clientId: "live_orders_client",
-                tenantId: "live_orders_tenant",
-                region: "ap-southeast-1",
-                authUrl: "https://auth.shop.com/orders/token",
-                scope: "read write",
-                audience: "api-orders",
-                projectId: "live_orders_proj",
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  },
-];
+interface ApiKey {
+  public_id: string;
+  prefix: string;
+  mode: "SANDBOX" | "LIVE";
+  expires_in_days: number;
+  created_at: string;
+  last_used_at: string | null;
+  expiry_date: string;
+  remaining_days: number;
+  token_status: string;
+  is_expired: boolean;
+}
 
-// ---------- Token storage (only status, no token string) ----------
 interface EnvToken {
   isGenerated: boolean;
   expiresAt: string | null;
+  remainingDays?: number;
 }
 
-const environmentTokens: { [envId: string]: { sandbox: EnvToken; live: EnvToken } } = {
-  "env_1_dev": {
-    sandbox: {
-      isGenerated: true,
-      expiresAt: new Date(Date.now() + 30 * 86400000).toISOString(),
-    },
-    live: {
-      isGenerated: true,
-      expiresAt: new Date(Date.now() + 30 * 86400000).toISOString(),
-    },
-  },
-  "env_1_stg": {
-    sandbox: { isGenerated: false, expiresAt: null },
-    live: { isGenerated: false, expiresAt: null },
-  },
-  "env_2_dev": {
-    sandbox: { isGenerated: false, expiresAt: null },
-    live: { isGenerated: false, expiresAt: null },
-  },
-  "env_2_qa": {
-    sandbox: { isGenerated: false, expiresAt: null },
-    live: { isGenerated: false, expiresAt: null },
-  },
-};
+interface ApiResponse {
+  success: boolean;
+  message: string;
+  data: ApiProject[];
+}
 
+interface ApiProject {
+  public_id: string;
+  project_name: string;
+  environments: ApiEnvironment[];
+}
+
+interface ApiEnvironment {
+  public_id: string;
+  environment_name: string;
+  services: ApiService[];
+  api_keys: ApiKey[];
+}
+
+interface ApiService {
+  id: string;
+  service_name: string;
+  sandbox: Credentials[];
+  live: Credentials[];
+}
+
+// ---------- Helper: format expiry days ----------
 const formatExpiry = (expiresAt: string | null) => {
   if (!expiresAt) return null;
   const daysLeft = Math.ceil(
@@ -343,7 +105,7 @@ const formatExpiry = (expiresAt: string | null) => {
   return `${daysLeft} day${daysLeft !== 1 ? "s" : ""}`;
 };
 
-// ---------- Instance Selector with Count Badges ----------
+// ---------- Instance Selector ----------
 interface InstanceSelectorProps {
   instanceType: "sandbox" | "live";
   onInstanceChange: (type: "sandbox" | "live") => void;
@@ -367,7 +129,6 @@ const InstanceSelector = ({
 
   return (
     <div className={styles.environmentHeader}>
-      {/* Segmented Control with Count Badges */}
       <div className={styles.instanceSegmentedControl}>
         <button
           className={`${styles.segmentedButton} ${instanceType === "sandbox" ? styles.segmentedActive : ""}`}
@@ -387,10 +148,9 @@ const InstanceSelector = ({
         </button>
       </div>
 
-      {/* Token Status - Single Line, no token value */}
       <div className={styles.tokenSummary}>
         <div className={styles.tokenKey}>
-        <RotateCcwKeyIcon size={18}  />
+          <RotateCcwKeyIcon size={18} />
         </div>
         <span className={styles.tokenSummaryLabel}>
           {instanceType === "sandbox" ? "Sandbox" : "Live"} Token
@@ -416,22 +176,18 @@ const InstanceSelector = ({
 };
 
 // ---------- Credential Accordion ----------
-const CredentialAccordion = ({ credential, index, isOpen, onToggle }: any) => {
+interface CredentialAccordionProps {
+  credential: Credentials;
+  index: number;
+  isOpen: boolean;
+  onToggle: () => void;
+}
+
+const CredentialAccordion = ({ credential, index, isOpen, onToggle }: CredentialAccordionProps) => {
   const [copied, setCopied] = useState(false);
-  const fieldConfig = [
-    { key: "apiKey", label: "API Key" },
-    { key: "apiSecret", label: "API Secret" },
-    { key: "clientId", label: "Client ID" },
-    { key: "tenantId", label: "Tenant ID" },
-    { key: "region", label: "Region" },
-    { key: "authUrl", label: "Auth URL" },
-    { key: "scope", label: "Scope" },
-    { key: "audience", label: "Audience" },
-    { key: "connectionString", label: "Connection String" },
-    { key: "projectId", label: "Project ID" },
-    { key: "description", label: "Description" },
-  ];
-  const existingFields = fieldConfig.filter((f) => credential[f.key]);
+  const displayFields = Object.entries(credential).filter(
+    ([key]) => !["mode", "service_type", "provider_name", "service_description"].includes(key)
+  );
   const handleCopy = async () => {
     await navigator.clipboard.writeText(credential.endpoint);
     setCopied(true);
@@ -443,9 +199,9 @@ const CredentialAccordion = ({ credential, index, isOpen, onToggle }: any) => {
         <div className={styles.accordionHeaderLeft}>
           <Server size={15} />
           <span>Credential #{index + 1}</span>
-          {credential.description && (
+          {credential.service_description && (
             <span className={styles.credentialDescription}>
-              — {credential.description}
+              — {credential.service_description}
             </span>
           )}
         </div>
@@ -465,19 +221,17 @@ const CredentialAccordion = ({ credential, index, isOpen, onToggle }: any) => {
       <div
         className={`${styles.credentialAccordionContent} ${isOpen ? styles.open : ""}`}
       >
-        {isOpen && existingFields.length > 0 && (
+        {isOpen && displayFields.length > 0 && (
           <div className={styles.credentialFields}>
-            {existingFields.map((field) => (
-              <div key={field.key} className={styles.credentialRow}>
-                <span className={styles.credLabel}>{field.label}</span>
-                <code className={styles.credValue}>
-                  {credential[field.key]}
-                </code>
+            {displayFields.map(([key, value]) => (
+              <div key={key} className={styles.credentialRow}>
+                <span className={styles.credLabel}>{key.replace(/_/g, " ").toUpperCase()}</span>
+                <code className={styles.credValue}>{String(value)}</code>
               </div>
             ))}
           </div>
         )}
-        {isOpen && existingFields.length === 0 && (
+        {isOpen && displayFields.length === 0 && (
           <div className={styles.noExtraFields}>No additional fields</div>
         )}
       </div>
@@ -486,7 +240,12 @@ const CredentialAccordion = ({ credential, index, isOpen, onToggle }: any) => {
 };
 
 // ---------- Main Workspace ----------
-const Workspace = () => {
+interface WorkspaceProps {
+  userId?: string;
+}
+
+const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
+  const { userId: paramUserId } = useParams<{ userId: string }>();
   const [projects, setProjects] = useState<Project[]>([]);
   const [expandedProjectId, setExpandedId] = useState<string | null>(null);
   const [selectedEnv, setSelectedEnv] = useState<{
@@ -496,50 +255,123 @@ const Workspace = () => {
   const [selectedService, setSelectedSvc] = useState<Service | null>(null);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
-  const [instanceType, setInstanceType] = useState<"sandbox" | "live">(
-    "sandbox",
-  );
-  const [openAccordions, setOpenAccordions] = useState<{
-    [k: number]: boolean;
-  }>({});
+  const [error, setError] = useState<string | null>(null);
+  const [instanceType, setInstanceType] = useState<"sandbox" | "live">("sandbox");
+  const [openAccordions, setOpenAccordions] = useState<{ [k: number]: boolean }>({});
+  const [tokensMap, setTokensMap] = useState<Record<string, EnvToken>>({});
+
+  // ✅ Fixed: get user ID from JWT token (payload has "id")
+  const getUserId = (): string => {
+    if (propUserId) return propUserId;
+    if (paramUserId) return paramUserId;
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload.id) return payload.id;   // matches your JWT structure
+      } catch (e) {
+        console.error("Failed to decode token", e);
+      }
+    }
+    // Fallback – use a stored ID if you have one
+    const storedId = localStorage.getItem("id");
+    if (storedId) return storedId;
+    return "";
+  };
 
   useEffect(() => {
-    setTimeout(() => {
-      setProjects(projectsData);
-      if (projectsData.length > 0) {
-        const first = projectsData[0];
-        const firstEnv = first.environments[0];
-        setExpandedId(first.public_id);
-        setSelectedEnv({ project: first, environment: firstEnv });
-        setSelectedSvc(firstEnv.services[0] || null);
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const id = getUserId();
+        if (!id) {
+          throw new Error("User ID not found. Please log in.");
+        }
+        console.log("Fetching projects for user ID:", id);
+        const response: ApiResponse = await userAssignProjectEnv(id);
+        console.log("API response:", response);
+
+        if (response?.success && Array.isArray(response.data)) {
+          const transformedProjects: Project[] = response.data.map((apiProject: ApiProject) => ({
+            public_id: apiProject.public_id,
+            project_name: apiProject.project_name,
+            environments: apiProject.environments.map((apiEnv: ApiEnvironment) => ({
+              public_id: apiEnv.public_id,
+              environment_name: apiEnv.environment_name,
+              services: apiEnv.services.map((apiService: ApiService) => ({
+                id: apiService.id,
+                name: apiService.service_name,
+                sandbox: apiService.sandbox || [],
+                live: apiService.live || [],
+              })),
+              apiKeys: apiEnv.api_keys || [],
+            })),
+          }));
+          setProjects(transformedProjects);
+
+          const tokenMap: Record<string, EnvToken> = {};
+          response.data.forEach((apiProject: ApiProject) => {
+            apiProject.environments.forEach((apiEnv: ApiEnvironment) => {
+              const envId = apiEnv.public_id;
+              (apiEnv.api_keys || []).forEach((key: ApiKey) => {
+                const mode = key.mode.toLowerCase() as "sandbox" | "live";
+                const isGenerated = key.token_status === "Generated" && !key.is_expired;
+                tokenMap[`${envId}_${mode}`] = {
+                  isGenerated,
+                  expiresAt: key.expiry_date,
+                  remainingDays: key.remaining_days,
+                };
+              });
+              if (!tokenMap[`${envId}_sandbox`]) tokenMap[`${envId}_sandbox`] = { isGenerated: false, expiresAt: null };
+              if (!tokenMap[`${envId}_live`]) tokenMap[`${envId}_live`] = { isGenerated: false, expiresAt: null };
+            });
+          });
+          setTokensMap(tokenMap);
+
+          if (transformedProjects.length > 0) {
+            const firstProject = transformedProjects[0];
+            const firstEnv = firstProject.environments[0];
+            if (firstEnv) {
+              setExpandedId(firstProject.public_id);
+              setSelectedEnv({ project: firstProject, environment: firstEnv });
+              setSelectedSvc(firstEnv.services[0] || null);
+            }
+          }
+        } else {
+          setError(response?.message || "Invalid response format from server");
+        }
+      } catch (err: unknown) {
+        console.error("API error:", err);
+        const errorMessage = err instanceof Error ? err.message : "Failed to load projects. Please try again.";
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    }, 500);
-  }, []);
+    };
+    fetchData();
+  }, [propUserId, paramUserId]);
 
-  const toggleProject = (id: string) =>
-    setExpandedId((p) => (p === id ? null : id));
-
+  // Handlers (unchanged)
+  const toggleProject = (id: string) => setExpandedId((p) => (p === id ? null : id));
   const selectEnvironment = (project: Project, env: Environment) => {
     setSelectedEnv({ project, environment: env });
     setSelectedSvc(env.services[0] || null);
     setInstanceType("sandbox");
     setOpenAccordions({});
   };
-
   const selectService = (svc: Service) => {
     setSelectedSvc(svc);
     setInstanceType("sandbox");
     setOpenAccordions({});
   };
-
-  const toggleAccordion = (i: number) =>
-    setOpenAccordions((p) => ({ ...p, [i]: !p[i] }));
+  const toggleAccordion = (i: number) => setOpenAccordions((p) => ({ ...p, [i]: !p[i] }));
 
   const filteredProjects = projects.filter((p) =>
-    p.project_name.toLowerCase().includes(search.toLowerCase()),
+    p.project_name.toLowerCase().includes(search.toLowerCase())
   );
 
+  // Loading state
   if (loading) {
     return (
       <div style={{ display: "flex", height: "100vh", width: "100%", background: "#f4f7fb" }}>
@@ -573,27 +405,27 @@ const Workspace = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div className={styles.globalEmptyState}>
+        <img src={workspaceIllustration} alt="Error" />
+        <p>{error}</p>
+      </div>
+    );
+  }
+
   if (projects.length === 0) {
     return (
       <div className={styles.globalEmptyState}>
         <img src={workspaceIllustration} alt="No data" />
-        <p>
-          No projects have been assigned to you yet. Please contact your
-          administrator for access.
-        </p>
+        <p>No projects have been assigned to you yet. Please contact your administrator for access.</p>
       </div>
     );
   }
 
   const envId = selectedEnv?.environment.public_id ?? "";
-  const sandboxData = environmentTokens[envId]?.sandbox ?? {
-    isGenerated: false,
-    expiresAt: null,
-  };
-  const liveData = environmentTokens[envId]?.live ?? {
-    isGenerated: false,
-    expiresAt: null,
-  };
+  const sandboxToken = tokensMap[`${envId}_sandbox`] ?? { isGenerated: false, expiresAt: null };
+  const liveToken = tokensMap[`${envId}_live`] ?? { isGenerated: false, expiresAt: null };
   const sandboxCount = selectedService?.sandbox.length ?? 0;
   const liveCount = selectedService?.live.length ?? 0;
   const credentials = selectedService
@@ -604,7 +436,6 @@ const Workspace = () => {
 
   return (
     <div className={styles.container}>
-      {/* SIDEBAR */}
       <aside className={styles.sidebar}>
         <div className={styles.search}>
           <Search size={15} />
@@ -630,35 +461,20 @@ const Workspace = () => {
                     className={`${styles.projectTitle} ${isExpanded ? styles.expanded : ""}`}
                     onClick={() => toggleProject(project.public_id)}
                   >
-                    {isExpanded ? (
-                      <FolderOpenDot size={18} />
-                    ) : (
-                      <FolderClosedIcon size={18} />
-                    )}
+                    {isExpanded ? <FolderOpenDot size={18} /> : <FolderClosedIcon size={18} />}
                     <span title={project.project_name}>{project.project_name}</span>
-                    {isExpanded ? (
-                      <ChevronDown size={15} />
-                    ) : (
-                      <ChevronRight size={15} />
-                    )}
+                    {isExpanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
                   </button>
-                  <div
-                    className={`${styles.environments} ${isExpanded ? styles.open : ""}`}
-                  >
+                  <div className={`${styles.environments} ${isExpanded ? styles.open : ""}`}>
                     <div className={styles.environmentsInner}>
                       {project.environments.length === 0 ? (
-                        <div className={styles.noEnvironmentsMessage}>
-                          No environments
-                        </div>
+                        <div className={styles.noEnvironmentsMessage}>No environments</div>
                       ) : (
                         project.environments.map((env) => (
                           <button
                             key={env.public_id}
                             className={`${styles.envButton} ${
-                              selectedEnv?.environment.public_id ===
-                              env.public_id
-                                ? styles.activeEnv
-                                : ""
+                              selectedEnv?.environment.public_id === env.public_id ? styles.activeEnv : ""
                             }`}
                             onClick={() => selectEnvironment(project, env)}
                           >
@@ -676,24 +492,19 @@ const Workspace = () => {
         </div>
       </aside>
 
-      {/* MAIN AREA */}
       <div className={styles.mainArea}>
         <div className={styles.topbar}>
           <div className={styles.breadcrumb}>
             <span>{selectedEnv?.project.project_name || "No project"}</span>
             <ChevronRight size={12} />
-            <span className={styles.activeBreadcrumb}>
-              {selectedEnv?.environment.environment_name || "No environment"}
-            </span>
+            <span className={styles.activeBreadcrumb}>{selectedEnv?.environment.environment_name || "No environment"}</span>
             <ChevronRight size={12} />
             <span>{selectedService?.name || "No service"}</span>
           </div>
           <div className={styles.divider} />
           <div className={styles.serviceScroll}>
             {selectedEnv?.environment.services.length === 0 ? (
-              <div className={styles.noServicesMessage}>
-                No services in this environment
-              </div>
+              <div className={styles.noServicesMessage}>No services in this environment</div>
             ) : (
               selectedEnv?.environment.services.map((svc) => (
                 <button
@@ -720,16 +531,13 @@ const Workspace = () => {
               <InstanceSelector
                 instanceType={instanceType}
                 onInstanceChange={setInstanceType}
-                sandboxToken={sandboxData}
-                liveToken={liveData}
+                sandboxToken={sandboxToken}
+                liveToken={liveToken}
                 sandboxCount={sandboxCount}
                 liveCount={liveCount}
               />
-
               {credentials.length === 0 ? (
-                <div className={styles.noCredentials}>
-                  No credentials found for this instance
-                </div>
+                <div className={styles.noCredentials}>No credentials found for this instance</div>
               ) : (
                 credentials.map((cred, idx) => (
                   <CredentialAccordion

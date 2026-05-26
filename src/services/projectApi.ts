@@ -203,3 +203,9 @@ export const regenerateApiKey = (id: string) =>
 
 export const deleteApiKey = (id: string) =>
   api.delete(`/token/delete-api-key/${id}`);
+
+export const userAssignProjectEnv = async (id: string) => {
+  console.log("id", id);
+  const response = await api.get(`/users/user-assigned-projects/${id}`);
+  return response?.data;
+};
