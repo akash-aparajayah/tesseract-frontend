@@ -72,6 +72,45 @@ export const getEnvironmentsByProjectId = async (projectId: string) => {
   return response.data; // This is { success: true, data: [...] }
 };
 
+export const updateEnvironment = async (
+  id: string,
+  payload: {
+    environment_name: string;
+  }
+) => {
+  const res = await api.patch(
+    `/project/update-environment/${id}`,
+    payload
+  );
+
+  return res.data;
+};
+
+export const cloneEnvironment = async (
+  id: string,
+  payload: {
+    environment_name: string;
+  }
+) => {
+  const res = await api.post(
+    `/project/clone-environment/${id}`,
+    payload
+  );
+
+  return res.data;
+};
+
+export const deleteEnvironment = async (
+  id: string
+) => {
+
+  const res = await api.delete(
+    `/project/delete-environment/${id}`
+  );
+
+  return res.data;
+};
+
 /* ========================================================
    SERVICE APIs (Project View)
 ======================================================== */

@@ -8,7 +8,7 @@ import {
 import noDataImg from "../assets/illustration/No data.gif";
 import errorImg from "../assets/illustration/error.svg";
 import { useToast } from "../hooks/useToast";
-import { createProject, getProjects, updateProjectStatus, } from "../services/projectApi";
+import { createProject, getProjects, updateProjectStatus, updateProject, deleteProject, getProjectById } from "../services/projectApi";
 import SkeletonLoader from "@/components/common/SkeletonLoader";
 
 interface Project {
@@ -18,7 +18,7 @@ interface Project {
   status: "active" | "inactive";
   created: string;
   services: string[];
-  logo?: string;
+  image_url?: string;
   updatedAt?: string;
   updatedBy?: string;
   sms_config?: any;
@@ -56,6 +56,7 @@ export default function ProjectDashboard() {
   });
   const [createImagePreview, setCreateImagePreview] = useState("");
   const [createTouched, setCreateTouched] = useState({ project_name: false });
+  const [projectNameExists, setProjectNameExists] = useState(false);
   const [isFormDirty, setIsFormDirty] = useState(false);
   const createFileRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -69,7 +70,7 @@ export default function ProjectDashboard() {
     project_name: "",
     project_description: "",
     status: "active" as "active" | "inactive",
-    logo: "",
+    image_url: "",
   });
   const [editImagePreview, setEditImagePreview] = useState("");
   const [editTouched, setEditTouched] = useState({ project_name: false });
@@ -79,6 +80,18 @@ export default function ProjectDashboard() {
   useEffect(() => {
     fetchProjects();
   }, []);
+
+  useEffect(() => {
+    const exists = projects.some(
+      (p) =>
+        p.name.trim().toLowerCase() ===
+        createForm.project_name.trim().toLowerCase()
+    );
+
+    setProjectNameExists(
+      createForm.project_name.trim().length > 0 && exists
+    );
+  }, [createForm.project_name, projects]);
 
   const fetchProjects = async () => {
     try {
@@ -98,7 +111,7 @@ export default function ProjectDashboard() {
           status: project.is_active ? "active" : "inactive", // ✅ is_active
           created: project.created_at || "",               // ✅ created_at
           services: project.services || [],
-          logo: project.image_url || "",
+          image_url: project.image_url || "",
           sms_config: {},
           email_config: {},
           whatsapp_config: {},
@@ -122,30 +135,7 @@ export default function ProjectDashboard() {
 
 
 
-  useEffect(() => {
-    const handleProjectUpdate = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      const updatedProject = customEvent.detail;
-      setProjects(prevProjects =>
-        prevProjects.map(p =>
-          p.id === updatedProject.id
-            ? {
-              ...p,
-              name: updatedProject.name,
-              description: updatedProject.description,
-              status: updatedProject.status,
-              logo: updatedProject.logo,
-              services: updatedProject.services,
-              updatedAt: updatedProject.updatedAt,
-              updatedBy: updatedProject.updatedBy
-            }
-            : p
-        )
-      );
-    };
-    window.addEventListener('projectUpdated', handleProjectUpdate);
-    return () => window.removeEventListener('projectUpdated', handleProjectUpdate);
-  }, []);
+
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -178,6 +168,11 @@ export default function ProjectDashboard() {
       return;
     }
 
+    if (projectNameExists) {
+      showToast("Project name already exists", "error");
+      return;
+    }
+
     setIsSubmitting(true);
 
     const payload = {
@@ -191,15 +186,35 @@ export default function ProjectDashboard() {
       const res = await createProject(payload);
       console.log("Full API Response:", res);
 
-      // Extract project ID from response
-      const projectId =
-        res?.data?.data?.project?.id ||
-        res?.data?.data?.id ||
-        res?.data?.data?.project_id ||
-        res?.data?.project?.id ||
-        res?.data?.id;
+      const createdProject =
+        res?.data?.data?.project ||
+        res?.data?.data ||
+        res?.data;
 
-      console.log("Extracted projectId:", projectId);
+      console.log("Created Project:", createdProject);
+      console.log("FULL RESPONSE:", res.data);
+
+      const projectsRes = await getProjects();
+      console.log("GET PROJECTS RESPONSE:", projectsRes);
+      console.log("GET PROJECTS RESPONSE DATA:", projectsRes?.data);
+      const projects = projectsRes?.data || [];
+      console.log("PROJECTS ARRAY:", projects);
+      const latestProject = projects.find(
+        (p: any) =>
+          p.project_name?.trim().toLowerCase() ===
+          createForm.project_name.trim().toLowerCase()
+      );
+
+      const projectPublicId = latestProject?.public_id;
+      console.log("MATCHED PROJECT:", latestProject);
+      console.log("PROJECT PUBLIC ID:", projectPublicId);
+
+      console.log("LATEST PROJECT:", latestProject);
+
+      if (!projectPublicId) {
+        showToast("Failed to get project public_id", "error");
+        return;
+      }
 
       if (res?.data?.success) {
         showToast("Project created successfully!", "success");
@@ -212,19 +227,16 @@ export default function ProjectDashboard() {
         resetCreateForm();
 
         // Navigate to project view
-        if (projectId) {
-          setTimeout(() => {
-            navigate(`/dashboard/project/${projectId}/view`);
-          }, 500);
-        } else {
-          showToast("Project created but could not retrieve ID", "error");
-        }
+        setTimeout(() => {
+          navigate(`/dashboard/project/${projectPublicId}/view`);
+        }, 500);
       } else {
         showToast(
           res?.data?.message || "Project creation failed",
           "error"
         );
       }
+
     } catch (error: unknown) {
       const message =
         error instanceof Error
@@ -238,49 +250,38 @@ export default function ProjectDashboard() {
 
   // Handle edit submit
   const handleEditSubmit = async () => {
+    if (!editingProject) return;
+
     if (!editForm.project_name.trim()) {
       setEditTouched({ project_name: true });
       showToast("Project name is required", "error");
       return;
     }
 
-    if (!editingProject) return;
-
     setIsSubmitting(true);
 
-    const updatedProject = {
-      ...editingProject,
-      name: editForm.project_name.trim(),
-      description: editForm.project_description.trim(),
-      status: editForm.status,
-      logo: editImagePreview || editForm.logo,
-      updatedAt: new Date().toISOString().split('T')[0],
-      updatedBy: "Current User",
-    };
-
     try {
-      localStorage.setItem(`project_${editingProject.id}`, JSON.stringify(updatedProject));
-      localStorage.setItem('currentProject', JSON.stringify(updatedProject));
+      const payload = {
+        project_name: editForm.project_name.trim(),
+        project_description: editForm.project_description.trim(),
+        image_url: editImagePreview || null,
+        isActive: editForm.status === "active",
+      };
 
-      const allProjects = JSON.parse(localStorage.getItem('allProjects') || '[]');
-      const updatedAllProjects = allProjects.map((p: any) =>
-        String(p.id) === String(editingProject.id) ? updatedProject : p
-      );
-      localStorage.setItem('allProjects', JSON.stringify(updatedAllProjects));
+      await updateProject(editingProject.id, payload);
 
-      // Update local state
-      setProjects(prev =>
-        prev.map(p => p.id === editingProject.id ? updatedProject : p)
-      );
+      showToast("Project updated successfully", "success");
 
-      window.dispatchEvent(new CustomEvent('projectUpdated', { detail: updatedProject }));
-
-      showToast("Project updated successfully!", "success");
       setShowEditPanel(false);
       setEditingProject(null);
-      setIsFormDirty(false);
-    } catch (error) {
-      showToast(error instanceof Error ? error.message : "Error updating project", "error");
+
+      await fetchProjects();
+
+    } catch (error: any) {
+      showToast(
+        error?.response?.data?.message || "Failed to update project",
+        "error"
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -290,18 +291,44 @@ export default function ProjectDashboard() {
   const handleOpenCreate = () => setShowCreatePanel(true);
 
   // Open edit panel
-  const handleOpenEdit = (project: Project) => {
-    setEditingProject(project);
-    setEditForm({
-      project_name: project.name,
-      project_description: project.description || "",
-      status: project.status,
-      logo: project.logo || "",
-    });
-    setEditImagePreview(project.logo || "");
-    setEditTouched({ project_name: false });
-    setIsFormDirty(false);
-    setShowEditPanel(true);
+  const handleOpenEdit = async (project: Project) => {
+    try {
+      const res = await getProjectById(project.id);
+
+      const projectData = res.data || res;
+
+      const formattedProject = {
+        id: projectData.public_id,
+        name: projectData.project_name,
+        description: projectData.project_description || "",
+        status: (projectData.is_active ? "active" : "inactive") as "active" | "inactive",
+        created: projectData.created_at || "",
+        image_url: projectData.image_url || "",
+        services: projectData.services || [],
+      };
+
+      setEditingProject(formattedProject);
+
+      setEditForm({
+        project_name: formattedProject.name,
+        project_description: formattedProject.description,
+        status: formattedProject.status,
+        image_url: formattedProject.image_url || "",
+      });
+
+      setEditImagePreview(formattedProject.image_url || "");
+
+      setEditTouched({ project_name: false });
+
+      setIsFormDirty(false);
+
+      setShowEditPanel(true);
+
+    } catch (error) {
+      console.error(error);
+
+      showToast("Failed to load project details", "error");
+    }
   };
 
   // Close with discard check
@@ -366,19 +393,28 @@ export default function ProjectDashboard() {
     }
   };
 
-  // const handleDelete = async (id: string) => {
-  //   try {
-  //     await deleteProject(id.toString());
-  //     showToast("Project deleted", "success");
-  //     await fetchProjects(); // Refresh list
-  //     setShowDeleteConfirm(null);
-  //   } catch (error: any) {
-  //     showToast(error?.response?.data?.message || "Failed to delete project", "error");
-  //   }
-  // };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteProject(id);
+
+      showToast("Project deleted successfully", "success");
+
+      setShowDeleteConfirm(null);
+
+      await fetchProjects();
+
+    } catch (error: any) {
+      showToast(
+        error?.response?.data?.message || "Failed to delete project",
+        "error"
+      );
+    }
+  };
+
 
   const handleView = (project: Project) => {
-    localStorage.setItem('currentProject', JSON.stringify(project));
+
     navigate(`/dashboard/project/${project.id}/view`);
   };
 
@@ -648,7 +684,7 @@ export default function ProjectDashboard() {
 
 
       {/* DELETE CONFIRMATION MODAL */}
-      {/* {showDeleteConfirm !== null && (
+      {showDeleteConfirm !== null && (
         <div className={styles["modal-overlay"]} onClick={() => setShowDeleteConfirm(null)}>
           <div className={`${styles["modal-container"]} ${styles["delete-confirm"]}`} onClick={e => e.stopPropagation()}>
             <h3>Delete Project</h3>
@@ -659,7 +695,7 @@ export default function ProjectDashboard() {
             </div>
           </div>
         </div>
-      )} */}
+      )}
 
 
       {/* ========== CREATE PROJECT PANEL ========== */}
@@ -691,7 +727,9 @@ export default function ProjectDashboard() {
                   onBlur={() => setCreateTouched(prev => ({ ...prev, project_name: true }))}
                 />
                 {createTouched.project_name && !createForm.project_name.trim() && (
-                  <span className={styles["error-msg"]}>Project name is required</span>
+                  <span className={styles["error-msg"]}>
+                    Project name is required
+                  </span>
                 )}
               </div>
 
@@ -845,7 +883,7 @@ export default function ProjectDashboard() {
                       <button type="button" className={styles["remove-img-btn"]} onClick={(e) => {
                         e.stopPropagation();
                         setEditImagePreview("");
-                        setEditForm(prev => ({ ...prev, logo: "" }));
+                        setEditForm(prev => ({ ...prev, image_url: "" }));
                       }}>
                         ✕ Remove
                       </button>

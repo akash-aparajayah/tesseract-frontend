@@ -5,16 +5,16 @@ import styles from "../styles/ProjectView.module.css";
 import {
   Pencil, FolderOpen, Plus, MessageSquare, Mail, MessageCircle, Plug, Check,
   Save, X, ChevronDown, Server, Copy, Trash2, Globe, Rocket, Wrench,
-  Search, Lock, AlertTriangle, Home, Monitor, Key,
+  Search, AlertTriangle, Home, Monitor, Key,
   User, UserMinus, UserPlus, AlertCircle, Calendar, Clock, RefreshCw, Filter, Settings
 } from 'lucide-react';
 import { useToast } from "../hooks/useToast";
 import "../styles/Toast.css"
 import noDataIllustration from '../assets/illustration/No data.gif';
 import {
-  getAllServices, getProvidersByServiceId, createProvider, getProviderById, deleteProvider,
-  createEnvironment, getEnvironmentsByProjectId, getProvidersByEnvironmentId, updateProvider, getAssignedUnassignedEmployees, assignUnassignEmployee,
-  getApiKeys, regenerateApiKey, createApiKey, deleteApiKey
+  getAllServices, getProvidersByServiceId, createProvider, getProviderById, deleteProvider, getProjectById,
+  createEnvironment, getEnvironmentsByProjectId, updateEnvironment, cloneEnvironment, deleteEnvironment, getProvidersByEnvironmentId, updateProvider, getAssignedUnassignedEmployees, assignUnassignEmployee,
+  getApiKeys, regenerateApiKey, createApiKey, deleteApiKey, updateProject
 } from "../services/projectApi";
 import SkeletonLoader from "@/components/common/SkeletonLoader";
 import FormValidation, { hasErrors } from "@/components/common/FormValidation";
@@ -28,7 +28,7 @@ interface Project {
   createdBy?: string;
   updatedAt?: string;
   updatedBy?: string;
-  logo?: string;
+  image_url?: string;
   services: string[];
 }
 
@@ -95,6 +95,7 @@ export default function ProjectView() {
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
   const [expandedProviders, setExpandedProviders] = useState<Record<string, boolean>>({});
   const [openEnvMenu, setOpenEnvMenu] = useState<string | null>(null);
+  const [selectedMenuEnv, setSelectedMenuEnv] = useState<any | null>(null);
   const [menuPosition, setMenuPosition] = useState({
     top: 0,
     left: 0,
@@ -119,9 +120,11 @@ export default function ProjectView() {
   const [editingEnvName] = useState("");
   const [editEnvName, setEditEnvName] = useState("");
   const [showDeleteEnvModal, setShowDeleteEnvModal] = useState(false);
+  const [deleteEnvId, setDeleteEnvId] = useState<string | null>(null);
   const [deletingEnvName, setDeletingEnvName] = useState("");
   const [blockedDeleteCounts, setBlockedDeleteCounts] = useState({ sms: 0, email: 0, whatsapp: 0 });
   const [showCloneModal, setShowCloneModal] = useState(false);
+  const [cloneSourceEnv, setCloneSourceEnv] = useState<string | null>(null);
   const [cloneTarget, setCloneTarget] = useState("");
   const [cloneCustomMode, setCloneCustomMode] = useState(false);
   const [cloneCustomName, setCloneCustomName] = useState("");
@@ -237,43 +240,53 @@ export default function ProjectView() {
     }
   }, [activeService, serviceData]);
 
-  const startEditingTab = (env: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setEditingTabEnv(env);
-    setEditingTabName(env);
+  const startEditingTab = (
+    env: any,
+    e?: React.MouseEvent
+  ) => {
+    e?.stopPropagation();
+
+    setEditingTabEnv(env.public_id);
+    setEditingTabName(env.environment_name);
   };
 
-  const saveTabEdit = () => {
-    if (!editingTabEnv || !editingTabName.trim() || editingTabName === editingTabEnv) {
+  const saveTabEdit = async () => {
+    if (!editingTabEnv || !editingTabName.trim()) {
       setEditingTabEnv(null);
       setEditingTabName("");
       return;
     }
-    handleEditEnvironmentInline(editingTabEnv, editingTabName.trim());
-    setEditingTabEnv(null);
-    setEditingTabName("");
+
+    try {
+      await updateEnvironment(editingTabEnv, {
+        environment_name: editingTabName.trim(),
+      });
+
+      // REFRESH FROM BACKEND
+      await loadEnvironments();
+
+      showToast(
+        "Environment updated successfully",
+        "success"
+      );
+
+      setEditingTabEnv(null);
+      setEditingTabName("");
+
+    } catch (error: any) {
+      console.error(error);
+
+      showToast(
+        error?.response?.data?.message ||
+        "Failed to update environment",
+        "error"
+      );
+    }
   };
 
   const cancelTabEdit = () => {
     setEditingTabEnv(null);
     setEditingTabName("");
-  };
-
-  const handleEditEnvironmentInline = (oldName: string, newName: string) => {
-    if (!projectId) return;
-    ['sms', 'email', 'whatsapp'].forEach(s => {
-      const oldKey = `env_${projectId}_${oldName}_${s}_providers`;
-      const newKey = `env_${projectId}_${newName}_${s}_providers`;
-      const data = localStorage.getItem(oldKey);
-      if (data) { localStorage.setItem(newKey, data); localStorage.removeItem(oldKey); }
-    });
-    const savedOrder = JSON.parse(localStorage.getItem(`env_order_${projectId}`) || "[]");
-    const updatedOrder = savedOrder.map((env: string) => env === oldName ? newName : env);
-    localStorage.setItem(`env_order_${projectId}`, JSON.stringify(updatedOrder));
-    setEnvironments(updatedOrder);
-    if (selectedEnv === oldName) setSelectedEnv(newName);
-
-    showToast(`Environment renamed to "${newName}"`, "success");
   };
 
   const loadProvidersForEnv = (env: any) => {
@@ -453,20 +466,14 @@ export default function ProjectView() {
 
     setEnvironmentsLoading(true);
 
-    const cached = localStorage.getItem(`env_data_${projectId}`);
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (parsed.length > 0) {
-          setEnvironments(parsed);
-          setSelectedEnv(parsed[0].public_id);
-        }
-      } catch { }
-    }
+
 
     try {
       const res = await getEnvironmentsByProjectId(projectId);
-      const envs = res?.data || [];
+      console.log("Environments response:", res);
+      const envs = res?.data?.data || res?.data || [];
+      console.log("Envs array:", envs, "Length:", envs.length);
+
       if (envs.length > 0) {
         setEnvironments(envs);
 
@@ -501,10 +508,12 @@ export default function ProjectView() {
           }
         }
       }
+      // If envs.length === 0, the finally block will still run and set loading to false
     } catch (error) {
       console.error("Failed to load environments", error);
+      setEnvironmentsLoading(false);
+      setPageLoading(false);
     } finally {
-      // Only set loading to false AFTER everything is loaded
       setEnvironmentsLoading(false);
       setPageLoading(false);
     }
@@ -576,7 +585,7 @@ export default function ProjectView() {
       // Reload environments from backend
       const res = await getEnvironmentsByProjectId(projectId);
 
-      const envs = res?.data || [];
+      const envs = res?.data?.data || res?.data || [];
 
       setEnvironments(envs);
 
@@ -589,8 +598,9 @@ export default function ProjectView() {
         setSelectedEnv(newEnv.public_id);
 
         // IMPORTANT
-        await loadProvidersForEnv(newEnv);
-        await fetchUsersForEnvironment(newEnv);
+        if (newEnv) {
+          setSelectedEnv(newEnv.public_id);
+        }
       }
 
       // Reset modal states
@@ -608,75 +618,107 @@ export default function ProjectView() {
     }
   };
 
-  const handleEditEnvironment = () => {
-    if (!projectId || !editEnvName.trim()) return;
-    ['sms', 'email', 'whatsapp'].forEach(s => {
-      const oldKey = `env_${projectId}_${editingEnvName}_${s}_providers`;
-      const newKey = `env_${projectId}_${editEnvName}_${s}_providers`;
-      const data = localStorage.getItem(oldKey);
-      if (data) { localStorage.setItem(newKey, data); localStorage.removeItem(oldKey); }
-    });
-    const savedOrder = JSON.parse(localStorage.getItem(`env_order_${projectId}`) || "[]");
-    const updatedOrder = savedOrder.map((env: string) => env === editingEnvName ? editEnvName : env);
-    localStorage.setItem(`env_order_${projectId}`, JSON.stringify(updatedOrder));
-    setEnvironments(updatedOrder);
-    if (selectedEnv === editingEnvName) setSelectedEnv(editEnvName);
-    setShowEditEnvModal(false);
+  const handleDeleteEnvironment = async () => {
 
-    showToast(`Environment renamed to "${editEnvName}"`, "success");
-  };
-
-  const handleDeleteEnvironment = () => {
-    if (!projectId) return;
-    ['sms', 'email', 'whatsapp'].forEach(s => localStorage.removeItem(`env_${projectId}_${deletingEnvName}_${s}_providers`));
-    deleteToken(projectId, deletingEnvName, 'Sandbox');
-    deleteToken(projectId, deletingEnvName, 'Live');
-    setAllTokens(prev => {
-      const updated = { ...prev };
-      delete updated[`${deletingEnvName}_SANDBOX`];
-      delete updated[`${deletingEnvName}_LIVE`];
-      return updated;
-    });
-    const updated = environments.filter(e => e !== deletingEnvName);
-    localStorage.setItem(
-      `env_order_${projectId}`,
-      JSON.stringify(updated)
-    );
-    setEnvironments(updated);
-    if (selectedEnv === deletingEnvName) setSelectedEnv(updated[0] || "");
-    setShowDeleteEnvModal(false);
-    showToast(`Environment "${deletingEnvName}" deleted`, "error");
-  };
-
-  const executeClone = () => {
-    if (!projectId) return;
-    let target = cloneCustomMode && cloneCustomName.trim() ? cloneCustomName.trim() : cloneTarget;
-    if (!target) return;
-
-    if (environments.some((e: any) => e.environment_name?.toLowerCase() === target.toLowerCase())) {
-      showToast(`Environment "${target}" already exists`, "error");
+    if (!deleteEnvId) {
       return;
     }
 
-    ['sms', 'email', 'whatsapp'].forEach(s => {
-      const src = localStorage.getItem(`env_${projectId}_${selectedEnv}_${s}_providers`);
-      if (src) localStorage.setItem(`env_${projectId}_${target}_${s}_providers`, JSON.stringify({ ...JSON.parse(src), timestamp: Date.now() }));
-    });
+    try {
 
-    const savedOrder = JSON.parse(localStorage.getItem(`env_order_${projectId}`) || "[]");
-    if (!savedOrder.includes(target)) {
-      const updatedOrder = [...savedOrder, target];
-      localStorage.setItem(`env_order_${projectId}`, JSON.stringify(updatedOrder));
+      await deleteEnvironment(deleteEnvId);
+
+      await loadEnvironments();
+
+      showToast(
+        "Environment deleted successfully",
+        "success"
+      );
+
+      setShowDeleteEnvModal(false)
+
+      setOpenEnvMenu(null);
+
+      // RESET SELECTED ENV IF DELETED
+      if (selectedEnv === deleteEnvId) {
+
+        const remainingEnvs =
+          environments.filter(
+            (env) => env.public_id !== deleteEnvId
+          );
+
+        if (remainingEnvs.length > 0) {
+          setSelectedEnv(
+            remainingEnvs[0].public_id
+          );
+        } else {
+          setSelectedEnv("");
+        }
+      }
+
+    } catch (error: any) {
+
+      console.error(error);
+
+      showToast(
+        error?.response?.data?.message ||
+        "Failed to delete environment",
+        "error"
+      );
+    }
+  };
+
+  const executeClone = async () => {
+
+    if (!cloneSourceEnv || !projectId) {
+      return;
     }
 
-    loadEnvironments();
-    setSelectedEnv(target);
-    loadProviders();
-    setShowCloneModal(false);
-    setCloneTarget("");
-    setCloneCustomName("");
-    setCloneCustomMode(false);
-    showToast(`Environment cloned to "${target}"`, "success");
+    const cloneName =
+      cloneCustomMode
+        ? cloneCustomName.trim()
+        : cloneTarget;
+
+    if (!cloneName) {
+      showToast(
+        "Please enter environment name",
+        "error"
+      );
+      return;
+    }
+
+    try {
+
+      await cloneEnvironment(
+        cloneSourceEnv!,
+        {
+          environment_name: cloneName,
+        }
+      );
+
+      await loadEnvironments();
+
+      showToast(
+        "Environment cloned successfully",
+        "success"
+      );
+
+      setShowCloneModal(false);
+
+      setCloneTarget("");
+      setCloneCustomMode(false);
+      setCloneCustomName("");
+
+    } catch (error: any) {
+
+      console.error(error);
+
+      showToast(
+        error?.response?.data?.message ||
+        "Failed to clone environment",
+        "error"
+      );
+    }
   };
 
   const saveProvider = async () => {
@@ -871,11 +913,16 @@ export default function ProjectView() {
       const tokenData = res.data.data;
 
       const token: ApiToken = {
-        id: tokenData.public_id || "",
+        id:
+          tokenData.public_id ||
+          currentToken?.id ||
+          "",
         name: tokenData.note || "",
         token: tokenData.key || tokenData.api_key || "",
         projectId: projectId || "",
-        environmentName: selectedEnv,
+        environmentName:
+          environments.find((e: any) => e.public_id === selectedEnv)
+            ?.environment_name || "",
         mode: tokenData.mode || "",
         created: tokenData.created_at || "",
         expires: tokenData.expires_at || "",
@@ -926,9 +973,21 @@ export default function ProjectView() {
     try {
       await deleteApiKey(currentToken.id);
 
+      const env = environments.find(
+        (e: any) => e.public_id === selectedEnv
+      );
+
+      const envName =
+        env?.environment_name || "";
+
       setAllTokens((prev) => {
+
         const updated = { ...prev };
-        delete updated[`${selectedEnv}_${currentToken.mode}`];
+
+        delete updated[
+          `${envName}_${currentToken.mode}`
+        ];
+
         return updated;
       });
 
@@ -1095,32 +1154,55 @@ export default function ProjectView() {
 
   // ---- EFFECTS ----
   useEffect(() => {
-    const loadProject = () => {
-      setPageLoading(true);
-      const allProjects = JSON.parse(localStorage.getItem('allProjects') || '[]');
-      const currentProject = JSON.parse(localStorage.getItem('currentProject') || 'null');
-      let projectToLoad = allProjects.find((p: any) => String(p.id) === String(projectId));
-      if (!projectToLoad && currentProject && String(currentProject.id) === String(projectId)) projectToLoad = currentProject;
-      if (projectToLoad) {
-        setProject({ ...projectToLoad, createdBy: projectToLoad.createdBy || "Admin User", updatedAt: projectToLoad.updatedAt || projectToLoad.created, updatedBy: projectToLoad.updatedBy || "Admin User" });
-        setEditForm({ name: projectToLoad.name || "", description: projectToLoad.description || "", status: projectToLoad.status || "active" });
-        // REMOVED setPageLoading(false) from here - let loadEnvironments handle it
-      } else {
-        setPageLoading(false);
-        setEnvironmentsLoading(false);
+    const initialize = async () => {
+      if (!projectId) return;
+
+      try {
+        setPageLoading(true);
+
+        // IMPORTANT
+        // allow skeleton to render first
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        // LOAD PROJECT FROM BACKEND
+        const projectRes = await getProjectById(projectId);
+
+        const projectData = projectRes?.data;
+
+        console.log("PROJECT DATA:", projectData);
+
+        setProject({
+          id: projectData.public_id || projectData.id,
+          name: projectData.project_name || "",
+          description: projectData.project_description || "",
+          status: projectData.is_active ? "active" : "inactive",
+          created: projectData.created_at || "",
+          services: projectData.services || [],
+          image_url: projectData.image_url || "",
+          createdBy: projectData.createdBy || "Admin User",
+          updatedAt: projectData.updated_at || projectData.created_at,
+          updatedBy: projectData.updatedBy || "Admin User",
+        });
+
+        setEditForm({
+          name: projectData.project_name || "",
+          description: projectData.project_description || "",
+          status: projectData.is_active ? "active" : "inactive",
+        });
+
+        // LOAD ENVIRONMENTS
+        loadEnvironments();
+
+      } catch (error) {
+        console.error("Failed to initialize project view:", error);
+      } finally {
+        setTimeout(() => {
+          setPageLoading(false);
+        }, 1800);
       }
     };
-    loadProject();
-    loadEnvironments();
 
-    const handleProjectUpdate = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      const updatedProject = customEvent.detail;
-      setProject({ ...updatedProject, createdBy: updatedProject.createdBy || "Admin User", updatedAt: updatedProject.updatedAt || updatedProject.created, updatedBy: updatedProject.updatedBy || "Admin User" });
-      setEditForm({ name: updatedProject.name || "", description: updatedProject.description || "", status: updatedProject.status || "active" });
-    };
-    window.addEventListener('projectUpdated', handleProjectUpdate);
-    return () => window.removeEventListener('projectUpdated', handleProjectUpdate);
+    initialize();
   }, [projectId]);
 
   useEffect(() => {
@@ -1136,14 +1218,14 @@ export default function ProjectView() {
   }, []);
 
   useEffect(() => {
-    if (serviceData && selectedEnv && activeMainTab === 'environments') {
+    if (serviceData && selectedEnv && activeMainTab === 'environments' && environments.length > 0) {
       const env = environments.find((e: any) => e.public_id === selectedEnv);
       if (env) {
         loadProvidersForEnv(env);
         loadAllServiceCounts(selectedEnv);
       }
     }
-  }, [serviceData, selectedEnv]);
+  }, [serviceData, selectedEnv, environments.length]);
 
   // Dropdown click outside - FIXED with ref
   useEffect(() => {
@@ -1288,19 +1370,60 @@ export default function ProjectView() {
     return icons[name] || <Wrench size={16} />;
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!project || !editForm.name.trim()) return;
-    const updatedProject = { ...project, name: editForm.name.trim(), description: editForm.description.trim(), status: editForm.status, updatedAt: new Date().toISOString().split('T')[0], updatedBy: "Current User" };
-    setProject(updatedProject); setIsEditing(false);
-    localStorage.setItem(`project_${project.id}`, JSON.stringify(updatedProject));
-    localStorage.setItem('currentProject', JSON.stringify(updatedProject));
-    const allProjects = JSON.parse(localStorage.getItem('allProjects') || '[]');
-    localStorage.setItem('allProjects', JSON.stringify(allProjects.map((p: Project) => String(p.id) === String(project.id) ? updatedProject : p)));
-    window.dispatchEvent(new CustomEvent('projectUpdated', { detail: updatedProject }));
+
+    try {
+      const payload = {
+        project_name: editForm.name.trim(),
+        project_description: editForm.description.trim(),
+        isActive: editForm.status === "active",
+        image_url: project.image_url || "",
+      };
+
+      const res = await updateProject(project.id, payload);
+
+      const updatedProject = res.data || res;
+
+      setProject({
+        id: updatedProject.public_id || updatedProject.id,
+        name: updatedProject.project_name,
+        description: updatedProject.project_description || "",
+        status: updatedProject.is_active ? "active" : "inactive",
+        created: updatedProject.created_at || "",
+        services: updatedProject.services || [],
+        image_url: updatedProject.image_url || "",
+        createdBy: project.createdBy,
+        updatedAt: updatedProject.updated_at || updatedProject.created_at,
+        updatedBy: project.updatedBy,
+      });
+
+      setEditForm({
+        name: updatedProject.project_name || "",
+        description: updatedProject.project_description || "",
+        status: updatedProject.is_active ? "active" : "inactive",
+      });
+
+      setIsEditing(false);
+
+      showToast("Project updated successfully", "success");
+
+    } catch (error: any) {
+      console.error(error);
+
+      showToast(
+        error?.response?.data?.message ||
+        "Failed to update project",
+        "error"
+      );
+    }
   };
+
   const handleCancelEdit = () => { if (project) setEditForm({ name: project.name, description: project.description || "", status: project.status }); setIsEditing(false); };
 
-  if (pageLoading || !project) {
+  console.log("SKELETON CHECK - pageLoading:", pageLoading, "!project:", !project, "environmentsLoading:", environmentsLoading);
+  if (pageLoading) {
+
     return (
       <div className={styles["project-view-page"]}>
         <div style={{ padding: "24px" }}>
@@ -1327,13 +1450,24 @@ export default function ProjectView() {
               <div className={styles["logo-edit-wrapper"]}>
                 <label className={styles["logo-label"]}>Logo</label>
                 <label className={`${styles["project-logo"]} ${styles["editable-logo"]}`} style={{ cursor: 'pointer' }}>
-                  {project.logo ? <img src={project.logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '20px' }} /> : <FolderOpen size={40} color="#818cf8" />}
-                  <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" onChange={(e) => { const file = e.target.files?.[0]; if (file) { const reader = new FileReader(); reader.onloadend = () => { setProject({ ...project, logo: reader.result as string }); }; reader.readAsDataURL(file); } }} style={{ display: 'none' }} />
+                  {project?.image_url ? <img src={project?.image_url} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '20px' }} /> : <FolderOpen size={40} color="#818cf8" />}
+                  <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" onChange={(e) => {
+                    const file = e.target.files?.[0]; if (file) {
+                      const reader = new FileReader(); reader.onloadend = () => {
+                        if (!project) return;
+
+                        setProject({
+                          ...project,
+                          image_url: reader.result as string,
+                        });
+                      }; reader.readAsDataURL(file);
+                    }
+                  }} style={{ display: 'none' }} />
                   <div className={styles["image-overlay-edit"]}><span>Change</span></div>
                 </label>
               </div>
             ) : (
-              <div className={styles["project-logo"]}>{project.logo ? <img src={project.logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '20px' }} /> : <FolderOpen size={40} color="#818cf8" />}</div>
+              <div className={styles["project-logo"]}>{project?.image_url ? <img src={project?.image_url} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '20px' }} /> : <FolderOpen size={40} color="#818cf8" />}</div>
             )}
           </div>
           <div className={styles["project-info-section"]}>
@@ -1366,14 +1500,14 @@ export default function ProjectView() {
               <>
                 <div className={styles["project-name-row"]}>
                   <div className={styles["project-name-left"]}>
-                    <h2>{project.name}</h2>
-                    <span className={`${styles["status-badge"]} ${styles[project.status]}`}>{project.status === "active" ? "Active" : "Inactive"}</span>
+                    <h2>{project?.name}</h2>
+                    <span className={`${styles["status-badge"]} ${styles[project?.status || "inactive"]}`}>{project?.status === "active" ? "Active" : "Inactive"}</span>
                     <button className={styles["edit-icon-inline"]} onClick={() => setIsEditing(true)}><Pencil size={15} /></button>
                   </div>
-                  <span className={styles["project-date-text"]}>Created on: {project.created}</span>
+                  <span className={styles["project-date-text"]}>Created on: {project?.created}</span>
                 </div>
-                <p className={styles["project-id-text"]}>#{project.id}</p>
-                {project.description && <p className={styles["project-desc-text"]}>{project.description}</p>}
+                <p className={styles["project-id-text"]}>#{project?.id}</p>
+                {project?.description && <p className={styles["project-desc-text"]}>{project?.description}</p>}
 
 
               </>
@@ -1466,6 +1600,11 @@ export default function ProjectView() {
                       <div
                         key={env.public_id}
                         className={`${styles["env-tab"]} ${selectedEnv === env.public_id ? styles["active"] : ''}`}
+
+                        onDoubleClick={(e) => {
+                          startEditingTab(env, e);
+                        }}
+
                         onClick={(e) => {
                           if ((e.target as HTMLElement).closest(`.${styles["env-menu-trigger"]}`)) {
                             return;
@@ -1473,11 +1612,13 @@ export default function ProjectView() {
 
                           console.log("Clicked env:", env.environment_name);
                           console.log("env.public_id:", env.public_id);
+
                           loadAllServiceCounts(env.public_id);
                           setSelectedEnv(env.public_id);
                           setProviders([]);
                           setAvailableUsers([]);
-                          setAssignedUsers([]); setCustomEnvInput("");   // ← ADD THIS
+                          setAssignedUsers([]);
+                          setCustomEnvInput("");
                           setNewEnvName("");
 
                           console.log("Calling loadProviders...");
@@ -1486,7 +1627,7 @@ export default function ProjectView() {
                           fetchUsersForEnvironment(env);
                         }}
                       >
-                        {editingTabEnv === env ? (
+                        {editingTabEnv === env.public_id ? (
                           <div className={styles["env-tab-editing"]} onClick={e => e.stopPropagation()}>
                             <input
                               type="text"
@@ -1547,47 +1688,80 @@ export default function ProjectView() {
                                     top: menuPosition.top,
                                     left: menuPosition.left,
                                   }} ref={envMenuRef} data-env-menu>
-                                  <button onClick={() => {
-                                    setEditingTabEnv(env);
-                                    setEditingTabName(env.environment_name);
-                                    setOpenEnvMenu(null);
-                                  }}>
-                                    <Pencil size={14} /><span className={styles["env-menu-tooltip"]}>Edit</span>
-                                  </button>
-                                  <button onClick={() => {
-                                    setShowCloneModal(false);
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
 
-                                    setTimeout(() => {
-                                      setCloneTarget("");
-                                      setCloneCustomMode(false);
-                                      setCloneCustomName("");
+                                      startEditingTab(env);
 
-                                      setShowCloneModal(true);
                                       setOpenEnvMenu(null);
-                                    }, 0);
-                                  }}>
+                                    }}
+                                  >
+                                    <Pencil size={14} />
+                                    <span className={styles["env-menu-tooltip"]}>
+                                      Edit
+                                    </span>
+                                  </button>
+                                  <button type="button"
+                                    onClick={() => {
+
+                                      setCloneSourceEnv(env.public_id);
+
+                                      setShowCloneModal(false);
+
+                                      setTimeout(() => {
+
+                                        setCloneTarget("");
+                                        setCloneCustomMode(false);
+                                        setCloneCustomName("");
+
+                                        setShowCloneModal(true);
+
+                                        setOpenEnvMenu(null);
+
+                                      }, 0);
+                                    }}
+                                  >
                                     <Copy size={14} /><span className={styles["env-menu-tooltip"]}>Clone</span>
                                   </button>
-                                  <button onClick={() => {
-                                    setShowUserPanel(true);
-                                    setOpenEnvMenu(null);
-                                    setUserSearchTerm("");
-                                    setSelectedUsers(new Set());
-                                    setSelectAll(false);
-                                    setUserFilter("all");
-                                    setAvailableUsers([]);
-                                    setAssignedUsers([]);
-                                    const env = environments.find((e: any) => e.public_id === selectedEnv);
-                                    fetchUsersForEnvironment(env);
-                                  }}>
-                                    <User size={14} /><span className={styles["env-menu-tooltip"]}>Users</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+
+                                      setSelectedEnv(env.public_id);
+
+                                      setShowUserPanel(true);
+
+                                      setOpenEnvMenu(null);
+
+                                      setUserSearchTerm("");
+
+                                      setSelectedUsers(new Set());
+
+                                      setSelectAll(false);
+
+                                      setUserFilter("all");
+
+                                      setAvailableUsers([]);
+
+                                      setAssignedUsers([]);
+
+                                      fetchUsersForEnvironment(env);
+                                    }}
+                                  >
+                                    <User size={14} />
+                                    <span className={styles["env-menu-tooltip"]}>
+                                      Users
+                                    </span>
                                   </button>
-                                  <button onClick={() => {
+                                  <button type="button" onClick={() => {
                                     const sms = JSON.parse(localStorage.getItem(`env_${projectId}_${env.environment_name}_sms_providers`) || '{"providers":[]}');
                                     const email = JSON.parse(localStorage.getItem(`env_${projectId}_${env.environment_name}_email_providers`) || '{"providers":[]}');
                                     const wa = JSON.parse(localStorage.getItem(`env_${projectId}_${env.environment_name}_whatsapp_providers`) || '{"providers":[]}');
                                     const total = (sms.providers?.length || 0) + (email.providers?.length || 0) + (wa.providers?.length || 0);
                                     setDeletingEnvName(env.environment_name);
+                                    setDeleteEnvId(env.public_id);
                                     if (total > 0) setBlockedDeleteCounts({ sms: sms.providers?.length || 0, email: email.providers?.length || 0, whatsapp: wa.providers?.length || 0 });
                                     else setShowDeleteEnvModal(true);
                                     setOpenEnvMenu(null);
@@ -1679,8 +1853,10 @@ export default function ProjectView() {
                     <Rocket size={14} />
                     <span className={styles["token-status-name"]}>Live</span>
                     {(() => {
-                      const liveToken = allTokens[`${selectedEnv}_LIVE`];
+                      const envName = environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv;
+                      const liveToken = allTokens[`${envName}_LIVE`];
                       if (liveToken) {
+                        console.log("RENDERING - pageLoading:", pageLoading, "environmentsLoading:", environmentsLoading, "project:", !!project);
                         return (
                           <span className={styles["token-status-expiry"]}>
                             {liveToken.name} · {calculateExpiryLabel(liveToken.expires, liveToken.expiresInDays)}
@@ -2127,7 +2303,12 @@ export default function ProjectView() {
               <div className={styles["pc-modal-body"]}><div className={styles["pc-form-group"]}><label>Environment Name</label><input type="text" className={styles["pc-input"]} value={editEnvName} onChange={(e) => setEditEnvName(e.target.value)} /></div></div>
               <div className={styles["pc-modal-footer"]}>
                 <button className={styles["pc-btn-cancel"]} onClick={() => { setPendingCloseAction(() => () => setShowEditEnvModal(false)); setShowUnsavedModal(true); }}>Cancel</button>
-                <button className={styles["pc-btn-primary"]} onClick={handleEditEnvironment}>Save Changes</button>
+                <button className={styles["pc-btn-primary"]} onClick={(e) => {
+                  if (!selectedMenuEnv) return;
+
+                  startEditingTab(selectedMenuEnv, e);
+                  setOpenEnvMenu(null);
+                }}>Save Changes</button>
               </div>
             </div>
           </div>
@@ -2276,7 +2457,13 @@ export default function ProjectView() {
       {
         showDeleteEnvModal && (
           <div className={styles["pc-modal-overlay"]} onClick={() => setShowDeleteEnvModal(false)}>
-            <div className={`${styles["pc-modal"]} ${styles["pc-modal-small"]}`} onClick={e => e.stopPropagation()}><div className={styles["pc-modal-header"]}><h3>Delete Environment</h3><button className={styles["pc-modal-close"]} onClick={() => setShowDeleteEnvModal(false)}><X size={18} /></button></div><div className={styles["pc-modal-body"]}><p>Are you sure you want to delete <strong>{deletingEnvName}</strong> environment?</p><div className={styles["warning-text"]}>This action cannot be undone.</div></div><div className={styles["pc-modal-footer"]}><button className={styles["pc-btn-cancel"]} onClick={() => setShowDeleteEnvModal(false)}>Cancel</button><button className={styles["pc-btn-danger"]} onClick={handleDeleteEnvironment}>Delete</button></div></div>
+            <div className={`${styles["pc-modal"]} ${styles["pc-modal-small"]}`} onClick={e => e.stopPropagation()}><div className={styles["pc-modal-header"]}><h3>Delete Environment</h3><button className={styles["pc-modal-close"]} onClick={() => setShowDeleteEnvModal(false)}><X size={18} /></button></div><div className={styles["pc-modal-body"]}><p>Are you sure you want to delete <strong>{deletingEnvName}</strong> environment?</p><div className={styles["warning-text"]}>This action cannot be undone.</div></div><div className={styles["pc-modal-footer"]}><button className={styles["pc-btn-cancel"]} onClick={() => setShowDeleteEnvModal(false)}>Cancel</button><button
+              type="button"
+              className={styles["pc-btn-danger"]}
+              onClick={handleDeleteEnvironment}
+            >
+              Delete Environment
+            </button></div></div>
           </div>
         )
       }
@@ -2457,12 +2644,12 @@ export default function ProjectView() {
         )
       }
 
-      {/* User Assignment Panel */}
+      {/* User Assignment Panel*/}
       {
         showUserPanel && (
           <div className={styles["user-panel-overlay"]} onClick={() => setShowUserPanel(false)}>
             <div className={styles["user-panel"]} onClick={e => e.stopPropagation()}>
-              <div className={styles["user-panel-header"]}><div className={styles["user-panel-header-left"]}><User size={20} /><h3>Manage Users - {environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv}</h3><h3>Manage Users - {selectedEnv}</h3></div><button className={styles["user-panel-close"]} onClick={() => setShowUserPanel(false)}><X size={20} /></button></div>
+              <div className={styles["user-panel-header"]}><div className={styles["user-panel-header-left"]}><User size={20} /><h3>Manage Users - {environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv}</h3></div><button className={styles["user-panel-close"]} onClick={() => setShowUserPanel(false)}><X size={20} /></button></div>
               <div className={styles["user-panel-tabs"]}>
                 <button className={`${styles["user-panel-tab"]} ${userActiveTab === 'assign' ? styles["active"] : ''}`} onClick={() => { setUserActiveTab('assign'); setSelectedUsers(new Set()); setSelectAll(false); }}><UserPlus size={14} /> Unassigned Users</button>
                 <button className={`${styles["user-panel-tab"]} ${userActiveTab === 'unassign' ? styles["active"] : ''}`} onClick={() => { setUserActiveTab('unassign'); setSelectedUsers(new Set()); setSelectAll(false); }}><UserMinus size={14} /> Assigned Users</button>
