@@ -74,13 +74,15 @@ export const getEnvironmentsByProjectId = async (projectId: string) => {
 
 export const updateEnvironment = async (
   id: string,
-  payload: {
-    environment_name: string;
+  data: {
+    environment_name?: string;
+    is_active?: boolean;
   }
 ) => {
+
   const res = await api.patch(
     `/project/update-environment/${id}`,
-    payload
+    data
   );
 
   return res.data;

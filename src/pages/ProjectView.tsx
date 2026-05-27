@@ -74,12 +74,41 @@ const formatDate = (dateString: string): string => {
   if (dateString === "Never") return "Never";
   return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
-const calculateExpiryLabel = (expires: string, expiresInDays: number | null): string => {
-  if (expiresInDays === null) return "Never expires";
-  const now = new Date(); const expiry = new Date(expires);
-  const diffDays = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-  if (diffDays <= 0) return "Expired";
-  if (diffDays === 1) return "1 day left";
+const calculateExpiryLabel = (
+  expires: string,
+  expiresInDays: number | null
+): string => {
+
+  if (
+    expiresInDays === null ||
+    !expires ||
+    expires === "Never"
+  ) {
+    return "Never expires";
+  }
+
+  const expiry = new Date(expires);
+
+  // IMPORTANT FIX
+  if (isNaN(expiry.getTime())) {
+    return "Never expires";
+  }
+
+  const now = new Date();
+
+  const diffDays = Math.ceil(
+    (expiry.getTime() - now.getTime()) /
+    (1000 * 60 * 60 * 24)
+  );
+
+  if (diffDays <= 0) {
+    return "Expired";
+  }
+
+  if (diffDays === 1) {
+    return "1 day left";
+  }
+
   return `${diffDays} days left`;
 };
 
@@ -89,6 +118,7 @@ export default function ProjectView() {
   const [project, setProject] = useState<Project | null>(null);
   const [environments, setEnvironments] = useState<any[]>([]);
   const [selectedEnv, setSelectedEnv] = useState("");
+
   const [activeService, setActiveService] = useState<string>("SMS");
   const [providers, setProviders] = useState<Provider[]>([]);
   const [serviceProviderCounts, setServiceProviderCounts] = useState<Record<string, number>>({ SMS: 0, Email: 0, Whatsapp: 0 });
@@ -166,7 +196,6 @@ export default function ProjectView() {
   const [editingTabEnv, setEditingTabEnv] = useState<string | null>(null);
   const [editingTabName, setEditingTabName] = useState("");
   const [userFilterDropdownOpen, setUserFilterDropdownOpen] = useState(false);
-  const [envStatus, setEnvStatus] = useState<Record<string, "active" | "inactive">>({});
 
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [pendingStatusChange, setPendingStatusChange] = useState<{ env: string; newStatus: "active" | "inactive" } | null>(null);
@@ -250,6 +279,42 @@ export default function ProjectView() {
     setEditingTabName(env.environment_name);
   };
 
+  const handleEnvironmentStatusToggle = async (
+    env: any
+  ) => {
+
+    try {
+
+      await updateEnvironment(
+        env.public_id,
+        {
+          is_active: !env.is_active,
+        }
+      );
+
+      // REFRESH FROM BACKEND
+      await loadEnvironments();
+
+      showToast(
+        `Environment ${!env.is_active
+          ? "activated"
+          : "deactivated"
+        } successfully`,
+        "success"
+      );
+
+    } catch (error: any) {
+
+      console.error(error);
+
+      showToast(
+        error?.response?.data?.message ||
+        "Failed to update environment status",
+        "error"
+      );
+    }
+  };
+
   const saveTabEdit = async () => {
     if (!editingTabEnv || !editingTabName.trim()) {
       setEditingTabEnv(null);
@@ -289,26 +354,68 @@ export default function ProjectView() {
     setEditingTabName("");
   };
 
-  const loadProvidersForEnv = (env: any) => {
-    if (!projectId || !serviceData) return;
-    const service = serviceData.find((s: any) => s.name?.toLowerCase() === activeService?.toLowerCase());
-    if (!env?.public_id || !service?.public_id) return;
+  const loadProvidersForEnv = async (env: any) => {
 
-    getProvidersByEnvironmentId(env.public_id, service.public_id)
-      .then(res => {
-        const data = res.data || {};
-        const allProviders = [...(data.sandbox || []), ...(data.live || [])];
-        setProviders(allProviders.map((p: any) => ({
+    if (!projectId || !serviceData) return;
+
+    const service = serviceData.find(
+      (s: any) =>
+        s.name?.toLowerCase() ===
+        activeService?.toLowerCase()
+    );
+
+    if (
+      !env?.public_id ||
+      env?.is_deleted ||
+      !service?.public_id
+    ) {
+      return;
+    }
+
+    try {
+
+      const res = await getProvidersByEnvironmentId(
+        env.public_id,
+        service.public_id
+      );
+
+      const data = res.data || {};
+
+      const allProviders = [
+        ...(data.sandbox || []),
+        ...(data.live || []),
+      ];
+
+      setProviders(
+        allProviders.map((p: any) => ({
           id: p.public_id || p.id,
           name: p.provider_name || p.name,
-          fields: { ...(p.credentials || {}), mode: p.mode, endpoint: p.endpoint },
-        })));
-        setServiceProviderCounts(prev => ({
-          ...prev,
-          [activeService]: allProviders.length
-        }));
-      })
-      .catch(() => { });
+          fields: {
+            ...(p.credentials || {}),
+            mode: p.mode,
+            endpoint: p.endpoint,
+          },
+        }))
+      );
+
+      setServiceProviderCounts((prev) => ({
+        ...prev,
+        [activeService]: allProviders.length,
+      }));
+
+      return allProviders;
+
+    } catch (error) {
+
+      console.error(
+        "Failed to load providers",
+        error
+      );
+
+      setProviders([]);
+
+      return [];
+    }
   };
 
 
@@ -439,7 +546,7 @@ export default function ProjectView() {
           mode: token.mode || "",
           created: token.created_at || "",
           expires: token.expires_at || "",
-          expiresInDays: token.expires_in_days || null,
+          expiresInDays: token.expires_in_days ?? null,
           revealed: false,
         };
       });
@@ -620,41 +727,49 @@ export default function ProjectView() {
 
   const handleDeleteEnvironment = async () => {
 
-    if (!deleteEnvId) {
-      return;
-    }
+    if (!deleteEnvId) return;
 
     try {
 
       await deleteEnvironment(deleteEnvId);
 
-      await loadEnvironments();
+      const res =
+        await getEnvironmentsByProjectId(projectId!);
+
+      const envs =
+        res?.data?.data || res?.data || [];
+
+      setEnvironments(envs);
+
+      if (envs.length > 0) {
+
+        setSelectedEnv((prev) => {
+
+          const exists = envs.find(
+            (e: any) => e.public_id === prev
+          );
+
+          return exists
+            ? prev
+            : envs[0].public_id;
+        });
+
+      } else {
+
+        setSelectedEnv("");
+        setProviders([]);
+        setAvailableUsers([]);
+        setAssignedUsers([]);
+      }
 
       showToast(
         "Environment deleted successfully",
         "success"
       );
 
-      setShowDeleteEnvModal(false)
+      setShowDeleteEnvModal(false);
 
       setOpenEnvMenu(null);
-
-      // RESET SELECTED ENV IF DELETED
-      if (selectedEnv === deleteEnvId) {
-
-        const remainingEnvs =
-          environments.filter(
-            (env) => env.public_id !== deleteEnvId
-          );
-
-        if (remainingEnvs.length > 0) {
-          setSelectedEnv(
-            remainingEnvs[0].public_id
-          );
-        } else {
-          setSelectedEnv("");
-        }
-      }
 
     } catch (error: any) {
 
@@ -890,11 +1005,15 @@ export default function ProjectView() {
         expires_in_days:
           tokenExpiration === "never"
             ? null
-            : tokenExpiration === "7days"
+            : tokenExpiration === "7"
               ? 7
-              : tokenExpiration === "30days"
+              : tokenExpiration === "30"
                 ? 30
-                : Number(tokenCustomDays),
+                : tokenExpiration === "60"
+                  ? 60
+                  : tokenExpiration === "90"
+                    ? 90
+                    : Number(tokenCustomDays),
       };
 
       let res;
@@ -926,7 +1045,7 @@ export default function ProjectView() {
         mode: tokenData.mode || "",
         created: tokenData.created_at || "",
         expires: tokenData.expires_at || "",
-        expiresInDays: tokenData.expires_in_days || 0,
+        expiresInDays: tokenData.expires_in_days ?? 0,
         revealed: false,
       };
 
@@ -968,6 +1087,8 @@ export default function ProjectView() {
   };
 
   const handleTokenDelete = async () => {
+    console.log("CURRENT TOKEN:", currentToken);
+    console.log("CURRENT TOKEN ID:", currentToken?.id);
     if (!projectId || !selectedEnv || !currentToken?.mode) return;
 
     try {
@@ -1217,16 +1338,6 @@ export default function ProjectView() {
     fetchServices();
   }, []);
 
-  useEffect(() => {
-    if (serviceData && selectedEnv && activeMainTab === 'environments' && environments.length > 0) {
-      const env = environments.find((e: any) => e.public_id === selectedEnv);
-      if (env) {
-        loadProvidersForEnv(env);
-        loadAllServiceCounts(selectedEnv);
-      }
-    }
-  }, [serviceData, selectedEnv, environments.length]);
-
   // Dropdown click outside - FIXED with ref
   useEffect(() => {
     if (!dropdownOpen) return;
@@ -1263,9 +1374,8 @@ export default function ProjectView() {
 
 
   const loadAllServiceCounts = async (envPublicId: string) => {
+    if (!serviceData?.length) return;
     if (!serviceData || !envPublicId) return;
-
-    console.log("Loading counts for env:", envPublicId);
 
     const counts: Record<string, number> = {};
 
@@ -1275,22 +1385,14 @@ export default function ProjectView() {
         const data = res.data || {};
         const total = (data.sandbox?.length || 0) + (data.live?.length || 0);
         counts[service.name] = total;
-        console.log(`Count for ${service.name}:`, total);
+
       } catch (error) {
-        console.error(`Failed to get count for ${service.name}:`, error);
         counts[service.name] = 0;
       }
     }
 
-    console.log("Final counts:", counts);
     setServiceProviderCounts(counts);
   };
-
-  useEffect(() => {
-    if (selectedEnv && serviceData && activeMainTab === 'environments') {
-      loadAllServiceCounts(selectedEnv);
-    }
-  }, [selectedEnv, serviceData]);
 
 
   const loadApiKeys = async () => {
@@ -1325,7 +1427,7 @@ export default function ProjectView() {
           mode: token.mode || "",
           created: token.created_at || "",
           expires: token.expires_at || "",
-          expiresInDays: token.expires_in_days || null,
+          expiresInDays: token.expires_in_days ?? null,
           revealed: false,
         };
       });
@@ -1344,26 +1446,46 @@ export default function ProjectView() {
     }
   };
 
-
   useEffect(() => {
-    if (projectId && environments.length > 0) {
-      loadApiKeys();
+
+    if (
+      !selectedEnv ||
+      !serviceData ||
+      activeMainTab !== "environments"
+    ) {
+      return;
     }
-  }, [projectId]);
 
-  useEffect(() => { if (selectedEnv && activeMainTab === 'environments') loadProviders(); }, [selectedEnv, activeService, activeMainTab]);
-  useEffect(() => { if (selectedEnv && activeMainTab === 'environments') updateAllServiceCounts(); }, [selectedEnv, activeService, modeFilter, activeMainTab]);
+    const env = environments.find(
+      (e: any) => e.public_id === selectedEnv
+    );
 
+    if (!env || env.is_deleted) {
+      return;
+    }
 
-  useEffect(() => {
-    if (selectedEnv && activeMainTab === 'environments' && serviceData) {
-      const env = environments.find((e: any) => e.public_id === selectedEnv);
-      if (env) {
-        loadProvidersForEnv(env);
+    const loadEnvironmentData = async () => {
+
+      try {
+
+        await Promise.all([
+          loadProvidersForEnv(env),
+          loadAllServiceCounts(env.public_id),
+          fetchUsersForEnvironment(env),
+        ]);
+
+      } catch (error) {
+        console.error("Failed loading environment data", error);
       }
-    }
-  }, [selectedEnv, serviceData]);
+    };
 
+    loadEnvironmentData();
+
+  }, [
+    selectedEnv,
+    activeService,
+    activeMainTab,
+  ]);
 
   const getEnvIcon = (name: string): React.ReactNode => {
     const icons: Record<string, React.ReactNode> = { 'Local': <Home size={16} />, 'Dev': <Monitor size={16} />, 'Staging': <Rocket size={16} />, 'Live': <Globe size={16} /> };
@@ -1438,6 +1560,37 @@ export default function ProjectView() {
       </div>
     );
   }
+
+  const currentEnvironment = environments.find(
+    (env: any) => env.public_id === selectedEnv
+  );
+
+  const isEnvironmentInactive =
+    currentEnvironment?.is_active === false;
+
+  const getRemainingDays = (expires?: string) => {
+
+    if (!expires || expires === "Never") {
+      return null;
+    }
+
+    const expiryDate = new Date(expires);
+
+    // IMPORTANT FIX
+    if (isNaN(expiryDate.getTime())) {
+      return null;
+    }
+
+    const now = new Date();
+
+    const diff =
+      expiryDate.getTime() - now.getTime();
+
+    const days =
+      Math.ceil(diff / (1000 * 60 * 60 * 24));
+
+    return days;
+  };
 
   return (
     <div className={styles["project-view-page"]}>
@@ -1539,6 +1692,9 @@ export default function ProjectView() {
 
       {/* Content Section */}
       {activeMainTab === 'environments' ? (
+
+
+
         <div className={styles["environment-section-new"]}>
           {environmentsLoading ? (
             <div style={{ padding: "24px" }}>
@@ -1606,25 +1762,21 @@ export default function ProjectView() {
                         }}
 
                         onClick={(e) => {
+
                           if ((e.target as HTMLElement).closest(`.${styles["env-menu-trigger"]}`)) {
                             return;
                           }
 
                           console.log("Clicked env:", env.environment_name);
-                          console.log("env.public_id:", env.public_id);
 
-                          loadAllServiceCounts(env.public_id);
                           setSelectedEnv(env.public_id);
+
                           setProviders([]);
                           setAvailableUsers([]);
                           setAssignedUsers([]);
+
                           setCustomEnvInput("");
                           setNewEnvName("");
-
-                          console.log("Calling loadProviders...");
-
-                          loadProvidersForEnv(env);
-                          fetchUsersForEnvironment(env);
                         }}
                       >
                         {editingTabEnv === env.public_id ? (
@@ -1655,9 +1807,11 @@ export default function ProjectView() {
                                 className={styles["env-menu-trigger"]}
                                 data-env-menu
                                 onClick={(e) => {
+
                                   e.stopPropagation();
 
-                                  const rect = e.currentTarget.getBoundingClientRect();
+                                  const rect =
+                                    e.currentTarget.getBoundingClientRect();
 
                                   setMenuPosition({
                                     top: rect.bottom - 80,
@@ -1670,12 +1824,11 @@ export default function ProjectView() {
                                   setAvailableUsers([]);
                                   setAssignedUsers([]);
 
-                                  loadProvidersForEnv(env);
-                                  fetchUsersForEnvironment(env);
-
                                   setTimeout(() => {
                                     setOpenEnvMenu((prev) =>
-                                      prev === env.public_id ? null : env.public_id
+                                      prev === env.public_id
+                                        ? null
+                                        : env.public_id
                                     );
                                   }, 0);
                                 }}
@@ -1805,12 +1958,30 @@ export default function ProjectView() {
                     {(() => {
                       const envName = environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv;
                       const sandboxToken = allTokens[`${envName}_SANDBOX`];
-                      const isExpiring = sandboxToken?.expiresInDays != null && sandboxToken.expiresInDays <= 7;
+                      const remainingDays =
+                        getRemainingDays(sandboxToken?.expires);
+
+                      const isExpired =
+                        remainingDays !== null &&
+                        remainingDays <= 0;
+
+                      const isExpiring =
+                        remainingDays !== null &&
+                        remainingDays > 0 &&
+                        remainingDays <= 7;
                       if (sandboxToken) {
-                        return isExpiring ? (
-                          <span className={`${styles["token-status-dot"]} ${styles["expiring"]}`}></span>
+                        return isExpired ? (
+                          <span
+                            className={`${styles["token-status-dot"]} ${styles["inactive"]}`}
+                          ></span>
+                        ) : isExpiring ? (
+                          <span
+                            className={`${styles["token-status-dot"]} ${styles["expiring"]}`}
+                          ></span>
                         ) : (
-                          <span className={`${styles["token-status-dot"]} ${styles["active"]}`}></span>
+                          <span
+                            className={`${styles["token-status-dot"]} ${styles["active"]}`}
+                          ></span>
                         );
                       }
                       return <span className={`${styles["token-status-dot"]} ${styles["inactive"]}`}></span>;
@@ -1840,12 +2011,30 @@ export default function ProjectView() {
                     {(() => {
                       const envName = environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv;
                       const liveToken = allTokens[`${envName}_LIVE`];
-                      const isExpiring = liveToken?.expiresInDays != null && liveToken.expiresInDays <= 7;
+                      const remainingDays =
+                        getRemainingDays(liveToken?.expires);
+
+                      const isExpired =
+                        remainingDays !== null &&
+                        remainingDays <= 0;
+
+                      const isExpiring =
+                        remainingDays !== null &&
+                        remainingDays > 0 &&
+                        remainingDays <= 7;
                       if (liveToken) {
-                        return isExpiring ? (
-                          <span className={`${styles["token-status-dot"]} ${styles["expiring"]}`}></span>
+                        return isExpired ? (
+                          <span
+                            className={`${styles["token-status-dot"]} ${styles["inactive"]}`}
+                          ></span>
+                        ) : isExpiring ? (
+                          <span
+                            className={`${styles["token-status-dot"]} ${styles["expiring"]}`}
+                          ></span>
                         ) : (
-                          <span className={`${styles["token-status-dot"]} ${styles["active"]}`}></span>
+                          <span
+                            className={`${styles["token-status-dot"]} ${styles["active"]}`}
+                          ></span>
                         );
                       }
                       return <span className={`${styles["token-status-dot"]} ${styles["inactive"]}`}></span>;
@@ -1880,14 +2069,32 @@ export default function ProjectView() {
                       }</strong> Environment is:
                     </span>
                     <button
-                      className={`${styles["env-status-toggle"]} ${(envStatus[selectedEnv] || 'active') === 'active' ? styles["status-active"] : styles["status-inactive"]}`}
+                      className={`${styles["env-status-toggle"]} ${currentEnvironment?.is_active
+                        ? styles["status-active"]
+                        : styles["status-inactive"]
+                        }`}
                       onClick={() => {
-                        const newStatus = (envStatus[selectedEnv] || 'active') === 'active' ? 'inactive' : 'active';
-                        setPendingStatusChange({ env: selectedEnv, newStatus });
+
+                        if (!currentEnvironment) return;
+
+                        const newStatus =
+                          currentEnvironment.is_active
+                            ? "inactive"
+                            : "active";
+
+                        setPendingStatusChange({
+                          env: selectedEnv,
+                          newStatus,
+                        });
+
                         setShowStatusModal(true);
                       }}
                     >
-                      <span className={styles["toggle-text"]}>{(envStatus[selectedEnv] || 'active').toUpperCase()}</span>
+                      <span className={styles["toggle-text"]}>
+                        {currentEnvironment?.is_active
+                          ? "ACTIVE"
+                          : "INACTIVE"}
+                      </span>
                       <span className={styles["toggle-icon"]}>
                         <svg viewBox="0 0 24 24">
                           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -1905,200 +2112,228 @@ export default function ProjectView() {
 
 
                 {/* Services Sidebar + Providers Panel */}
-                <div className={styles["pc-main-content"]} style={{ padding: '0' }}>
-                  <div className={styles["pc-sidebar-wrapper"]} style={{ padding: '16px 0 16px 16px' }}>
-                    <div className={styles["pc-service-env-info"]}>
 
-                      <span>Services</span>
-                      <span className={styles["pc-separator-dash"]}>-</span>
-                      <span className={styles["pc-service-label"]}>{serviceData?.find((s: any) => s.slug?.toLowerCase() === activeService?.toLowerCase() || s.name?.toLowerCase() === activeService?.toLowerCase())?.name || activeService}</span>
+                <div className={styles["environmentSectionWrapper"]}>
 
+                  {isEnvironmentInactive && (
+                    <div className={styles["inactiveOverlay"]}>
+                      <AlertCircle size={24} />
 
+                      <div>
+                        <h4>Environment Inactive</h4>
+
+                        <p>
+                          Services and providers are disabled
+                          for this environment.
+                        </p>
+                      </div>
                     </div>
-                    <div className={styles["pc-sidebar"]}>
-                      {!serviceData ? (
-                        <SkeletonLoader variant="list" count={3} />
-                      ) : serviceData && serviceData.map((service: any) => (
-                        <div
-                          key={service.public_id}
-                          className={`${styles["pc-sidebar-item"]} ${activeService === service.name ? styles["active"] : ''}`}
-                          onClick={() => {
-                            setActiveService(service.name);
-                            setmodeFilter("Sandbox");
-                            setProviders([]);
+                  )}
 
-                            const env = environments.find((e: any) => e.public_id === selectedEnv);
-                            console.log("Clicked service:", service.name, "Env:", env?.environment_name);
+                  <div
+                    className={
+                      isEnvironmentInactive
+                        ? styles["environmentDisabled"]
+                        : ""
+                    }
+                  >
 
-                            if (env?.public_id && service?.public_id) {
-                              // First, update counts for ALL services
-                              loadAllServiceCounts(env.public_id);
+                    <div className={styles["pc-main-content"]} style={{ padding: '0' }}>
+                      <div className={styles["pc-sidebar-wrapper"]} style={{ padding: '16px 0 16px 16px' }}>
+                        <div className={styles["pc-service-env-info"]}>
 
-                              // Then load providers for the clicked service
-                              console.log("Fetching providers for service:", service.public_id, "env:", env.public_id);
+                          <span>Services</span>
+                          <span className={styles["pc-separator-dash"]}>-</span>
+                          <span className={styles["pc-service-label"]}>{serviceData?.find((s: any) => s.slug?.toLowerCase() === activeService?.toLowerCase() || s.name?.toLowerCase() === activeService?.toLowerCase())?.name || activeService}</span>
 
-                              setProvidersLoading(true);
-                              getProvidersByEnvironmentId(env.public_id, service.public_id)
-                                .then(res => {
-                                  console.log("Providers response:", res.data);
-                                  const data = res.data || {};
-                                  const allProviders = [...(data.sandbox || []), ...(data.live || [])];
-                                  const providerList = allProviders.map((p: any) => ({
-                                    id: p.public_id || p.id,
-                                    name: p.provider_name || p.name,
-                                    fields: { ...(p.credentials || {}), mode: p.mode, endpoint: p.endpoint },
-                                  }));
-                                  console.log("Setting providers:", providerList.length);
-                                  setProviders(providerList);
-                                  setServiceProviderCounts(prev => ({
-                                    ...prev,
-                                    [service.name]: providerList.length
-                                  }));
-                                })
-                                .catch((error) => {
-                                  console.error("Failed to load providers:", error);
-                                  setProviders([]);
-                                  setServiceProviderCounts(prev => ({ ...prev, [service.name]: 0 }));
-                                })
-                                .finally(() => {
-                                  setProvidersLoading(false);
-                                });
-                            }
-                          }}
-                          style={{
-                            borderLeftColor: activeService === service.name ? SERVICE_COLORS[service.name] : 'transparent',
-                            backgroundColor: activeService === service.name ? `${SERVICE_COLORS[service.name]}10` : 'transparent'
-                          }}
-                        >
-                          <span className={styles["pc-sidebar-icon"]}>{SERVICE_ICONS[service.name]}</span>
-                          <div className={styles["pc-sidebar-info"]}>
-                            <div className={styles["pc-sidebar-name"]}>{service.name}</div>
-                            <div className={styles["pc-sidebar-count"]}>
-                              {activeService === service.name ? providers.length : (() => {
-                                // Need to track counts per service separately
-                                return serviceProviderCounts[service.name] || 0;
-                              })()} providers
-                            </div>
-                          </div>
-                          {activeService === service.name && (
-                            <div className={styles["pc-sidebar-active-indicator"]} style={{ background: SERVICE_COLORS[service.name] }} />
-                          )}
+
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className={styles["pc-sidebar-wrapper"]} style={{ flex: 1, padding: '16px 16px 16px 0' }}>
-                    <h4 className={`${styles["pc-column-label"]} ${styles["pc-column-label-providers"]}`}>Providers</h4>
-                    <div className={styles["pc-providers-panel"]} style={{ borderTop: `3px solid ${SERVICE_COLORS[activeService]}` }}>
-                      <div className={styles["pc-panel-header"]}>
-                        <div className={styles["pc-panel-title"]}>{SERVICE_ICONS[activeService]}<h3>{activeService} Providers</h3></div>
-                        <button
-                          className={styles["pc-add-btn"]}
-                          style={{ backgroundColor: SERVICE_COLORS[activeService] }}
-                          onClick={async () => {
-                            setEditingProvider(null);
-                            setSelectedProvider("");
-                            setProviderFields({});
-                            setShowAddProviderModal(true);
-                          }}
-                        >
-                          <Plus size={14} /> Add Provider
-                        </button>
-                      </div>
-                      <div className={styles["pc-mode-tabs"]}>
-                        <button className={`${styles["pc-mode-tab"]} ${modeFilter === 'Sandbox' ? `${styles["active"]} ${styles["sandbox"]}` : ''}`} onClick={() => setmodeFilter('Sandbox')}>
-                          <Wrench size={14} /> Sandbox <span className={styles["pc-mode-tab-count"]}>{providers.filter(p => p.fields.mode === 'Sandbox').length}</span>
-                        </button>
-                        <button className={`${styles["pc-mode-tab"]} ${modeFilter === 'Live' ? `${styles["active"]} ${styles["live"]}` : ''}`} onClick={() => setmodeFilter('Live')}>
-                          <Rocket size={14} /> Live <span className={styles["pc-mode-tab-count"]}>{providers.filter(p => p.fields.mode === 'Live').length}</span>
-                        </button>
-                      </div>
-                      <div className={styles["pc-providers-list"]}>
-                        {providersLoading && (
-                          <div style={{ textAlign: 'center', padding: '12px', opacity: 0.7 }}>
-                            <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> Loading...
-                          </div>
-                        )}
-                        {!providersLoading && filteredProviders.length === 0 ? (
-                          <div className={styles["pc-empty-state"]}>
-                            <Server size={44} color="#cbd5e1" />
-                            <h4>No {modeFilter} {activeService} providers yet</h4>
-                            <p>Add your first {modeFilter.toLowerCase()} provider to start configuring services</p>
-                          </div>
-                        ) : (
-                          filteredProviders.map((provider, index) => (
-                            <div key={provider.id} className={`${styles["pc-provider-card"]} ${dragIndex === index ? styles["dragging"] : ''}`} style={{ borderLeftColor: SERVICE_COLORS[activeService] }}
-                              draggable onDragStart={(e) => handleDragStart(e, index)} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, index)} onDragEnd={handleDragEnd}>
-                              <div className={styles["pc-provider-card-header"]} onClick={() => setExpandedProviders(prev => ({ ...prev, [provider.id]: !prev[provider.id] }))}>
-                                <div className={styles["pc-provider-title"]}>
-                                  <Plug size={14} /><span>{provider.name.replace(/_/g, ' ')}</span>
-                                  {index === 0 && <span className={styles["pc-primary-badge"]}><Rocket size={10} /> Primary</span>}
-                                  <span className={styles["pc-configured-badge"]} style={{ background: `${SERVICE_COLORS[activeService]}15`, color: SERVICE_COLORS[activeService] }}><Check size={10} /> Configured</span>
-                                </div>
-                                <div className={styles["pc-provider-header-right"]}>
-                                  <div className={styles["pc-endpoint-inline"]}>
-                                    <code className={styles["pc-endpoint-text"]}>
-                                      Endpoint URL : {provider.fields.endpoint || "------------------"}
-                                    </code>
-                                    {provider.fields.endpoint && (
-                                      <button
-                                        className={styles["pc-endpoint-copy-mini"]}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          navigator.clipboard.writeText(provider.fields.endpoint);
-                                          showToast("Endpoint copied!", "success");
-                                        }}
-                                      >
-                                        <Copy size={12} />
-                                      </button>
-                                    )}
-                                  </div>
-                                  <div className={styles["pc-provider-actions"]} onClick={(e) => e.stopPropagation()}>
-                                    <button
-                                      className={styles["pc-edit-btn"]}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setEditingProvider(provider);
-                                        setSelectedProvider(provider.name);
-                                        setProviderFields({ ...provider.fields });
-                                        setShowAddProviderModal(true);
-                                      }}
-                                    >
-                                      <Pencil size={14} />
-                                    </button>
-                                    <button className={styles["pc-delete-btn"]} onClick={() => setShowDeleteProviderModal({ id: provider.id, name: provider.name })}><Trash2 size={14} /></button>
-                                  </div>
+                        <div className={styles["pc-sidebar"]}>
+                          {!serviceData ? (
+                            <SkeletonLoader variant="list" count={3} />
+                          ) : serviceData && serviceData.map((service: any) => (
+                            <div
+                              key={service.public_id}
+                              className={`${styles["pc-sidebar-item"]} ${activeService === service.name ? styles["active"] : ''}`}
+                              onClick={() => {
+                                setActiveService(service.name);
+                                setmodeFilter("Sandbox");
+                                setProviders([]);
+
+                                const env = environments.find((e: any) => e.public_id === selectedEnv);
+                                console.log("Clicked service:", service.name, "Env:", env?.environment_name);
+
+                                if (env?.public_id && service?.public_id) {
+                                  // First, update counts for ALL services
+                                  loadAllServiceCounts(env.public_id);
+
+                                  // Then load providers for the clicked service
+                                  console.log("Fetching providers for service:", service.public_id, "env:", env.public_id);
+
+                                  setProvidersLoading(true);
+                                  getProvidersByEnvironmentId(env.public_id, service.public_id)
+                                    .then(res => {
+                                      console.log("Providers response:", res.data);
+                                      const data = res.data || {};
+                                      const allProviders = [...(data.sandbox || []), ...(data.live || [])];
+                                      const providerList = allProviders.map((p: any) => ({
+                                        id: p.public_id || p.id,
+                                        name: p.provider_name || p.name,
+                                        fields: { ...(p.credentials || {}), mode: p.mode, endpoint: p.endpoint },
+                                      }));
+                                      console.log("Setting providers:", providerList.length);
+                                      setProviders(providerList);
+                                      setServiceProviderCounts(prev => ({
+                                        ...prev,
+                                        [service.name]: providerList.length
+                                      }));
+                                    })
+                                    .catch((error) => {
+                                      console.error("Failed to load providers:", error);
+                                      setProviders([]);
+                                      setServiceProviderCounts(prev => ({ ...prev, [service.name]: 0 }));
+                                    })
+                                    .finally(() => {
+                                      setProvidersLoading(false);
+                                    });
+                                }
+                              }}
+                              style={{
+                                borderLeftColor: activeService === service.name ? SERVICE_COLORS[service.name] : 'transparent',
+                                backgroundColor: activeService === service.name ? `${SERVICE_COLORS[service.name]}10` : 'transparent'
+                              }}
+                            >
+                              <span className={styles["pc-sidebar-icon"]}>{SERVICE_ICONS[service.name]}</span>
+                              <div className={styles["pc-sidebar-info"]}>
+                                <div className={styles["pc-sidebar-name"]}>{service.name}</div>
+                                <div className={styles["pc-sidebar-count"]}>
+                                  {activeService === service.name ? providers.length : (() => {
+                                    // Need to track counts per service separately
+                                    return serviceProviderCounts[service.name] || 0;
+                                  })()} providers
                                 </div>
                               </div>
-                              {expandedProviders[provider.id] && (
-                                <div className={styles["pc-provider-card-body"]}>
-                                  {Object.entries(provider.fields)
-                                    .filter(([key]) => key !== 'endpoint' && key !== 'id')
-                                    .sort(([a], [b]) => a === 'mode' ? -1 : b === 'mode' ? 1 : 0)
-                                    .map(([key, value]) => {
-                                      const isPwd = key.toLowerCase().includes("key") || key.toLowerCase().includes("token") || key.toLowerCase().includes("secret") || key.toLowerCase().includes("password");
-                                      const ismode = key === 'mode';
-                                      const pk = `${provider.id}_${key}`;
-                                      return (
-                                        <div className={styles["pc-credential-row"]} key={key}>
-                                          <span className={styles["pc-credential-label"]}>
-                                            {ismode ? "Mode" : key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').replace(/^./, s => s.toUpperCase())}
-                                          </span>                                          {ismode ? (
-                                            <span className={`${styles["pc-mode-badge"]} ${value === 'Live' ? styles["live"] : styles["sandbox"]}`}>{value === 'Live' ? <Rocket size={12} /> : <Wrench size={12} />}{value || "—"}</span>
-                                          ) : (
-                                            <>
-                                              <span className={styles["pc-credential-value"]}>{isPwd ? (visiblePasswords[pk] ? value : "••••••••••") : value || "—"}</span>
-                                              {isPwd && value && <button className={styles["pc-eye-btn-inline"]} onClick={() => setVisiblePasswords(prev => ({ ...prev, [pk]: !prev[pk] }))}>{visiblePasswords[pk] ? <FaEyeSlash size={14} /> : <FaEye size={14} />}</button>}
-                                            </>
-                                          )}
-                                        </div>
-                                      );
-                                    })}
-                                </div>
+                              {activeService === service.name && (
+                                <div className={styles["pc-sidebar-active-indicator"]} style={{ background: SERVICE_COLORS[service.name] }} />
                               )}
                             </div>
-                          ))
-                        )}
+                          ))}
+                        </div>
+                      </div>
+                      <div className={styles["pc-sidebar-wrapper"]} style={{ flex: 1, padding: '16px 16px 16px 0' }}>
+                        <h4 className={`${styles["pc-column-label"]} ${styles["pc-column-label-providers"]}`}>Providers</h4>
+                        <div className={styles["pc-providers-panel"]} style={{ borderTop: `3px solid ${SERVICE_COLORS[activeService]}` }}>
+                          <div className={styles["pc-panel-header"]}>
+                            <div className={styles["pc-panel-title"]}>{SERVICE_ICONS[activeService]}<h3>{activeService} Providers</h3></div>
+                            <button
+                              className={styles["pc-add-btn"]}
+                              style={{ backgroundColor: SERVICE_COLORS[activeService] }}
+                              onClick={async () => {
+                                setEditingProvider(null);
+                                setSelectedProvider("");
+                                setProviderFields({});
+                                setShowAddProviderModal(true);
+                              }}
+                            >
+                              <Plus size={14} /> Add Provider
+                            </button>
+                          </div>
+                          <div className={styles["pc-mode-tabs"]}>
+                            <button className={`${styles["pc-mode-tab"]} ${modeFilter === 'Sandbox' ? `${styles["active"]} ${styles["sandbox"]}` : ''}`} onClick={() => setmodeFilter('Sandbox')}>
+                              <Wrench size={14} /> Sandbox <span className={styles["pc-mode-tab-count"]}>{providers.filter(p => p.fields.mode === 'Sandbox').length}</span>
+                            </button>
+                            <button className={`${styles["pc-mode-tab"]} ${modeFilter === 'Live' ? `${styles["active"]} ${styles["live"]}` : ''}`} onClick={() => setmodeFilter('Live')}>
+                              <Rocket size={14} /> Live <span className={styles["pc-mode-tab-count"]}>{providers.filter(p => p.fields.mode === 'Live').length}</span>
+                            </button>
+                          </div>
+                          <div className={styles["pc-providers-list"]}>
+                            {providersLoading && (
+                              <div style={{ textAlign: 'center', padding: '12px', opacity: 0.7 }}>
+                                <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> Loading...
+                              </div>
+                            )}
+                            {!providersLoading && filteredProviders.length === 0 ? (
+                              <div className={styles["pc-empty-state"]}>
+                                <Server size={44} color="#cbd5e1" />
+                                <h4>No {modeFilter} {activeService} providers yet</h4>
+                                <p>Add your first {modeFilter.toLowerCase()} provider to start configuring services</p>
+                              </div>
+                            ) : (
+                              filteredProviders.map((provider, index) => (
+                                <div key={provider.id} className={`${styles["pc-provider-card"]} ${dragIndex === index ? styles["dragging"] : ''}`} style={{ borderLeftColor: SERVICE_COLORS[activeService] }}
+                                  draggable onDragStart={(e) => handleDragStart(e, index)} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, index)} onDragEnd={handleDragEnd}>
+                                  <div className={styles["pc-provider-card-header"]} onClick={() => setExpandedProviders(prev => ({ ...prev, [provider.id]: !prev[provider.id] }))}>
+                                    <div className={styles["pc-provider-title"]}>
+                                      <Plug size={14} /><span>{provider.name.replace(/_/g, ' ')}</span>
+                                      {index === 0 && <span className={styles["pc-primary-badge"]}><Rocket size={10} /> Primary</span>}
+                                      <span className={styles["pc-configured-badge"]} style={{ background: `${SERVICE_COLORS[activeService]}15`, color: SERVICE_COLORS[activeService] }}><Check size={10} /> Configured</span>
+                                    </div>
+                                    <div className={styles["pc-provider-header-right"]}>
+                                      <div className={styles["pc-endpoint-inline"]}>
+                                        <code className={styles["pc-endpoint-text"]}>
+                                          Endpoint URL : {provider.fields.endpoint || "------------------"}
+                                        </code>
+                                        {provider.fields.endpoint && (
+                                          <button
+                                            className={styles["pc-endpoint-copy-mini"]}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              navigator.clipboard.writeText(provider.fields.endpoint);
+                                              showToast("Endpoint copied!", "success");
+                                            }}
+                                          >
+                                            <Copy size={12} />
+                                          </button>
+                                        )}
+                                      </div>
+                                      <div className={styles["pc-provider-actions"]} onClick={(e) => e.stopPropagation()}>
+                                        <button
+                                          className={styles["pc-edit-btn"]}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setEditingProvider(provider);
+                                            setSelectedProvider(provider.name);
+                                            setProviderFields({ ...provider.fields });
+                                            setShowAddProviderModal(true);
+                                          }}
+                                        >
+                                          <Pencil size={14} />
+                                        </button>
+                                        <button className={styles["pc-delete-btn"]} onClick={() => setShowDeleteProviderModal({ id: provider.id, name: provider.name })}><Trash2 size={14} /></button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  {expandedProviders[provider.id] && (
+                                    <div className={styles["pc-provider-card-body"]}>
+                                      {Object.entries(provider.fields)
+                                        .filter(([key]) => key !== 'endpoint' && key !== 'id')
+                                        .sort(([a], [b]) => a === 'mode' ? -1 : b === 'mode' ? 1 : 0)
+                                        .map(([key, value]) => {
+                                          const isPwd = key.toLowerCase().includes("key") || key.toLowerCase().includes("token") || key.toLowerCase().includes("secret") || key.toLowerCase().includes("password");
+                                          const ismode = key === 'mode';
+                                          const pk = `${provider.id}_${key}`;
+                                          return (
+                                            <div className={styles["pc-credential-row"]} key={key}>
+                                              <span className={styles["pc-credential-label"]}>
+                                                {ismode ? "Mode" : key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').replace(/^./, s => s.toUpperCase())}
+                                              </span>                                          {ismode ? (
+                                                <span className={`${styles["pc-mode-badge"]} ${value === 'Live' ? styles["live"] : styles["sandbox"]}`}>{value === 'Live' ? <Rocket size={12} /> : <Wrench size={12} />}{value || "—"}</span>
+                                              ) : (
+                                                <>
+                                                  <span className={styles["pc-credential-value"]}>{isPwd ? (visiblePasswords[pk] ? value : "••••••••••") : value || "—"}</span>
+                                                  {isPwd && value && <button className={styles["pc-eye-btn-inline"]} onClick={() => setVisiblePasswords(prev => ({ ...prev, [pk]: !prev[pk] }))}>{visiblePasswords[pk] ? <FaEyeSlash size={14} /> : <FaEye size={14} />}</button>}
+                                                </>
+                                              )}
+                                            </div>
+                                          );
+                                        })}
+                                    </div>
+                                  )}
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -2845,7 +3080,7 @@ export default function ProjectView() {
 
       {/* Environment Status Change Modal */}
       {showStatusModal && pendingStatusChange && (
-        <div className={styles["pc-modal-overlay"]} onClick={() => setShowStatusModal(false)}>
+        <div className={styles["pc-modal-overlay"]} >
           <div className={`${styles["pc-modal"]} ${styles["pc-modal-small"]}`} onClick={e => e.stopPropagation()}>
             <div className={styles["pc-modal-header"]}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -2873,22 +3108,56 @@ export default function ProjectView() {
                 setPendingStatusChange(null);
               }}>Cancel</button>
               <button
-                className={pendingStatusChange.newStatus === 'active' ? styles["pc-btn-primary"] : styles["pc-btn-danger"]}
-                onClick={() => {
-                  if (pendingStatusChange) {
-                    setEnvStatus(prev => ({
-                      ...prev,
-                      [pendingStatusChange.env]: pendingStatusChange.newStatus
-                    }));
-                    // Get environment name for toast
-                    const envName = environments.find((e: any) => e.public_id === pendingStatusChange.env)?.environment_name || pendingStatusChange.env;
+                className={
+                  pendingStatusChange.newStatus === 'active'
+                    ? styles["pc-btn-primary"]
+                    : styles["pc-btn-danger"]
+                }
+                onClick={async () => {
+
+                  if (!pendingStatusChange) return;
+
+                  try {
+
+                    await updateEnvironment(
+                      pendingStatusChange.env,
+                      {
+                        is_active:
+                          pendingStatusChange.newStatus === "active",
+                      }
+                    );
+
+                    await loadEnvironments();
+
+                    const envName =
+                      environments.find(
+                        (e: any) =>
+                          e.public_id === pendingStatusChange.env
+                      )?.environment_name ||
+                      pendingStatusChange.env;
+
                     showToast(
-                      `Environment "${envName}" ${pendingStatusChange.newStatus === 'active' ? 'activated' : 'deactivated'}`,
-                      pendingStatusChange.newStatus === 'active' ? 'success' : 'error'
+                      `Environment "${envName}" ${pendingStatusChange.newStatus === "active"
+                        ? "activated"
+                        : "deactivated"
+                      }`,
+                      "success"
+                    );
+
+                    setShowStatusModal(false);
+
+                    setPendingStatusChange(null);
+
+                  } catch (error: any) {
+
+                    console.error(error);
+
+                    showToast(
+                      error?.response?.data?.message ||
+                      "Failed to update environment status",
+                      "error"
                     );
                   }
-                  setShowStatusModal(false);
-                  setPendingStatusChange(null);
                 }}
               >
                 {pendingStatusChange.newStatus === 'active' ? (
