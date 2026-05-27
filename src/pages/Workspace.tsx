@@ -198,10 +198,10 @@ const CredentialAccordion = ({ credential, index, isOpen, onToggle }: Credential
       <button className={styles.credentialAccordionHeader} onClick={onToggle}>
         <div className={styles.accordionHeaderLeft}>
           <Server size={15} />
-          <span>Credential #{index + 1}</span>
+          <span>Credential  #{index + 1}</span>
           {credential.service_description && (
             <span className={styles.credentialDescription}>
-              — {credential.service_description}
+              —  {credential.service_description}
             </span>
           )}
         </div>
@@ -461,25 +461,50 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
                     className={`${styles.projectTitle} ${isExpanded ? styles.expanded : ""}`}
                     onClick={() => toggleProject(project.public_id)}
                   >
-                    {isExpanded ? <FolderOpenDot size={18} /> : <FolderClosedIcon size={18} />}
-                    <span title={project.project_name}>{project.project_name}</span>
-                    {isExpanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+                    {isExpanded ? (
+                      <FolderOpenDot size={18} />
+                    ) : (
+                      <FolderClosedIcon size={18} />
+                    )}
+                    <span title={project.project_name}>
+                      {project.project_name
+                        ? project.project_name.charAt(0).toUpperCase() +
+                          project.project_name.slice(1)
+                        : "No project"}
+                    </span>
+                    {isExpanded ? (
+                      <ChevronDown size={15} />
+                    ) : (
+                      <ChevronRight size={15} />
+                    )}
                   </button>
-                  <div className={`${styles.environments} ${isExpanded ? styles.open : ""}`}>
+                  <div
+                    className={`${styles.environments} ${isExpanded ? styles.open : ""}`}
+                  >
                     <div className={styles.environmentsInner}>
                       {project.environments.length === 0 ? (
-                        <div className={styles.noEnvironmentsMessage}>No environments</div>
+                        <div className={styles.noEnvironmentsMessage}>
+                          No environments
+                        </div>
                       ) : (
                         project.environments.map((env) => (
                           <button
                             key={env.public_id}
                             className={`${styles.envButton} ${
-                              selectedEnv?.environment.public_id === env.public_id ? styles.activeEnv : ""
+                              selectedEnv?.environment.public_id ===
+                              env.public_id
+                                ? styles.activeEnv
+                                : ""
                             }`}
                             onClick={() => selectEnvironment(project, env)}
                           >
-                            <Globe size={13} />
-                            <span>{env.environment_name}</span>
+                            <Globe size={14} />
+                            <span>
+                              {env.environment_name
+                                ? env.environment_name.charAt(0).toUpperCase() +
+                                  env.environment_name.slice(1)
+                                : "No environment"}
+                            </span>
                           </button>
                         ))
                       )}
@@ -495,16 +520,32 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
       <div className={styles.mainArea}>
         <div className={styles.topbar}>
           <div className={styles.breadcrumb}>
-            <span>{selectedEnv?.project.project_name || "No project"}</span>
+            <span>
+              {selectedEnv?.project?.project_name
+                ? selectedEnv.project.project_name.charAt(0).toUpperCase() +
+                  selectedEnv.project.project_name.slice(1)
+                : "No project"}
+            </span>{" "}
             <ChevronRight size={12} />
-            <span className={styles.activeBreadcrumb}>{selectedEnv?.environment.environment_name || "No environment"}</span>
+            <span className={styles.activeBreadcrumb}>
+              <span>
+                {selectedEnv?.environment?.environment_name
+                  ? selectedEnv.environment.environment_name
+                      .charAt(0)
+                      .toUpperCase() +
+                    selectedEnv.environment.environment_name.slice(1)
+                  : "No environment"}
+              </span>
+            </span>
             <ChevronRight size={12} />
-            <span>{selectedService?.name || "No service"}</span>
+            <span className={styles.activeBreadcrumb}>{selectedService?.name || "No service"}</span>
           </div>
           <div className={styles.divider} />
           <div className={styles.serviceScroll}>
             {selectedEnv?.environment.services.length === 0 ? (
-              <div className={styles.noServicesMessage}>No services in this environment</div>
+              <div className={styles.noServicesMessage}>
+                No services in this environment
+              </div>
             ) : (
               selectedEnv?.environment.services.map((svc) => (
                 <button
@@ -537,7 +578,9 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
                 liveCount={liveCount}
               />
               {credentials.length === 0 ? (
-                <div className={styles.noCredentials}>No credentials found for this instance</div>
+                <div className={styles.noCredentials}>
+                  No credentials found for this instance
+                </div>
               ) : (
                 credentials.map((cred, idx) => (
                   <CredentialAccordion

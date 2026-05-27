@@ -1,6 +1,3 @@
-/* ============================================================
-   ZOHO UI — PURE BRAND COLORS + ORIGINAL GRADIENT
-   ============================================================ */
 
 *,
 *::before,
@@ -36,8 +33,8 @@ body,
   --zoho-error: #FF0000;
 
   /* ─── ORIGINAL GRADIENT (from your design) ─── */
-  --primary-gradient: linear-gradient(135deg, #1e3a8a, #3b82f6);
-  --primary-hover: linear-gradient(135deg, #172554, #2563eb);
+  --primary-gradient:  #1d4ed8;
+  --primary-hover:   #2563eb;
 
   /* Aliases */
   --accent-blue: var(--zoho-blue);
@@ -332,7 +329,7 @@ body,
 .topbar {
   background: var(--zoho-white);
   border-bottom: 1.5px solid var(--border-light);
-  padding: 0.9rem 1.25rem;
+  padding: 0.9rem 0.9rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -344,13 +341,13 @@ body,
   align-items: center;
   gap: 0.4rem;
   font-weight: 600;
-  font-size: 0.82rem;
+  font-size: 0.9rem;
   color: var(--text-secondary);
   flex-wrap: wrap;
 }
 
 .activeBreadcrumb {
-  color: var(--zoho-blue);
+  color:#1d4ed8
 }
 
 .serviceScroll {
