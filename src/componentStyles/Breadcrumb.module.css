@@ -50,3 +50,15 @@
     color: var(--deep-navy);
     font-weight: 600;
 }
+
+.pageTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.titleIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
