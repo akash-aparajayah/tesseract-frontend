@@ -1,0 +1,115 @@
+.container {
+    width: 100vw;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+/* Full screen GIF - fits perfectly */
+.fullScreenGif {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    z-index: 1;
+}
+
+/* Overlay with buttons at bottom */
+.overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 2;
+    padding: 2rem;
+    padding-bottom: 3rem;
+}
+
+.actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.button {
+    padding: 0.75rem 2rem;
+    border-radius: 0.75rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    min-width: 180px;
+}
+
+.primaryButton {
+    background: #3b82f6;
+    color: white;
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+}
+
+.primaryButton:hover {
+    background: #2563eb;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+
+.secondaryButton {
+    background: white;
+    color: #3b82f6;
+    border: 2px solid #3b82f6;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.secondaryButton:hover {
+    background: #eff6ff;
+    border-color: #2563eb;
+    color: #2563eb;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive for mobile */
+@media (max-width: 640px) {
+    .overlay {
+        padding: 1rem;
+        padding-bottom: 2rem;
+    }
+
+    .actions {
+        flex-direction: column;
+        gap: 0.75rem;
+        width: 100%;
+        max-width: 300px;
+    }
+
+    .button {
+        width: 100%;
+        padding: 0.75rem 1.5rem;
+        font-size: 0.95rem;
+        min-width: unset;
+    }
+}
+
+/* Landscape phones */
+@media (max-height: 500px) {
+    .overlay {
+        padding: 0.75rem;
+        padding-bottom: 1rem;
+    }
+
+    .button {
+        padding: 0.6rem 1.5rem;
+        font-size: 0.9rem;
+    }
+}

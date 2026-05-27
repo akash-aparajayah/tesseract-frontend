@@ -211,3 +211,20 @@ export const userAssignProjectEnv = async (id: string) => {
   const response = await api.get(`/users/user-assigned-projects/${id}`);
   return response?.data;
 };
+
+export const reorderProviders = async (
+  providers: {
+    public_id: string;
+    sort_order: number;
+  }[]
+) => {
+
+  const res = await api.patch(
+    "/project/reorder-providers",
+    {
+      providers,
+    }
+  );
+
+  return res.data;
+};

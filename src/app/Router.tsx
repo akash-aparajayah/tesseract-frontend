@@ -1,3 +1,4 @@
+// Router.tsx
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Layout from "../components/Layout";
 import Login from "../pages/login";
@@ -9,6 +10,7 @@ import ForgotPassword from "@/pages/ForgotPassword";
 import UserDetailView from "@/pages/UserDetailView";
 import Workspace from "@/pages/Workspace";
 import AssignProjectsEnv from "@/pages/AssignProjectsEnv";
+import NotFound from "@/components/NotFound/NotFound"; // Import your 404 component
 
 const router = createBrowserRouter([
   {
@@ -58,6 +60,11 @@ const router = createBrowserRouter([
         element: <Workspace />, // Empty placeholder component for now
       },
     ],
+  },
+  // ✅ Add 404 catch-all route at the end
+  {
+    path: "*",
+    element: <NotFound />,
   },
 ]);
 

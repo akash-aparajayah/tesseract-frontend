@@ -55,6 +55,8 @@ export default function ProjectDashboard() {
     project_description: "",
   });
   const [createImagePreview, setCreateImagePreview] = useState("");
+  const [createImageFile, setCreateImageFile] =
+    useState<File | null>(null);
   const [createTouched, setCreateTouched] = useState({ project_name: false });
   const [projectNameExists, setProjectNameExists] = useState(false);
   const [isFormDirty, setIsFormDirty] = useState(false);
@@ -73,6 +75,11 @@ export default function ProjectDashboard() {
     image_url: "",
   });
   const [editImagePreview, setEditImagePreview] = useState("");
+  const [editImageFile, setEditImageFile] =
+    useState<File | null>(null);
+
+  const [removeEditImage, setRemoveEditImage] =
+    useState(false);
   const [editTouched, setEditTouched] = useState({ project_name: false });
   const editFileRef = useRef<HTMLInputElement>(null);
 
@@ -758,7 +765,13 @@ export default function ProjectDashboard() {
                       if (file) {
                         const reader = new FileReader();
                         reader.onloadend = () => {
-                          setCreateImagePreview(reader.result as string);
+
+                          setCreateImagePreview(
+                            reader.result as string
+                          );
+
+                          setCreateImageFile(file);
+
                           setIsFormDirty(true);
                         };
                         reader.readAsDataURL(file);
@@ -869,7 +882,15 @@ export default function ProjectDashboard() {
                       if (file) {
                         const reader = new FileReader();
                         reader.onloadend = () => {
-                          setEditImagePreview(reader.result as string);
+
+                          setEditImagePreview(
+                            reader.result as string
+                          );
+
+                          setEditImageFile(file);
+
+                          setRemoveEditImage(false);
+
                           setIsFormDirty(true);
                         };
                         reader.readAsDataURL(file);
@@ -883,7 +904,17 @@ export default function ProjectDashboard() {
                       <button type="button" className={styles["remove-img-btn"]} onClick={(e) => {
                         e.stopPropagation();
                         setEditImagePreview("");
-                        setEditForm(prev => ({ ...prev, image_url: "" }));
+
+                        setEditImageFile(null);
+
+                        setRemoveEditImage(true);
+
+                        setEditForm(prev => ({
+                          ...prev,
+                          image_url: ""
+                        }));
+
+                        setIsFormDirty(true);
                       }}>
                         ✕ Remove
                       </button>

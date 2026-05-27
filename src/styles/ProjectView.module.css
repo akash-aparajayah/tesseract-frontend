@@ -3127,6 +3127,7 @@
     border-radius: 6px;
     padding: 4px 10px;
     max-width: 300px;
+    margin-left: auto;
 }
 
 .pc-endpoint-text {
@@ -3224,4 +3225,29 @@
     margin: 4px 0 0;
     font-size: 13px;
     opacity: 0.9;
+}
+
+.inactiveContent p {
+    color: #0c213d;
+
+}
+
+.inactiveContent h4 {
+    color: #0c213d;
+}
+
+.inactiveIcon {
+    color: #0c213d;
+}
+
+.pc-mode-tabs {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pc-endpoint-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #071e3e;
 }

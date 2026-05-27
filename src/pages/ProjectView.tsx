@@ -14,7 +14,7 @@ import noDataIllustration from '../assets/illustration/No data.gif';
 import {
   getAllServices, getProvidersByServiceId, createProvider, getProviderById, deleteProvider, getProjectById,
   createEnvironment, getEnvironmentsByProjectId, updateEnvironment, cloneEnvironment, deleteEnvironment, getProvidersByEnvironmentId, updateProvider, getAssignedUnassignedEmployees, assignUnassignEmployee,
-  getApiKeys, regenerateApiKey, createApiKey, deleteApiKey, updateProject
+  getApiKeys, regenerateApiKey, createApiKey, deleteApiKey, updateProject, reorderProviders,
 } from "../services/projectApi";
 import SkeletonLoader from "@/components/common/SkeletonLoader";
 import FormValidation, { hasErrors } from "@/components/common/FormValidation";
@@ -121,6 +121,8 @@ export default function ProjectView() {
 
   const [activeService, setActiveService] = useState<string>("SMS");
   const [providers, setProviders] = useState<Provider[]>([]);
+  const [serviceEndpoint, setServiceEndpoint] =
+    useState("");
   const [serviceProviderCounts, setServiceProviderCounts] = useState<Record<string, number>>({ SMS: 0, Email: 0, Whatsapp: 0 });
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
   const [expandedProviders, setExpandedProviders] = useState<Record<string, boolean>>({});
@@ -386,6 +388,10 @@ export default function ProjectView() {
         ...(data.live || []),
       ];
 
+      setServiceEndpoint(
+        allProviders?.[0]?.endpoint || ""
+      );
+
       setProviders(
         allProviders.map((p: any) => ({
           id: p.public_id || p.id,
@@ -460,6 +466,33 @@ export default function ProjectView() {
       window.removeEventListener('popstate', handlePopState);
     };
   }, [generatedToken]);
+
+
+  useEffect(() => {
+
+    const handleScroll = () => {
+
+      setOpenEnvMenu(null);
+
+    };
+
+    window.addEventListener(
+      "scroll",
+      handleScroll,
+      true
+    );
+
+    return () => {
+
+      window.removeEventListener(
+        "scroll",
+        handleScroll,
+        true
+      );
+
+    };
+
+  }, []);
 
 
   useEffect(() => {
@@ -1150,19 +1183,108 @@ export default function ProjectView() {
     e.dataTransfer.effectAllowed = 'move';
   };
   const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; };
-  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+  const handleDrop = async (
+    e: React.DragEvent,
+    dropIndex: number
+  ) => {
+
     e.preventDefault();
-    if (dragIndex === null) return;
-    const dropProvider = filteredProviders[dropIndex];
-    const realDropIndex = providers.findIndex(p => p.id === dropProvider.id);
-    if (dragIndex === realDropIndex) { setDragIndex(null); return; }
-    const newProviders = [...providers];
-    const draggedItem = newProviders[dragIndex];
-    newProviders.splice(dragIndex, 1); newProviders.splice(realDropIndex, 0, draggedItem);
-    setProviders(newProviders); setDragIndex(null);
-    // saveToLocalStorage(newProviders);
-    showToast("Primary provider updated successfully", "success");
+
+    if (dragIndex === null) {
+      return;
+    }
+
+    const dropProvider =
+      filteredProviders[dropIndex];
+
+    const realDropIndex =
+      providers.findIndex(
+        (p) => p.id === dropProvider.id
+      );
+
+    if (dragIndex === realDropIndex) {
+
+      setDragIndex(null);
+
+      return;
+    }
+
+    const reorderedProviders = [...providers];
+
+    const draggedItem =
+      reorderedProviders[dragIndex];
+
+    reorderedProviders.splice(
+      dragIndex,
+      1
+    );
+
+    reorderedProviders.splice(
+      realDropIndex,
+      0,
+      draggedItem
+    );
+
+    // Optimistic UI
+    setProviders(reorderedProviders);
+
+    try {
+
+      await reorderProviders(
+
+        reorderedProviders.map(
+          (provider, index) => ({
+            public_id: provider.id,
+            sort_order: index,
+          })
+        )
+
+      );
+
+      // REFRESH FROM BACKEND
+      const env =
+        environments.find(
+          (e: any) =>
+            e.public_id === selectedEnv
+        );
+
+      if (env) {
+
+        await loadProvidersForEnv(env);
+
+      }
+
+      showToast(
+        "Provider priority updated successfully",
+        "success"
+      );
+
+    } catch (error) {
+
+      console.error(error);
+
+      showToast(
+        "Failed to reorder providers",
+        "error"
+      );
+
+      // Rollback from backend
+      const env =
+        environments.find(
+          (e: any) =>
+            e.public_id === selectedEnv
+        );
+
+      if (env) {
+
+        await loadProvidersForEnv(env);
+
+      }
+    }
+
+    setDragIndex(null);
   };
+
   const handleDragEnd = () => setDragIndex(null);
 
   // ---- USER FUNCTIONS ----
@@ -1840,6 +1962,8 @@ export default function ProjectView() {
                                   style={{
                                     top: menuPosition.top,
                                     left: menuPosition.left,
+                                    position: 'fixed',
+                                    zIndex: 9999,
                                   }} ref={envMenuRef} data-env-menu>
                                   <button
                                     type="button"
@@ -2117,10 +2241,10 @@ export default function ProjectView() {
 
                   {isEnvironmentInactive && (
                     <div className={styles["inactiveOverlay"]}>
-                      <AlertCircle size={24} />
+                      <AlertCircle className={styles["inactiveIcon"]} />
 
-                      <div>
-                        <h4>Environment Inactive</h4>
+                      <div className={styles["inactiveContent"]}>
+                        <h4 className={styles["inactiveTitle"]}>Environment Inactive</h4>
 
                         <p>
                           Services and providers are disabled
@@ -2245,6 +2369,34 @@ export default function ProjectView() {
                             <button className={`${styles["pc-mode-tab"]} ${modeFilter === 'Live' ? `${styles["active"]} ${styles["live"]}` : ''}`} onClick={() => setmodeFilter('Live')}>
                               <Rocket size={14} /> Live <span className={styles["pc-mode-tab-count"]}>{providers.filter(p => p.fields.mode === 'Live').length}</span>
                             </button>
+                            {serviceEndpoint && (
+                              <div className={styles["pc-endpoint-inline"]}>
+
+                                <span className={styles["pc-endpoint-label"]}>
+                                  Endpoint URL :
+                                </span>
+
+                                <span className={styles["pc-endpoint-text"]}>
+                                  {serviceEndpoint}
+                                </span>
+
+                                <button
+                                  className={styles["pc-endpoint-copy-mini"]}
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(
+                                      serviceEndpoint
+                                    );
+
+                                    showToast(
+                                      "Endpoint copied",
+                                      "success"
+                                    );
+                                  }}
+                                >
+                                  <Copy size={12} />
+                                </button>
+                              </div>
+                            )}
                           </div>
                           <div className={styles["pc-providers-list"]}>
                             {providersLoading && (
@@ -2269,7 +2421,7 @@ export default function ProjectView() {
                                       <span className={styles["pc-configured-badge"]} style={{ background: `${SERVICE_COLORS[activeService]}15`, color: SERVICE_COLORS[activeService] }}><Check size={10} /> Configured</span>
                                     </div>
                                     <div className={styles["pc-provider-header-right"]}>
-                                      <div className={styles["pc-endpoint-inline"]}>
+                                      {/* <div className={styles["pc-endpoint-inline"]}>
                                         <code className={styles["pc-endpoint-text"]}>
                                           Endpoint URL : {provider.fields.endpoint || "------------------"}
                                         </code>
@@ -2285,7 +2437,7 @@ export default function ProjectView() {
                                             <Copy size={12} />
                                           </button>
                                         )}
-                                      </div>
+                                      </div> */}
                                       <div className={styles["pc-provider-actions"]} onClick={(e) => e.stopPropagation()}>
                                         <button
                                           className={styles["pc-edit-btn"]}
