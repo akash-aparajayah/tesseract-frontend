@@ -1,7 +1,7 @@
 // components/Breadcrumb.tsx
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard,
+  SquareDashedKanbanIcon,
   FolderKanban,
   PlusCircle,
   Briefcase,
@@ -26,11 +26,12 @@ interface BreadcrumbItem {
 // Helper to get icon based on label (used only for the page title)
 const getIconForTitle = (label: string): React.ReactNode => {
   const labelLower = label.toLowerCase();
-  const iconSize = 20;
+  const iconSize = 22;
   const iconProps = { size: iconSize, className: styles.titleIcon };
 
-  if (labelLower === "dashboard") return <LayoutDashboard {...iconProps} />;
-  if (labelLower === "project dashboard") return <FolderKanban {...iconProps} />;
+  if (labelLower === "dashboard") return <SquareDashedKanbanIcon {...iconProps} />;
+  if (labelLower === "project dashboard")
+    return <FolderKanban {...iconProps} />;
   if (labelLower === "create project") return <PlusCircle {...iconProps} />;
   if (labelLower === "workspace") return <Briefcase {...iconProps} />;
   if (labelLower === "user hub") return <Users {...iconProps} />;
@@ -96,7 +97,10 @@ export default function Breadcrumb() {
       return breadcrumbMap[location.pathname];
     }
 
-    if (location.pathname.includes("/project/") && location.pathname.includes("/view")) {
+    if (
+      location.pathname.includes("/project/") &&
+      location.pathname.includes("/view")
+    ) {
       return [
         { label: "Dashboard", path: "/dashboard" },
         { label: "Project Dashboard", path: "/dashboard/project" },
@@ -140,7 +144,8 @@ export default function Breadcrumb() {
   };
 
   const breadcrumbs = getBreadcrumbs();
-  const pageTitle = breadcrumbs.length > 0 ? breadcrumbs[breadcrumbs.length - 1].label : "";
+  const pageTitle =
+    breadcrumbs.length > 0 ? breadcrumbs[breadcrumbs.length - 1].label : "";
 
   if (breadcrumbs.length === 0) return null;
 
