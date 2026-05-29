@@ -27,28 +27,22 @@
    TOPBAR
 ========================================================= */
 .topBar {
-  position: fixed;
+  position: sticky;
   top: 0;
+  width: 100%;
   left: var(--sidebar-width);
   right: 0;
-
   height: 70px;
-
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   padding: 0 28px;
-
   background: var(--light-bg);
-
   border-bottom: 1px solid var(--border);
-
   box-shadow: 0 2px 8px rgba(27, 114, 232, 0.04);
-
   z-index: 1000;
-
   animation: topbarEnter 0.45s ease;
+  transition: left 0.3s ease;
 }
 
 @keyframes topbarEnter {
@@ -150,35 +144,28 @@
 ========================================================= */
 .passwordButton,
 .bell,
-.settingsIcon {
+.settingsIcon,
+.logoutButton {
   width: 42px;
   height: 42px;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   border-radius: 50%;
-
   background: var(--white);
-
   border: 1.5px solid var(--border-soft);
-
   cursor: pointer;
-
   transition: var(--transition);
-
   position: relative;
-
   overflow: hidden;
 }
 
 .passwordButton svg,
 .bell svg,
-.settingsIcon svg {
+.settingsIcon svg,
+.logoutButton svg {
   font-size: 17px;
   color: var(--deep-navy);
-
   transition: var(--transition);
 }
 
@@ -187,20 +174,30 @@
 ========================================================= */
 .passwordButton:hover,
 .bell:hover,
-.settingsIcon:hover {
+.settingsIcon:hover,
+.logoutButton:hover {
   transform: translateY(-2px);
-
   border-color: #9fc2ee;
-
   box-shadow: var(--shadow-soft);
-
   background: #f8fbff;
 }
 
 .passwordButton:hover svg,
 .bell:hover svg,
-.settingsIcon:hover svg {
+.settingsIcon:hover svg,
+.logoutButton:hover svg {
   color: var(--primary-blue);
+}
+
+/* Logout specific hover */
+.logoutButton:hover svg {
+  color: var(--danger);
+  /* Red on hover for logout */
+}
+
+.logoutButton:hover {
+  border-color: #fecaca;
+  background: #fef2f2;
 }
 
 /* =========================================================
@@ -218,11 +215,25 @@
 }
 
 @keyframes bellShake {
-  0% { transform: rotate(0deg); }
-  25% { transform: rotate(10deg); }
-  50% { transform: rotate(-10deg); }
-  75% { transform: rotate(5deg); }
-  100% { transform: rotate(0deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  25% {
+    transform: rotate(10deg);
+  }
+
+  50% {
+    transform: rotate(-10deg);
+  }
+
+  75% {
+    transform: rotate(5deg);
+  }
+
+  100% {
+    transform: rotate(0deg);
+  }
 }
 
 /* =========================================================
@@ -306,11 +317,9 @@
 
   border-radius: 50%;
 
-  background: linear-gradient(
-    135deg,
-    var(--primary-blue),
-    #4d9eff
-  );
+  background: linear-gradient(135deg,
+      var(--primary-blue),
+      #4d9eff);
 
   transition: all 0.3s ease;
 
@@ -635,9 +644,17 @@
 /* =========================================================
    RESPONSIVE
 ========================================================= */
+
 @media (max-width: 900px) {
   .searchForm {
     width: 180px;
+  }
+}
+
+@media (max-width: 768px) {
+  .topBar {
+    padding: 0 16px;
+    height: 60px;
   }
 }
 
@@ -651,7 +668,7 @@
   }
 
   .topBar {
-    padding: 0 16px;
+    padding: 0 12px;
   }
 }
 
@@ -662,5 +679,17 @@
 
   .topBarRight {
     gap: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .topBar {
+    padding: 0 8px;
+    height: 56px;
+  }
+
+  .searchForm {
+    width: 120px;
+    height: 38px;
   }
 }

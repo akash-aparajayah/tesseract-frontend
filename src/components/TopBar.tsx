@@ -8,9 +8,11 @@ import {
   FaEye,
   FaEyeSlash,
   FaCog,
+  FaSignOutAlt,
 } from "react-icons/fa";
 
 import { jwtDecode } from "jwt-decode";
+import { useNavigate } from "react-router-dom";
 
 import styles from "../componentStyles/Topbar.module.css";
 import Toast from "./common/Toast";
@@ -55,6 +57,8 @@ const getUserFromToken = () => {
 };
 
 export default function TopBar() {
+  const navigate = useNavigate();
+
   const [search, setSearch] = useState("");
   const [bellActive, setBellActive] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -64,6 +68,10 @@ export default function TopBar() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [toasts, setToasts] = useState<ToastState[]>([]);
+
+  // Logout states
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const { name: userName, role: userRole } = getUserFromToken();
 
@@ -97,24 +105,24 @@ export default function TopBar() {
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
- 
+
     if (newPassword !== confirmPassword) {
       showToast("Passwords do not match", "error");
       return;
     }
-    
+
     if (newPassword.length < 8) {
       showToast("Password must be at least 8 characters", "error");
       return;
     }
-    
+
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    
+
     if (!passwordRegex.test(newPassword)) {
       showToast("Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character", "error");
       return;
     }
-    
+
 
     setIsUpdating(true);
     try {
@@ -142,6 +150,23 @@ export default function TopBar() {
     } finally {
       setIsUpdating(false);
     }
+  };
+
+  // Logout handlers
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+  };
+
+  const handleConfirmLogout = () => {
+    setIsLoggingOut(true);
+    setTimeout(() => {
+      localStorage.clear();
+      navigate("/");
+    }, 1000);
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutModal(false);
   };
 
   return (
@@ -172,6 +197,7 @@ export default function TopBar() {
         </div>
 
         <div className={styles.topBarRight}>
+          {/* Change Password Button */}
           <button
             className={styles.passwordButton}
             onClick={() => setShowPasswordModal(true)}
@@ -180,6 +206,7 @@ export default function TopBar() {
             <FaKey />
           </button>
 
+          {/* Notification Bell */}
           <div
             className={`${styles.bell} ${bellActive ? styles.animate : ""}`}
             onClick={handleBell}
@@ -189,10 +216,21 @@ export default function TopBar() {
             <span className={styles.badge}></span>
           </div>
 
+          {/* Settings */}
           <div className={styles.settingsIcon} title="Settings">
             <FaCog />
           </div>
 
+          {/* Logout Button */}
+          <button
+            className={styles.logoutButton}
+            onClick={handleLogoutClick}
+            title="Logout"
+          >
+            <FaSignOutAlt />
+          </button>
+
+          {/* Profile */}
           <div className={styles.profile}>
             <div className={styles.avatar}>
               <FaUserAlt />
@@ -205,6 +243,7 @@ export default function TopBar() {
         </div>
       </header>
 
+      {/* Change Password Modal */}
       {showPasswordModal && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalBox}>
@@ -267,6 +306,58 @@ export default function TopBar() {
           </div>
         </div>
       )}
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalBox} style={{ maxWidth: "400px" }}>
+            <button
+              className={styles.closeButton}
+              onClick={handleCancelLogout}
+              title="Close"
+            >
+              <FaTimes />
+            </button>
+            <h2>Confirm Logout</h2>
+            <p style={{ color: "#64748b", marginBottom: "24px", marginTop: "12px" }}>
+              Are you sure you want to logout from your account?
+            </p>
+            <div className={styles.modalActions}>
+              <button
+                type="button"
+                className={styles.cancelButton}
+                onClick={handleCancelLogout}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={styles.saveButton}
+                onClick={handleConfirmLogout}
+                disabled={isLoggingOut}
+                style={{ background: isLoggingOut ? "#94a3b8" : "#ef4444" }}
+              >
+                {isLoggingOut ? (
+                  <>
+                    <FaSignOutAlt style={{ marginRight: "8px", animation: "spin 1s linear infinite" }} />
+                    Logging out...
+                  </>
+                ) : (
+                  "Logout"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add keyframe animation for spinner */}
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </>
   );
 }

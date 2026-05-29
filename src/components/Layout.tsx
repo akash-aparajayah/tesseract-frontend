@@ -8,40 +8,28 @@ export default function Layout() {
   const navigation = useNavigation();
 
   return (
-    <div
-      style={{
-        height: "100vh",
-        overflow: "hidden",
-      }}
-    >
-      {/* Top Bar */}
-      <TopBar />
+    <div className="dashboard-layout-wrapper">
+      <div className="dashboard-layout-inner">
+        <div className="dashboard-layout">
+          {/* Sidebar */}
+          <Sidebar />
 
-      {/* Sidebar */}
-      <Sidebar />
+          {/* Main Content Area */}
+          <div className="dashboard-content">
+            {/* Top Bar */}
+            <TopBar />
 
-      {/* Main Content */}
-      <main
-        style={{
-          marginLeft: "250px",
-          marginTop: "55px",
-          padding: "18px",
-          backgroundColor: "#f9fafb",
-          height: "calc(100vh - 55px)",
-          overflowY: "auto",
-          overflowX: "hidden",
-          boxSizing: "border-box",
-        }}
-      >
-        {/* Route Loader */}
-        {navigation.state === "loading" && <PageLoader />}
+            {/* Route Loader */}
+            {navigation.state === "loading" && <PageLoader />}
 
-        {/* Breadcrumb */}
-        <Breadcrumb />
+            {/* Breadcrumb */}
+            <Breadcrumb />
 
-        {/* Page Content */}
-        <Outlet />
-      </main>
+            {/* Page Content */}
+            <Outlet />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

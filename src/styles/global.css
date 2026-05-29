@@ -5,6 +5,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 /* =========================================================
+   CSS VARIABLES
+========================================================= */
+
+:root {
+  --sidebar-width: 250px;
+  --layout-max-width: 2000px;
+}
+
+/* =========================================================
    RESET
 ========================================================= */
 
@@ -25,17 +34,56 @@ body,
   height: 100%;
 }
 
+/* Layout Wrapper - Centers content on large screens */
+.dashboard-layout-wrapper {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  background-color: #e8ecf1;
+  /* Background outside container for large screens */
+}
+
+/* Inner container with max-width */
+.dashboard-layout-inner {
+  width: 100%;
+  max-width: var(--layout-max-width);
+  min-height: 100vh;
+  position: relative;
+  background-color: #f9fafb;
+}
+
+/* Add shadow to container on large screens */
+@media (min-width: 1441px) {
+  .dashboard-layout-inner {
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* Main layout - keeps current structure */
 .dashboard-layout {
   display: flex;
   min-height: 100vh;
   width: 100%;
   overflow-x: hidden;
+  position: relative;
 }
 
 .dashboard-content {
   flex: 1;
-  min-width: 0;
-  width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: margin-left 0.3s ease, width 0.3s ease;
+  box-sizing: border-box;
+  background-color: #f9fafb;
+  padding: 0px;
+  padding-top: 0px;
+}
+
+.page-content {
+  padding: 0px;
+  flex: 1;
+  overflow-y: auto;
   overflow-x: hidden;
 }
 
@@ -45,23 +93,19 @@ body,
 
 body {
   background-color: #dee3e8;
-
-  font-family:
-    'Inter',
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
-
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.5;
-
   color: #1e293b;
-
   -webkit-font-smoothing: antialiased;
-
   overflow-x: hidden;
   overflow-y: auto;
+}
+
+/* Change body background for large screens */
+@media (min-width: 1441px) {
+  body {
+    background-color: #d0d5dc;
+  }
 }
 
 /* =========================================================
@@ -119,3 +163,12 @@ button {
 ::-webkit-scrollbar-thumb:hover {
   background: #64748b;
 }
+
+html,
+body {
+  overflow-x: hidden;
+}
+
+/* =========================================================
+   RESPONSIVE - SIDEBAR COLLAPSED STATE
+========================================================= */

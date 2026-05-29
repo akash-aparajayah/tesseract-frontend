@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import styles from "../componentStyles/Sidebar.module.css";
@@ -9,16 +9,51 @@ interface DecodedToken {
 }
 
 export default function Sidebar() {
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [showPopup, setShowPopup] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [isProjectHubOpen, setIsProjectHubOpen] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Track window width and auto-collapse on mobile
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      setWindowWidth(width);
+
+      if (width <= 768) {
+        setIsCollapsed(true); // Always force collapse on mobile
+      }
+    };
+
+    // Check on initial load
+    handleResize();
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Update CSS variable when sidebar collapses/expands
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isCollapsed) {
+      root.style.setProperty("--sidebar-width", "80px");
+    } else {
+      root.style.setProperty("--sidebar-width", "250px");
+    }
+  }, [isCollapsed]);
+
   // Auto-open Project Hub if on a project-related page
-  const isProjectRoute = location.pathname.includes('/dashboard/project') ||
-    location.pathname.includes('/dashboard/workspace');
+  useEffect(() => {
+    const isProjectRoute =
+      location.pathname.includes("/dashboard/project") ||
+      location.pathname.includes("/dashboard/workspace");
+
+    if (isProjectRoute) {
+      setIsProjectHubOpen(true);
+    }
+  }, [location.pathname]);
 
   const token = localStorage.getItem("accessToken");
   let role: DecodedToken | null = null;
@@ -39,42 +74,19 @@ export default function Sidebar() {
     }, 200);
   };
 
-  const createRipple = (event: React.MouseEvent<HTMLButtonElement>) => {
-    const button = event.currentTarget;
-    const rect = button.getBoundingClientRect();
-    const size = Math.max(rect.width, rect.height);
-    const x = event.clientX - rect.left - size / 2;
-    const y = event.clientY - rect.top - size / 2;
-    const ripple = document.createElement("span");
-    ripple.classList.add(styles.ripple);
-    ripple.style.width = ripple.style.height = `${size}px`;
-    ripple.style.left = `${x}px`;
-    ripple.style.top = `${y}px`;
-    button.appendChild(ripple);
-    setTimeout(() => {
-      ripple.remove();
-    }, 600);
-  };
+  const toggleSidebar = () => {
+    // Prevent expanding on mobile screens (768px and below)
+    if (windowWidth <= 768) {
+      return; // Completely block toggle on mobile
+    }
 
-  const handleLogoutClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (isLoggingOut) return;
-    createRipple(e);
-    setShowPopup(true);
-  };
-
-  const handleConfirmLogout = () => {
-    setShowPopup(false);
-    setIsLoggingOut(true);
-    setTimeout(() => {
-      setIsLoggingOut(false);
-      localStorage.clear();
-      navigate("/");
-    }, 2000);
+    // On larger screens, toggle normally
+    setIsCollapsed(!isCollapsed);
   };
 
   return (
     <>
-      <aside className={styles.sidebar}>
+      <aside className={`${styles.sidebar} ${isCollapsed ? styles.collapsed : ""}`}>
         <div className={styles.sidebarLogo}>
           <img src={logo} alt="BridgeKey Logo" className={styles.logoImage} />
         </div>
@@ -90,6 +102,7 @@ export default function Sidebar() {
                 `${styles.menuItem} ${isActive ? styles.active : ""}`
               }
               onClick={handleMenuClick}
+              title={isCollapsed ? "Dashboard" : ""}
             >
               <div className={styles.sidebarLink}>
                 <div className={styles.linkContent}>
@@ -111,6 +124,7 @@ export default function Sidebar() {
                   `${styles.menuItem} ${isActive ? styles.active : ""}`
                 }
                 onClick={handleMenuClick}
+                title={isCollapsed ? "User Hub" : ""}
               >
                 <div className={styles.sidebarLink}>
                   <div className={styles.linkContent}>
@@ -127,10 +141,11 @@ export default function Sidebar() {
                 className={`${styles.dropdownTrigger} ${isProjectHubOpen ? styles.dropdownOpen : ""
                   }`}
                 onClick={() => setIsProjectHubOpen(!isProjectHubOpen)}
+                title={isCollapsed ? "Project Hub" : ""}
               >
                 <div className={styles.dropdownTriggerContent}>
                   <i className={`fas fa-folder-open ${styles.sideBarIcon}`}></i>
-                  <span>Project Hub</span>
+                  <span className={styles.menuText}>Project Hub</span>
                 </div>
                 <i
                   className={`fas fa-chevron-down ${styles.chevron} ${isProjectHubOpen ? styles.chevronRotate : ""
@@ -149,6 +164,7 @@ export default function Sidebar() {
                     `${styles.dropdownItem} ${isActive ? styles.active : ""}`
                   }
                   onClick={handleMenuClick}
+                  title={isCollapsed ? "Project Dashboard" : ""}
                 >
                   <div className={styles.linkContent}>
                     <i className={`fa-solid fa-border-all ${styles.sideBarIcon}`}></i>
@@ -162,6 +178,7 @@ export default function Sidebar() {
                     `${styles.dropdownItem} ${isActive ? styles.active : ""}`
                   }
                   onClick={handleMenuClick}
+                  title={isCollapsed ? "Workspace" : ""}
                 >
                   <div className={styles.linkContent}>
                     <i className={`fas fa-briefcase ${styles.sideBarIcon}`}></i>
@@ -177,6 +194,7 @@ export default function Sidebar() {
                 `${styles.menuItem} ${isActive ? styles.active : ""}`
               }
               onClick={handleMenuClick}
+              title={isCollapsed ? "Report" : ""}
             >
               <div className={styles.sidebarLink}>
                 <div className={styles.linkContent}>
@@ -196,6 +214,7 @@ export default function Sidebar() {
                 `${styles.menuItem} ${isActive ? styles.active : ""}`
               }
               onClick={handleMenuClick}
+              title={isCollapsed ? "Documentation" : ""}
             >
               <div className={styles.sidebarLink}>
                 <div className={styles.linkContent}>
@@ -207,45 +226,25 @@ export default function Sidebar() {
           </div>
         </div>
 
-        {/* Logout */}
-        <div className={styles.logoutBtnContainer}>
+        {/* Collapse/Expand Button */}
+        <div className={styles.collapseBtnContainer}>
           <button
-            className={`${styles.logoutButton} ${isLoggingOut ? styles.loggingOut : ""}`}
-            onClick={handleLogoutClick}
-            disabled={isLoggingOut}
+            className={styles.collapseButton}
+            onClick={toggleSidebar}
+            disabled={windowWidth <= 768}
+            title={isCollapsed ? "Expand Menu" : "Collapse Menu"}
+            style={windowWidth <= 768 ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
           >
-            {isLoggingOut ? (
-              <>
-                <i className="fas fa-spinner fa-pulse"></i>
-                <span>Logging out...</span>
-              </>
-            ) : (
-              <>
-                <i className="fas fa-sign-out-alt"></i>
-                <span>Log Out</span>
-              </>
-            )}
+            <span className={styles.collapseIcon}>
+              {isCollapsed ? (
+                <i className="fas fa-chevron-circle-right"></i>
+              ) : (
+                <i className="fas fa-chevron-circle-left"></i>
+              )}
+            </span>
           </button>
         </div>
       </aside>
-
-      {/* Popup */}
-      {showPopup && (
-        <div className={styles.popupOverlay}>
-          <div className={styles.popupBox}>
-            <h3>Are you sure?</h3>
-            <p>Do you really want to log out of the system?</p>
-            <div className={styles.popupActions}>
-              <button className={styles.btnNo} onClick={() => setShowPopup(false)}>
-                No
-              </button>
-              <button className={styles.btnYes} onClick={handleConfirmLogout}>
-                Yes, Log out
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }
