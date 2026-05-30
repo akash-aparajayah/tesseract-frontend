@@ -99,6 +99,7 @@ interface ApiEnvironment {
 
 interface ApiService {
   id: string;
+  service_endpoint: string;
   service_name: string;
   sandbox: Credentials[];
   live: Credentials[];
@@ -261,22 +262,15 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
               project_name: apiProject.project_name,
               environments: apiProject.environments.map(
                 (apiEnv: ApiEnvironment) => {
-                  const transformedServices: Service[] = apiEnv.services.map(
-                    (apiService: ApiService) => {
-                      const firstSandboxEndpoint =
-                        apiService.sandbox[0]?.endpoint;
-                      const firstLiveEndpoint = apiService.live[0]?.endpoint;
-                      const serviceEndpoint =
-                        firstSandboxEndpoint || firstLiveEndpoint || "";
-                      return {
-                        id: apiService.id,
-                        name: apiService.service_name,
-                        serviceEndpoint,
-                        sandbox: apiService.sandbox || [],
-                        live: apiService.live || [],
-                      };
-                    },
-                  );
+                 const transformedServices: Service[] = apiEnv.services.map(
+                   (apiService: ApiService) => ({
+                     id: apiService.id,
+                     name: apiService.service_name,
+                     serviceEndpoint: apiService.service_endpoint || "",
+                     sandbox: apiService.sandbox || [],
+                     live: apiService.live || [],
+                   }),
+                 );
                   return {
                     public_id: apiEnv.public_id,
                     environment_name: apiEnv.environment_name,
