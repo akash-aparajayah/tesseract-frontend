@@ -26,13 +26,12 @@
 /* =========================================================
    TOPBAR
 ========================================================= */
+/* =========================================================
+   TOPBAR - Fixed for all screen sizes
+========================================================= */
 .topBar {
-  position: sticky;
-  top: 0;
   width: 100%;
-  left: var(--sidebar-width);
-  right: 0;
-  height: 70px;
+  height: var(--topbar-height, 70px);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -40,9 +39,16 @@
   background: var(--light-bg);
   border-bottom: 1px solid var(--border);
   box-shadow: 0 2px 8px rgba(27, 114, 232, 0.04);
-  z-index: 1000;
-  animation: topbarEnter 0.45s ease;
-  transition: left 0.3s ease;
+  box-sizing: border-box;
+}
+
+/* For extra large screens - ensure proper containment */
+
+@media (max-width: 768px) {
+  .topBar {
+    left: 0;
+    width: 100%;
+  }
 }
 
 @keyframes topbarEnter {

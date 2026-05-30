@@ -6,6 +6,9 @@
     padding: 12px 34px;
     margin-bottom: 10px;
     border-bottom: 1px solid var(--soft-border);
+    background: var(--light-bg, #ffffff);
+
+
 }
 
 .pageTitle {
@@ -13,6 +16,9 @@
     font-weight: 700;
     color: var(--deep-navy);
     margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .breadcrumb {

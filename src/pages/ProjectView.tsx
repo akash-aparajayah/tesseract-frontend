@@ -670,22 +670,6 @@ export default function ProjectView() {
   };
 
 
-  const togglePageScroll = (lock: boolean) => {
-    const pageContent = document.querySelector('.page-content') as HTMLElement;
-    if (pageContent) {
-      if (lock) {
-        // Save current scroll position before locking
-        const scrollTop = pageContent.scrollTop;
-        pageContent.style.overflow = 'hidden';
-        // Maintain scroll position
-        pageContent.scrollTop = scrollTop;
-      } else {
-        pageContent.style.overflow = '';
-      }
-    }
-  };
-
-
   // const handleCreateEnvironment = () => {
   //   if (!projectId) return;
   //   const envToCreate = isCustomEnv && customEnvInput.trim() ? customEnvInput.trim() : (newEnvName || 'Local');
@@ -940,7 +924,7 @@ export default function ProjectView() {
             mode: modeFilter,
           },
           mode: modeFilter,
-          endpoint: providerFields.endpoint || service?.service_base_endpoint || "",
+          // endpoint: providerFields.endpoint || service?.service_base_endpoint || "",
         };
 
         await createProvider(payload);
@@ -2077,7 +2061,7 @@ export default function ProjectView() {
                       setNewEnvName("");
                       setIsCustomEnv(false);
                       setCustomEnvInput("");
-                      togglePageScroll(true);
+
                       setShowAddEnvModal(true);
                     }, 0);
                   }}>
@@ -2641,69 +2625,75 @@ export default function ProjectView() {
       {/* Add Environment Modal */}
       {
         showAddEnvModal && (
-          <div className={`${styles["pc-modal-overlay"]} ${styles["slide-panel"]}`}>
-            <div className={styles["pc-modal"]} onClick={e => e.stopPropagation()}>
-              <div className={styles["pc-modal-header"]}><h3><Plus size={18} /> Add Environment</h3><button className={styles["pc-modal-close"]} onClick={() => {
-                setPendingCloseAction(() => () => {
-                  setShowAddEnvModal(false);
-                  togglePageScroll(false);
-                  setNewEnvName("");
-                  setIsCustomEnv(false);
-                  setCustomEnvInput("");
-                });
-                setShowUnsavedModal(true);
-              }}>
-                <X size={20} />
-              </button></div>
-              <div className={styles["pc-modal-body"]}>
-                <p className={styles["pc-modal-desc"]}>Select an environment or create a custom one</p>
-                <div className={styles["pc-env-options"]}>
-                  {['Local', 'Dev', 'Staging', 'Live'].filter(
-                    env =>
-                      !environments.some(
-                        (e: any) => e.environment_name === env
-                      )
-                  ).map(env => (
-                    <div key={env} className={`${styles["pc-env-option"]} ${newEnvName === env && !isCustomEnv ? styles["selected"] : ''}`} onClick={() => { setNewEnvName(env); setIsCustomEnv(false); }}>
-                      <span className={styles["pc-env-option-icon"]}>{getEnvIcon(env)}</span><span>{env}</span>{newEnvName === env && !isCustomEnv && <Check size={18} />}
-                    </div>
-                  ))}
-                  <div className={`${styles["pc-env-option"]} ${styles["custom"]} ${isCustomEnv ? styles["selected"] : ''}`} onClick={() => { setIsCustomEnv(true); setNewEnvName(""); }}>
-                    <span className={styles["pc-env-option-icon"]}><Wrench size={18} /></span><span>Custom Environment</span>{isCustomEnv && <Check size={18} />}
-                  </div>
-                </div>
-                {isCustomEnv && <div className={styles["pc-form-group"]}><label>Environment Name *</label><input type="text" placeholder="e.g., Production" value={customEnvInput} onChange={(e) => setCustomEnvInput(e.target.value)} className={styles["pc-input"]} autoFocus /></div>}
-              </div>
-              <div className={styles["pc-modal-footer"]}>
-                <button className={styles["pc-btn-cancel"]} onClick={() => {
+          <>
+            <div className={styles["pc-drawer-backdrop"]}></div>
+
+            <div className={styles["pc-slide-panel"]}>
+              <div className={styles["pc-modal"]} onClick={e => e.stopPropagation()}>
+                <div className={styles["pc-modal-header"]}><h3><Plus size={18} /> Add Environment</h3><button className={styles["pc-modal-close"]} onClick={() => {
                   setPendingCloseAction(() => () => {
                     setShowAddEnvModal(false);
+
                     setNewEnvName("");
                     setIsCustomEnv(false);
                     setCustomEnvInput("");
                   });
                   setShowUnsavedModal(true);
                 }}>
-                  Cancel
-                </button>
-                <button
-                  className={styles["pc-btn-primary"]}
-                  onClick={handleAddEnvironment}
-                  disabled={saving}
-                  style={{ backgroundColor: SERVICE_COLORS[activeService], border: 'none' }}
-                >
-                  {saving ? 'Creating...' : 'Create Environment'}
-                </button>
+                  <X size={20} />
+                </button></div>
+                <div className={styles["pc-modal-body"]}>
+                  <p className={styles["pc-modal-desc"]}>Select an environment or create a custom one</p>
+                  <div className={styles["pc-env-options"]}>
+                    {['Local', 'Dev', 'Staging', 'Live'].filter(
+                      env =>
+                        !environments.some(
+                          (e: any) => e.environment_name === env
+                        )
+                    ).map(env => (
+                      <div key={env} className={`${styles["pc-env-option"]} ${newEnvName === env && !isCustomEnv ? styles["selected"] : ''}`} onClick={() => { setNewEnvName(env); setIsCustomEnv(false); }}>
+                        <span className={styles["pc-env-option-icon"]}>{getEnvIcon(env)}</span><span>{env}</span>{newEnvName === env && !isCustomEnv && <Check size={18} />}
+                      </div>
+                    ))}
+                    <div className={`${styles["pc-env-option"]} ${styles["custom"]} ${isCustomEnv ? styles["selected"] : ''}`} onClick={() => { setIsCustomEnv(true); setNewEnvName(""); }}>
+                      <span className={styles["pc-env-option-icon"]}><Wrench size={18} /></span><span>Custom Environment</span>{isCustomEnv && <Check size={18} />}
+                    </div>
+                  </div>
+                  {isCustomEnv && <div className={styles["pc-form-group"]}><label>Environment Name *</label><input type="text" placeholder="e.g., Production" value={customEnvInput} onChange={(e) => setCustomEnvInput(e.target.value)} className={styles["pc-input"]} autoFocus /></div>}
+                </div>
+                <div className={styles["pc-modal-footer"]}>
+                  <button className={styles["pc-btn-cancel"]} onClick={() => {
+                    setPendingCloseAction(() => () => {
+                      setShowAddEnvModal(false);
+                      setNewEnvName("");
+                      setIsCustomEnv(false);
+                      setCustomEnvInput("");
+                    });
+                    setShowUnsavedModal(true);
+                  }}>
+                    Cancel
+                  </button>
+                  <button
+                    className={styles["pc-btn-primary"]}
+                    onClick={handleAddEnvironment}
+                    disabled={saving}
+                    style={{ backgroundColor: SERVICE_COLORS[activeService], border: 'none' }}
+                  >
+                    {saving ? 'Creating...' : 'Create Environment'}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          </>
         )
       }
 
       {/* Edit Environment Modal */}
       {
-        showEditEnvModal && (
-          <div className={`${styles["pc-modal-overlay"]} ${styles["slide-panel"]}`}>
+        showEditEnvModal && (<>
+          <div className={styles["pc-drawer-backdrop"]} />
+
+          <div className={styles["pc-slide-panel"]}>
             <div className={`${styles["pc-modal"]} ${styles["pc-modal-small"]}`} onClick={e => e.stopPropagation()}>
               <div className={styles["pc-modal-header"]}><h3>Edit Environment</h3><button className={styles["pc-modal-close"]} onClick={() => { setPendingCloseAction(() => () => setShowEditEnvModal(false)); setShowUnsavedModal(true); }}><X size={18} /></button></div>
               <div className={styles["pc-modal-body"]}><div className={styles["pc-form-group"]}><label>Environment Name</label><input type="text" className={styles["pc-input"]} value={editEnvName} onChange={(e) => setEditEnvName(e.target.value)} /></div></div>
@@ -2718,13 +2708,17 @@ export default function ProjectView() {
               </div>
             </div>
           </div>
+
+        </>
         )
       }
 
       {/* Clone Modal */}
       {
-        showCloneModal && (
-          <div className={`${styles["pc-modal-overlay"]} ${styles["slide-panel"]}`}>
+        showCloneModal && (<>
+          <div className={styles["pc-drawer-backdrop"]} />
+
+          <div className={styles["pc-slide-panel"]}>
             <div className={styles["pc-modal"]} onClick={e => e.stopPropagation()}>
               <div className={styles["pc-modal-header"]}><h3><Copy size={18} /> Clone Environment</h3><button className={styles["pc-modal-close"]} onClick={() => setShowCloneModal(false)}><X size={20} /></button></div>
               <div className={styles["pc-modal-body"]}>
@@ -2760,13 +2754,16 @@ export default function ProjectView() {
               </div>
             </div>
           </div>
+        </>
         )
       }
 
       {/* Add/Edit Provider Modal */}
       {
-        showAddProviderModal && (
-          <div className={`${styles["pc-modal-overlay"]} ${styles["slide-panel"]}`}>
+        showAddProviderModal && (<>
+          <div className={styles["pc-drawer-backdrop"]} />
+
+          <div className={styles["pc-slide-panel"]}>
             <div className={`${styles["pc-modal"]} ${styles["pc-modal-provider"]}`} onClick={e => e.stopPropagation()}>
               <div className={styles["pc-modal-header"]}>
                 <div className={styles["pc-modal-header-left"]}>
@@ -2856,6 +2853,7 @@ export default function ProjectView() {
               </div>
             </div>
           </div>
+        </>
         )
       }
 
@@ -2923,42 +2921,46 @@ export default function ProjectView() {
       {/* Token Generate Form Modal */}
       {
         showTokenFormModal && (
-          <div className={`${styles["pc-modal-overlay"]} ${styles["slide-panel"]}`}>
-            <div className={`${styles["pc-modal"]} ${styles["token-form-modal"]}`} onClick={e => e.stopPropagation()}>
-              <div className={styles["pc-modal-header"]}><h3>{isRegenerating ? 'Regenerate Token' : 'Generate Token'}</h3><button className={styles["pc-modal-close"]} onClick={() => setShowTokenFormModal(false)}><X size={20} /></button></div>
-              <div className={styles["pc-modal-body"]}>
-                <div className={styles["modal-token-info"]}>
-                  <div><Globe size={14} /> Environment: <strong>{
-                    environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv
-                  }</strong></div>
-                </div>
-                <div className={styles["pc-form-group"]}><label>Note</label><input type="text" placeholder="What's this token for?" value={tokenName} onChange={(e) => setTokenName(e.target.value)} className={styles["pc-input"]} autoFocus /></div>
-                <div className={styles["pc-form-group"]}><label>Expiration</label>
-                  <div className={styles["expiration-options"]}>
-                    {[{ value: "7", label: "7 Days" }, { value: "30", label: "30 Days" }, { value: "60", label: "60 Days" }, { value: "90", label: "90 Days" }, { value: "custom", label: "Custom" }, { value: "never", label: "Never" }].map(opt => (
-                      <div key={opt.value} className={`${styles["expiration-option"]} ${tokenExpiration === opt.value ? styles["active"] : ''}`} onClick={() => setTokenExpiration(opt.value)}>
-                        <div className={styles["expiration-label"]}>{opt.label}</div>
-                        <div className={styles["expiration-date"]}>{opt.value === "never" ? "—" : opt.value === "custom" ? (tokenCustomDate ? formatDate(tokenCustomDate) : "Pick a date") : getExpiryDate(opt.value)}</div>
-                      </div>
-                    ))}
+          <>
+            <div className={styles["pc-drawer-backdrop"]}></div>
+
+            <div className={styles["pc-slide-panel"]}>
+              <div className={`${styles["pc-modal"]} ${styles["token-form-modal"]}`} onClick={e => e.stopPropagation()}>
+                <div className={styles["pc-modal-header"]}><h3>{isRegenerating ? 'Regenerate Token' : 'Generate Token'}</h3><button className={styles["pc-modal-close"]} onClick={() => setShowTokenFormModal(false)}><X size={20} /></button></div>
+                <div className={styles["pc-modal-body"]}>
+                  <div className={styles["modal-token-info"]}>
+                    <div><Globe size={14} /> Environment: <strong>{
+                      environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv
+                    }</strong></div>
                   </div>
-                </div>
-                {tokenExpiration === "custom" && (
-                  <div className={styles["pc-form-group"]}><label>Select Expiry Date</label>
-                    <div className={styles["token-date-wrapper"]} onClick={() => { if (tokenDateRef.current) tokenDateRef.current.showPicker(); }}>
-                      <input type="date" value={tokenCustomDate} onChange={(e) => { setTokenCustomDate(e.target.value); const now = new Date(); const expiry = new Date(e.target.value); const diffDays = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)); setTokenCustomDays(String(diffDays > 0 ? diffDays : 1)); }} ref={tokenDateRef} className={`${styles["pc-input"]} ${styles["token-date-input"]}`} min={new Date().toISOString().split('T')[0]} />
-                      <Calendar className={styles["token-date-icon"]} size={16} />
+                  <div className={styles["pc-form-group"]}><label>Note</label><input type="text" placeholder="What's this token for?" value={tokenName} onChange={(e) => setTokenName(e.target.value)} className={styles["pc-input"]} autoFocus /></div>
+                  <div className={styles["pc-form-group"]}><label>Expiration</label>
+                    <div className={styles["expiration-options"]}>
+                      {[{ value: "7", label: "7 Days" }, { value: "30", label: "30 Days" }, { value: "60", label: "60 Days" }, { value: "90", label: "90 Days" }, { value: "custom", label: "Custom" }, { value: "never", label: "Never" }].map(opt => (
+                        <div key={opt.value} className={`${styles["expiration-option"]} ${tokenExpiration === opt.value ? styles["active"] : ''}`} onClick={() => setTokenExpiration(opt.value)}>
+                          <div className={styles["expiration-label"]}>{opt.label}</div>
+                          <div className={styles["expiration-date"]}>{opt.value === "never" ? "—" : opt.value === "custom" ? (tokenCustomDate ? formatDate(tokenCustomDate) : "Pick a date") : getExpiryDate(opt.value)}</div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                )}
-                <div className={styles["token-warning"]}><AlertTriangle size={16} /><span>The token will only be shown once after creation.</span></div>
-              </div>
-              <div className={styles["pc-modal-footer"]}>
-                <button className={styles["pc-btn-cancel"]} onClick={() => setShowTokenFormModal(false)}>Cancel</button>
-                <button className={styles["pc-btn-primary"]} onClick={handleTokenGenerate} disabled={!tokenName.trim() || !tokenMode}>{isRegenerating ? 'Regenerate Token' : 'Generate Token'}</button>
+                  {tokenExpiration === "custom" && (
+                    <div className={styles["pc-form-group"]}><label>Select Expiry Date</label>
+                      <div className={styles["token-date-wrapper"]} onClick={() => { if (tokenDateRef.current) tokenDateRef.current.showPicker(); }}>
+                        <input type="date" value={tokenCustomDate} onChange={(e) => { setTokenCustomDate(e.target.value); const now = new Date(); const expiry = new Date(e.target.value); const diffDays = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)); setTokenCustomDays(String(diffDays > 0 ? diffDays : 1)); }} ref={tokenDateRef} className={`${styles["pc-input"]} ${styles["token-date-input"]}`} min={new Date().toISOString().split('T')[0]} />
+                        <Calendar className={styles["token-date-icon"]} size={16} />
+                      </div>
+                    </div>
+                  )}
+                  <div className={styles["token-warning"]}><AlertTriangle size={16} /><span>The token will only be shown once after creation.</span></div>
+                </div>
+                <div className={styles["pc-modal-footer"]}>
+                  <button className={styles["pc-btn-cancel"]} onClick={() => setShowTokenFormModal(false)}>Cancel</button>
+                  <button className={styles["pc-btn-primary"]} onClick={handleTokenGenerate} disabled={!tokenName.trim() || !tokenMode}>{isRegenerating ? 'Regenerate Token' : 'Generate Token'}</button>
+                </div>
               </div>
             </div>
-          </div>
+          </>
         )
       }
 

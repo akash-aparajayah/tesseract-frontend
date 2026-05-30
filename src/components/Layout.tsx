@@ -26,7 +26,9 @@ export default function Layout() {
             <Breadcrumb />
 
             {/* Page Content */}
-            <Outlet />
+            <div className="page-content">
+              <Outlet />
+            </div>
           </div>
         </div>
       </div>

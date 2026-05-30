@@ -32,15 +32,17 @@ body,
 #root {
   width: 100%;
   height: 100%;
+  overflow: hidden;
 }
 
 /* Layout Wrapper - Centers content on large screens */
 .dashboard-layout-wrapper {
   width: 100%;
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   justify-content: center;
   background-color: #e8ecf1;
+  overflow: hidden;
   /* Background outside container for large screens */
 }
 
@@ -48,9 +50,10 @@ body,
 .dashboard-layout-inner {
   width: 100%;
   max-width: var(--layout-max-width);
-  min-height: 100vh;
+  height: 100vh;
   position: relative;
   background-color: #f9fafb;
+  overflow: hidden;
 }
 
 /* Add shadow to container on large screens */
@@ -63,28 +66,26 @@ body,
 /* Main layout - keeps current structure */
 .dashboard-layout {
   display: flex;
-  min-height: 100vh;
+  height: 100%;
   width: 100%;
-  overflow-x: hidden;
   position: relative;
+  overflow: hidden;
 }
 
 .dashboard-content {
   flex: 1;
-  min-height: 100vh;
-  overflow-x: hidden;
-  transition: margin-left 0.3s ease, width 0.3s ease;
+  min-width: 0;
+  overflow: hidden;
   box-sizing: border-box;
   background-color: #f9fafb;
-  padding: 0px;
-  padding-top: 0px;
+  display: flex;
+  flex-direction: column;
 }
 
 .page-content {
-  padding: 0px;
   flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* =========================================================

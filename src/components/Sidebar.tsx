@@ -24,6 +24,8 @@ export default function Sidebar() {
 
       if (width <= 768) {
         setIsCollapsed(true); // Always force collapse on mobile
+      } else {
+        setIsCollapsed(false); // Auto-expand on larger screens
       }
     };
 

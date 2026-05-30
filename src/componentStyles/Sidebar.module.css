@@ -22,30 +22,26 @@
 
 /* Collapsed state */
 .sidebar.collapsed {
-  width: 80px;
+  width: 60px;
 }
 
 /* ========== LOGO ========== */
 .sidebarLogo {
   flex-shrink: 0;
-  padding: 24px 16px 20px 16px;
+  padding: 10px 16px 2px 16px;
   border-bottom: 1px solid #e2e8f0;
   text-align: center;
   transition: padding 0.3s ease;
 }
 
 .sidebar.collapsed .sidebarLogo {
-  padding: 20px 10px;
+  padding: 10px 9px 2px;
 }
 
 .logoImage {
-  max-width: 160px;
+  max-width: 200px;
   height: auto;
   transition: all 0.3s ease;
-}
-
-.sidebar.collapsed .logoImage {
-  max-width: 45px;
 }
 
 .logoPlaceholder {

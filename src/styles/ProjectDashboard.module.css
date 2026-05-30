@@ -31,6 +31,16 @@
     animation: containerFade 0.4s ease-out;
     transition: all 0.3s ease;
     padding: 0 24px;
+
+    overflow: visible;
+
+    min-height: calc(100vh - 70px);
+
+    z-index: 20;
+}
+
+.mainContent {
+    position: relative;
 }
 
 .dashboard-header {
@@ -1423,17 +1433,18 @@
 }
 
 .dashboard-slide-panel {
-    position: fixed;
+    position: absolute;
     top: 0;
     right: 0;
     width: 575px;
     max-width: 90vw;
-    height: 100vh;
+    height: calc(100% - 0px);
     background: #fff;
     z-index: 1001;
     box-shadow: -8px 0 30px rgba(0, 0, 0, 0.15);
     display: flex;
     flex-direction: column;
+
     animation: dashboardSlideInRight 0.5s ease;
 }
 
@@ -1497,6 +1508,10 @@
     padding: 16px 24px;
     border-top: 1px solid #e2e8f0;
     flex-shrink: 0;
+}
+
+.panel-footer button {
+    flex: 1;
 }
 
 /* Form */
