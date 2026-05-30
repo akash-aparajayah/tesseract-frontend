@@ -138,6 +138,7 @@ export default function ProjectView() {
   const [newEnvName, setNewEnvName] = useState("");
   const [isCustomEnv, setIsCustomEnv] = useState(false);
   const [customEnvInput, setCustomEnvInput] = useState("");
+  const [isAddEnvModalOpen, setIsAddEnvModalOpen] = useState(false);
 
   const [showAddProviderModal, setShowAddProviderModal] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState("");
@@ -387,9 +388,9 @@ export default function ProjectView() {
         ...(data.sandbox || []),
         ...(data.live || []),
       ];
-
+      const firstProvider = allProviders[0];
       setServiceEndpoint(
-        allProviders?.[0]?.endpoint || ""
+        firstProvider?.endpoint || ""
       );
 
       setProviders(
@@ -419,7 +420,7 @@ export default function ProjectView() {
       );
 
       setProviders([]);
-
+      setServiceEndpoint("");
       return [];
     }
   };
@@ -666,6 +667,22 @@ export default function ProjectView() {
 
   const updateAllServiceCounts = () => {
     setServiceProviderCounts(prev => ({ ...prev, [activeService]: providers.length }));
+  };
+
+
+  const togglePageScroll = (lock: boolean) => {
+    const pageContent = document.querySelector('.page-content') as HTMLElement;
+    if (pageContent) {
+      if (lock) {
+        // Save current scroll position before locking
+        const scrollTop = pageContent.scrollTop;
+        pageContent.style.overflow = 'hidden';
+        // Maintain scroll position
+        pageContent.scrollTop = scrollTop;
+      } else {
+        pageContent.style.overflow = '';
+      }
+    }
   };
 
 
@@ -923,7 +940,7 @@ export default function ProjectView() {
             mode: modeFilter,
           },
           mode: modeFilter,
-          endpoint: providerFields.endpoint || "",
+          endpoint: providerFields.endpoint || service?.service_base_endpoint || "",
         };
 
         await createProvider(payload);
@@ -1235,7 +1252,7 @@ export default function ProjectView() {
         reorderedProviders.map(
           (provider, index) => ({
             public_id: provider.id,
-            sort_order: index,
+            sort_order: index + 1,
           })
         )
 
@@ -2060,7 +2077,7 @@ export default function ProjectView() {
                       setNewEnvName("");
                       setIsCustomEnv(false);
                       setCustomEnvInput("");
-
+                      togglePageScroll(true);
                       setShowAddEnvModal(true);
                     }, 0);
                   }}>
@@ -2283,6 +2300,7 @@ export default function ProjectView() {
                                 setActiveService(service.name);
                                 setmodeFilter("Sandbox");
                                 setProviders([]);
+                                setServiceEndpoint("");
 
                                 const env = environments.find((e: any) => e.public_id === selectedEnv);
                                 console.log("Clicked service:", service.name, "Env:", env?.environment_name);
@@ -2628,6 +2646,7 @@ export default function ProjectView() {
               <div className={styles["pc-modal-header"]}><h3><Plus size={18} /> Add Environment</h3><button className={styles["pc-modal-close"]} onClick={() => {
                 setPendingCloseAction(() => () => {
                   setShowAddEnvModal(false);
+                  togglePageScroll(false);
                   setNewEnvName("");
                   setIsCustomEnv(false);
                   setCustomEnvInput("");
