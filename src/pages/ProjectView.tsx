@@ -939,8 +939,9 @@ export default function ProjectView() {
             ...providerFields,
             mode: modeFilter,
           },
-          mode: modeFilter,
+          mode: modeFilter.toUpperCase(),
           endpoint: providerFields.endpoint || service?.service_base_endpoint || "",
+          provider_slug: provider?.slug,
         };
 
         await createProvider(payload);

@@ -148,6 +148,7 @@ export const createProvider = async (data: {
   credentials: Record<string, string>;
   mode: string;
   endpoint?: string;
+  provider_slug: string;
 }) => {
   const response = await api.post("/services/create-provider", data);
   return response.data;
