@@ -208,6 +208,7 @@ export default function ProjectView() {
   const envTabsRef = useRef<HTMLDivElement>(null);
   const userFilterRef = useRef<HTMLDivElement>(null);
   const tokenDateRef = useRef<HTMLInputElement>(null);
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [providersLoading, setProvidersLoading] = useState(false);
   const [serviceData, setServiceData] = useState<any>(null);
@@ -225,6 +226,17 @@ export default function ProjectView() {
   const tokensInitialized = useRef(false);
   const [providerFormKey, setProviderFormKey] = useState(0);
   const [providerSchema, setProviderSchema] = useState<any[]>([]);
+
+  // Provider health status
+  const [providerHealth, setProviderHealth] = useState<Record<string, {
+    isActive: boolean;
+    error?: string;
+    errorTimestamp?: string;
+  }>>({});
+
+  const [showErrorTooltip, setShowErrorTooltip] = useState<string | null>(null);
+  const [errorTooltipPosition, setErrorTooltipPosition] = useState({ top: 0, left: 0 });
+  const [isTogglingProvider, setIsTogglingProvider] = useState<string | null>(null);
 
   const fetchUsersForEnvironment = async (env?: any) => {
     if (!projectId) return;
@@ -256,6 +268,111 @@ export default function ProjectView() {
       setUsersLoading(false);
     }
   };
+
+  const fetchProviderHealth = async (envPublicId: string, providerPublicId: string) => {
+    try {
+      // TODO: Replace with actual API endpoint when available
+      // const response = await getProviderHealth(envPublicId, providerPublicId);
+      // const data = response.data;
+
+      // Mock response structure - remove when API is ready
+      const data = {
+        isActive: true,
+        error: null,
+        errorTimestamp: null
+      };
+
+      setProviderHealth(prev => ({
+        ...prev,
+        [providerPublicId]: {
+          isActive: data.isActive,
+          error: data.error || undefined,
+          errorTimestamp: data.errorTimestamp || undefined
+        }
+      }));
+
+      return data;
+    } catch (error) {
+      console.error("Failed to fetch provider health:", error);
+      return null;
+    }
+  }; const handleProviderHealthToggle = async (providerId: string, envPublicId: string) => {
+    if (isTogglingProvider === providerId) return;
+
+    setIsTogglingProvider(providerId);
+
+    try {
+      const currentHealth = providerHealth[providerId];
+      const newStatus = !currentHealth?.isActive;
+
+      // TODO: Replace with actual API endpoint when available
+      // await toggleProviderHealth(envPublicId, providerId, newStatus);
+
+      // Optimistic update
+      setProviderHealth(prev => ({
+        ...prev,
+        [providerId]: {
+          isActive: newStatus,
+          error: prev[providerId]?.error,
+          errorTimestamp: prev[providerId]?.errorTimestamp
+        }
+      }));
+
+      showToast(
+        `Provider ${newStatus ? 'activated' : 'deactivated'} successfully`,
+        "success"
+      );
+    } catch (error: any) {
+      console.error("Failed to toggle provider health:", error);
+
+      // Revert optimistic update
+      setProviderHealth(prev => ({
+        ...prev,
+        [providerId]: {
+          isActive: !prev[providerId]?.isActive,
+          error: prev[providerId]?.error,
+          errorTimestamp: prev[providerId]?.errorTimestamp
+        }
+      }));
+
+      showToast(
+        error?.response?.data?.message || "Failed to update provider status",
+        "error"
+      );
+    } finally {
+      setIsTogglingProvider(null);
+    }
+  };
+  useEffect(() => {
+    if (!selectedEnv || !providers.length) return;
+
+    // TODO: Replace with actual WebSocket/SSE endpoint when available
+    // const ws = new WebSocket(`ws://your-api/providers/${selectedEnv}/health`);
+
+    // Mock WebSocket implementation - remove when API is ready
+    const mockHealthCheck = setInterval(() => {
+      providers.forEach(provider => {
+        // Simulate random errors for testing
+        // Remove this mock logic when connecting to real backend
+        if (Math.random() < 0.1) { // 10% chance of error for testing
+          setProviderHealth(prev => ({
+            ...prev,
+            [provider.id]: {
+              isActive: false,
+              error: `Connection failed: ${new Date().toLocaleTimeString()}`,
+              errorTimestamp: new Date().toISOString()
+            }
+          }));
+        }
+      });
+    }, 30000); // Check every 30 seconds
+
+    return () => {
+      clearInterval(mockHealthCheck);
+      // Cleanup WebSocket connection when real endpoint is available
+      // ws.close();
+    };
+  }, [selectedEnv, providers]);
 
   const fetchProvidersForService = async (servicePublicId: string) => {
     try {
@@ -405,7 +522,7 @@ export default function ProjectView() {
           name: p.provider_name || p.name,
           fields: {
             ...(p.credentials || {}),
-            mode: p.mode,
+            mode: p.mode || p.credentials?.mode || "",
             endpoint: p.endpoint,
           },
         }))
@@ -415,6 +532,10 @@ export default function ProjectView() {
         ...prev,
         [activeService]: allProviders.length,
       }));
+
+      allProviders.forEach(async (provider: any) => {
+        await fetchProviderHealth(env.public_id, provider.public_id || provider.id);
+      });
 
       return allProviders;
 
@@ -502,6 +623,15 @@ export default function ProjectView() {
   }, []);
 
 
+  // Cleanup hover timer on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     if (generatedToken) {
       const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -577,12 +707,18 @@ export default function ProjectView() {
         const environmentName = env.environment_name;
 
         mapped[`${environmentName}_${token.mode}`] = {
-          id: token.public_id || token.id || "",
+          id:
+            token.public_id ||
+            token.id ||
+            token.api_key_id ||
+            "",
           name: token.note || "",
           token: token.key || token.api_key || "",
           projectId: token.project_id || "",
           environmentName,
-          mode: token.mode || "",
+          mode:
+            (token.mode || "")
+              .toUpperCase(),
           created: token.created_at || "",
           expires: token.expires_at || "",
           expiresInDays: token.expires_in_days ?? null,
@@ -1076,12 +1212,19 @@ export default function ProjectView() {
       const tokenData = res.data.data || res.data;
 
       const token: ApiToken = {
-        id: tokenData.public_id || currentToken?.id || "",
+        id:
+          tokenData.public_id ||
+          tokenData.id ||
+          tokenData.api_key_id ||
+          currentToken?.id ||
+          "",
         name: tokenData.note || "",
         token: tokenData.key || tokenData.api_key || "",
         projectId: projectId || "",
         environmentName: envName,
-        mode: tokenData.mode || tokenMode || "",
+        mode:
+          (tokenData.mode || tokenMode || "")
+            .toUpperCase(),
         created: tokenData.created_at || "",
         expires: tokenData.expires_at || "",
         expiresInDays: tokenData.expires_in_days ?? null,
@@ -1121,16 +1264,27 @@ export default function ProjectView() {
   };
 
   const handleTokenDelete = async () => {
-    console.log("CURRENT TOKEN:", currentToken);
-    console.log("CURRENT TOKEN ID:", currentToken?.id);
-    if (!projectId || !selectedEnv || !currentToken?.mode) return;
+
+    if (!currentToken?.id) {
+      return;
+    }
 
     try {
+
+      console.log(
+        "Deleting token:",
+        currentToken.id
+      );
+
       await deleteApiKey(currentToken.id);
 
-      const env = environments.find(
-        (e: any) => e.public_id === selectedEnv
-      );
+      console.log("DELETE API SUCCESS");
+
+      const env =
+        environments.find(
+          (e: any) =>
+            e.public_id === selectedEnv
+        );
 
       const envName =
         env?.environment_name || "";
@@ -1146,14 +1300,22 @@ export default function ProjectView() {
         return updated;
       });
 
+      showToast(
+        "Token deleted",
+        "success"
+      );
+
+      // MOVE THESE LAST
       setShowTokenDeleteModal(false);
-      setSelectedEnv("");
+
       setCurrentToken(null);
 
-      showToast("Token deleted", "error");
-
     } catch (error: any) {
-      console.error("Delete token failed:", error);
+
+      console.error(
+        "Delete token failed:",
+        error
+      );
 
       showToast(
         error?.response?.data?.message ||
@@ -1616,7 +1778,34 @@ export default function ProjectView() {
   };
 
   const handleCancelEdit = () => { if (project) setEditForm({ name: project.name, description: project.description || "", status: project.status }); setIsEditing(false); };
+  // ✅ PLACE IT HERE - Before console.log and before if (pageLoading)
+  useEffect(() => {
+    if (providers.length > 0) {
+      const firstProvider = providers[0];
+      if (firstProvider) {
+        setProviderHealth(prev => ({
+          ...prev,
+          [firstProvider.id]: {
+            isActive: false,
+            error: "Connection failed: SMS gateway timeout after 30 seconds. Unable to reach Twilio API endpoint. Please check your credentials and network connectivity.",
+            errorTimestamp: new Date().toISOString()
+          }
+        }));
+      }
+    }
+  }, [providers]);
 
+  // This must come AFTER all hooks
+  console.log("SKELETON CHECK - pageLoading:", pageLoading, "!project:", !project, "environmentsLoading:", environmentsLoading);
+
+  // This can now safely return early because ALL hooks are above it
+  if (pageLoading) {
+    return (
+      <div className={styles["project-view-page"]}>
+        ...
+      </div>
+    );
+  }
   console.log("SKELETON CHECK - pageLoading:", pageLoading, "!project:", !project, "environmentsLoading:", environmentsLoading);
   if (pageLoading) {
 
@@ -1665,6 +1854,8 @@ export default function ProjectView() {
 
     return days;
   };
+
+
 
   return (
     <div className={styles["project-view-page"]}>
@@ -2311,10 +2502,10 @@ export default function ProjectView() {
                           </div>
                           <div className={styles["pc-mode-tabs"]}>
                             <button className={`${styles["pc-mode-tab"]} ${modeFilter === 'Sandbox' ? `${styles["active"]} ${styles["sandbox"]}` : ''}`} onClick={() => setmodeFilter('Sandbox')}>
-                              <Wrench size={14} /> Sandbox <span className={styles["pc-mode-tab-count"]}>{providers.filter(p => p.fields.mode === 'Sandbox').length}</span>
+                              <Wrench size={14} /> Sandbox <span className={styles["pc-mode-tab-count"]}>{providers.filter(p => p.fields.mode?.toLowerCase() === 'sandbox').length}</span>
                             </button>
                             <button className={`${styles["pc-mode-tab"]} ${modeFilter === 'Live' ? `${styles["active"]} ${styles["live"]}` : ''}`} onClick={() => setmodeFilter('Live')}>
-                              <Rocket size={14} /> Live <span className={styles["pc-mode-tab-count"]}>{providers.filter(p => p.fields.mode === 'Live').length}</span>
+                              <Rocket size={14} /> Live <span className={styles["pc-mode-tab-count"]}>{providers.filter(p => p.fields.mode?.toLowerCase() === 'live').length}</span>
                             </button>
                             {serviceEndpoint && (
                               <div className={styles["pc-endpoint-inline"]}>
@@ -2358,78 +2549,277 @@ export default function ProjectView() {
                                 <p>Add your first {modeFilter.toLowerCase()} provider to start configuring services</p>
                               </div>
                             ) : (
-                              filteredProviders.map((provider, index) => (
-                                <div key={provider.id} className={`${styles["pc-provider-card"]} ${dragIndex === index ? styles["dragging"] : ''}`} style={{ borderLeftColor: SERVICE_COLORS[activeService] }}
-                                  draggable onDragStart={(e) => handleDragStart(e, index)} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, index)} onDragEnd={handleDragEnd}>
-                                  <div className={styles["pc-provider-card-header"]} onClick={() => setExpandedProviders(prev => ({ ...prev, [provider.id]: !prev[provider.id] }))}>
-                                    <div className={styles["pc-provider-title"]}>
-                                      <Plug size={14} /><span>{provider.name.replace(/_/g, ' ')}</span>
-                                      {index === 0 && <span className={styles["pc-primary-badge"]}><Rocket size={10} /> Primary</span>}
-                                      <span className={styles["pc-configured-badge"]} style={{ background: `${SERVICE_COLORS[activeService]}15`, color: SERVICE_COLORS[activeService] }}><Check size={10} /> Configured</span>
-                                    </div>
-                                    <div className={styles["pc-provider-header-right"]}>
-                                      {/* <div className={styles["pc-endpoint-inline"]}>
-                                        <code className={styles["pc-endpoint-text"]}>
-                                          Endpoint URL : {provider.fields.endpoint || "------------------"}
-                                        </code>
-                                        {provider.fields.endpoint && (
-                                          <button
-                                            className={styles["pc-endpoint-copy-mini"]}
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              navigator.clipboard.writeText(provider.fields.endpoint);
-                                              showToast("Endpoint copied!", "success");
-                                            }}
-                                          >
-                                            <Copy size={12} />
-                                          </button>
+
+                              filteredProviders.map((provider, index) => {
+                                const health = providerHealth[provider.id];
+                                const isActive = health?.isActive !== false; // Default to active if no status
+                                const hasError = health?.error && !isActive;
+                                const serviceColor = SERVICE_COLORS[activeService];
+                                const borderColor = isActive ? serviceColor : '#ef4444';
+
+                                return (
+                                  <div
+                                    key={provider.id}
+                                    className={`${styles["pc-provider-card"]} ${dragIndex === index ? styles["dragging"] : ''
+                                      } ${!isActive ? styles["provider-inactive"] : ''} ${hasError ? styles["provider-error"] : ''
+                                      }`}
+                                    style={{
+                                      borderLeftColor: borderColor,
+                                      backgroundColor: !isActive ? '#fef2f2' : undefined
+                                    }}
+                                    draggable
+                                    onDragStart={(e) => handleDragStart(e, index)}
+                                    onDragOver={handleDragOver}
+                                    onDrop={(e) => handleDrop(e, index)}
+                                    onDragEnd={handleDragEnd}
+                                  >
+                                    <div
+                                      className={styles["pc-provider-card-header"]}
+                                      onClick={() => setExpandedProviders(prev => ({
+                                        ...prev,
+                                        [provider.id]: !prev[provider.id]
+                                      }))}
+                                    >
+                                      <div className={styles["pc-provider-title"]}>
+                                        <Plug size={14} />
+                                        <span>{provider.name.replace(/_/g, ' ')}</span>
+
+                                        {index === 0 && (
+                                          <span className={styles["pc-primary-badge"]}>
+                                            <Rocket size={10} /> Primary
+                                          </span>
                                         )}
-                                      </div> */}
-                                      <div className={styles["pc-provider-actions"]} onClick={(e) => e.stopPropagation()}>
-                                        <button
-                                          className={styles["pc-edit-btn"]}
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setEditingProvider(provider);
-                                            setSelectedProvider(provider.name);
-                                            setProviderFields({ ...provider.fields });
-                                            setShowAddProviderModal(true);
+
+                                        <span
+                                          className={styles["pc-configured-badge"]}
+                                          style={{
+                                            background: `${serviceColor}15`,
+                                            color: serviceColor
                                           }}
                                         >
-                                          <Pencil size={14} />
+                                          <Check size={10} /> Configured
+                                        </span>
+
+                                      </div>
+
+                                      <div className={styles["pc-provider-header-right"]}>
+                                        {/* Error Alert Icon - Shows NEXT to the toggle, both visible */}
+                                        {hasError && (
+                                          <div
+                                            className={styles["provider-error-alert"]}
+                                            onMouseEnter={(e) => {
+                                              // Clear any pending hide timers
+                                              if (hoverTimerRef.current) {
+                                                clearTimeout(hoverTimerRef.current);
+                                                hoverTimerRef.current = null;
+                                              }
+                                              const rect = e.currentTarget.getBoundingClientRect();
+                                              setErrorTooltipPosition({
+                                                top: Math.min(rect.bottom + 8, window.innerHeight - 250),
+                                                left: Math.max(10, Math.min(rect.left, window.innerWidth - 420))
+                                              });
+                                              setShowErrorTooltip(provider.id);
+                                            }}
+                                            onMouseLeave={() => {
+                                              // Small delay to allow mouse to reach tooltip
+                                              hoverTimerRef.current = setTimeout(() => {
+                                                setShowErrorTooltip(null);
+                                              }, 300);
+                                            }}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              if (hoverTimerRef.current) {
+                                                clearTimeout(hoverTimerRef.current);
+                                                hoverTimerRef.current = null;
+                                              }
+                                              const rect = e.currentTarget.getBoundingClientRect();
+                                              setErrorTooltipPosition({
+                                                top: Math.min(rect.bottom + 8, window.innerHeight - 250),
+                                                left: Math.max(10, Math.min(rect.left, window.innerWidth - 420))
+                                              });
+                                              setShowErrorTooltip(
+                                                showErrorTooltip === provider.id ? null : provider.id
+                                              );
+                                            }}
+                                          >
+                                            <div className={styles["error-pulse-ring"]}></div>
+                                            <AlertCircle size={16} />
+                                          </div>
+                                        )}
+
+                                        {/* Health Toggle - Always visible */}
+                                        <button
+                                          className={`${styles["env-status-toggle"]} ${isActive ? styles["status-active"] : styles["status-inactive"]
+                                            }`}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            const env = environments.find((e: any) => e.public_id === selectedEnv);
+                                            if (env) {
+                                              handleProviderHealthToggle(provider.id, env.public_id);
+                                            }
+                                          }}
+                                          disabled={isTogglingProvider === provider.id}
+                                          title={isActive ? "Deactivate provider" : "Activate provider"}
+                                        >
+                                          <span className={styles["toggle-text"]}>
+                                            {isTogglingProvider === provider.id
+                                              ? '...'
+                                              : isActive
+                                                ? 'ACTIVE'
+                                                : 'INACTIVE'
+                                            }
+                                          </span>
+                                          <span className={styles["toggle-icon"]}>
+                                            <svg viewBox="0 0 24 24">
+                                              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                              <circle cx="12" cy="7" r="4"></circle>
+                                            </svg>
+                                          </span>
                                         </button>
-                                        <button className={styles["pc-delete-btn"]} onClick={() => setShowDeleteProviderModal({ id: provider.id, name: provider.name })}><Trash2 size={14} /></button>
+
+                                        <div className={styles["pc-provider-actions"]} onClick={(e) => e.stopPropagation()}>
+                                          <button
+                                            className={styles["pc-edit-btn"]}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setEditingProvider(provider);
+                                              setSelectedProvider(provider.name);
+                                              setProviderFields({ ...provider.fields });
+                                              setShowAddProviderModal(true);
+                                            }}
+                                          >
+                                            <Pencil size={14} />
+                                          </button>
+                                          <button
+                                            className={styles["pc-delete-btn"]}
+                                            onClick={() => setShowDeleteProviderModal({
+                                              id: provider.id,
+                                              name: provider.name
+                                            })}
+                                          >
+                                            <Trash2 size={14} />
+                                          </button>
+                                        </div>
                                       </div>
                                     </div>
-                                  </div>
-                                  {expandedProviders[provider.id] && (
-                                    <div className={styles["pc-provider-card-body"]}>
-                                      {Object.entries(provider.fields)
-                                        .filter(([key]) => key !== 'endpoint' && key !== 'id')
-                                        .sort(([a], [b]) => a === 'mode' ? -1 : b === 'mode' ? 1 : 0)
-                                        .map(([key, value]) => {
-                                          const isPwd = key.toLowerCase().includes("key") || key.toLowerCase().includes("token") || key.toLowerCase().includes("secret") || key.toLowerCase().includes("password");
-                                          const ismode = key === 'mode';
-                                          const pk = `${provider.id}_${key}`;
-                                          return (
-                                            <div className={styles["pc-credential-row"]} key={key}>
-                                              <span className={styles["pc-credential-label"]}>
-                                                {ismode ? "Mode" : key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').replace(/^./, s => s.toUpperCase())}
-                                              </span>                                          {ismode ? (
-                                                <span className={`${styles["pc-mode-badge"]} ${value === 'Live' ? styles["live"] : styles["sandbox"]}`}>{value === 'Live' ? <Rocket size={12} /> : <Wrench size={12} />}{value || "—"}</span>
-                                              ) : (
-                                                <>
-                                                  <span className={styles["pc-credential-value"]}>{isPwd ? (visiblePasswords[pk] ? value : "••••••••••") : value || "—"}</span>
-                                                  {isPwd && value && <button className={styles["pc-eye-btn-inline"]} onClick={() => setVisiblePasswords(prev => ({ ...prev, [pk]: !prev[pk] }))}>{visiblePasswords[pk] ? <FaEyeSlash size={14} /> : <FaEye size={14} />}</button>}
-                                                </>
-                                              )}
+
+                                    {/* Error Tooltip */}
+                                    {showErrorTooltip === provider.id && hasError && (
+                                      <div
+                                        className={styles["error-tooltip"]}
+                                        style={{
+                                          position: 'fixed',
+                                          top: `${errorTooltipPosition.top}px`,
+                                          left: `${errorTooltipPosition.left}px`,
+                                          zIndex: 10000
+                                        }}
+                                        onMouseEnter={() => {
+                                          // Clear any pending hide timers when mouse enters tooltip
+                                          if (hoverTimerRef.current) {
+                                            clearTimeout(hoverTimerRef.current);
+                                            hoverTimerRef.current = null;
+                                          }
+                                          // Keep tooltip visible
+                                          setShowErrorTooltip(provider.id);
+                                        }}
+                                        onMouseLeave={() => {
+                                          // Hide immediately when mouse leaves the tooltip
+                                          setShowErrorTooltip(null);
+                                        }}
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        <div className={styles["error-tooltip-header"]}>
+                                          <AlertTriangle size={16} />
+                                          <span>Provider Error</span>
+                                          <button
+                                            className={styles["error-tooltip-copy"]}
+                                            onClick={() => {
+                                              navigator.clipboard.writeText(health?.error || '');
+
+                                              // Temporarily change button to show "Copied" state
+                                              const button = document.activeElement as HTMLElement;
+                                              if (button) {
+                                                button.classList.add(styles["copied"]);
+                                                setTimeout(() => {
+                                                  button.classList.remove(styles["copied"]);
+                                                }, 2000);
+                                              }
+                                            }}
+                                          >
+                                            <span className={styles["copy-default"]}>
+                                              <Copy size={14} />
+                                              Copy
+                                            </span>
+                                            <span className={styles["copy-success"]}>
+                                              <Check size={14} />
+                                              Copied
+                                            </span>
+                                          </button>
+                                        </div>
+                                        <div className={styles["error-tooltip-content"]}>
+                                          <p>{health?.error}</p>
+                                          {health?.errorTimestamp && (
+                                            <div className={styles["error-tooltip-timestamp"]}>
+                                              <Clock size={12} />
+                                              {new Date(health.errorTimestamp).toLocaleString()}
                                             </div>
-                                          );
-                                        })}
-                                    </div>
-                                  )}
-                                </div>
-                              ))
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {expandedProviders[provider.id] && (
+                                      <div className={styles["pc-provider-card-body"]}>
+                                        {Object.entries(provider.fields)
+                                          .filter(([key]) => key !== 'endpoint' && key !== 'id')
+                                          .sort(([a], [b]) => a === 'mode' ? -1 : b === 'mode' ? 1 : 0)
+                                          .map(([key, value]) => {
+                                            const isPwd = key.toLowerCase().includes("key") ||
+                                              key.toLowerCase().includes("token") ||
+                                              key.toLowerCase().includes("secret") ||
+                                              key.toLowerCase().includes("password");
+                                            const ismode = key === 'mode';
+                                            const pk = `${provider.id}_${key}`;
+                                            return (
+                                              <div className={styles["pc-credential-row"]} key={key}>
+                                                <span className={styles["pc-credential-label"]}>
+                                                  {ismode ? "Mode" : key.replace(/([A-Z])/g, ' $1')
+                                                    .replace(/_/g, ' ')
+                                                    .replace(/^./, s => s.toUpperCase())}
+                                                </span>
+                                                {ismode ? (
+                                                  <span className={`${styles["pc-mode-badge"]} ${value === 'Live' ? styles["live"] : styles["sandbox"]
+                                                    }`}>
+                                                    {value === 'Live' ? <Rocket size={12} /> : <Wrench size={12} />}
+                                                    {value || "—"}
+                                                  </span>
+                                                ) : (
+                                                  <>
+                                                    <span className={styles["pc-credential-value"]}>
+                                                      {isPwd ? (visiblePasswords[pk] ? value : "••••••••••") : value || "—"}
+                                                    </span>
+                                                    {isPwd && value && (
+                                                      <button
+                                                        className={styles["pc-eye-btn-inline"]}
+                                                        onClick={() => setVisiblePasswords(prev => ({
+                                                          ...prev,
+                                                          [pk]: !prev[pk]
+                                                        }))}
+                                                      >
+                                                        {visiblePasswords[pk] ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
+                                                      </button>
+                                                    )}
+                                                  </>
+                                                )}
+                                              </div>
+                                            );
+                                          })}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })
+
                             )}
                           </div>
                         </div>
@@ -2564,8 +2954,41 @@ export default function ProjectView() {
                                       setIsRegenerating(true);
                                       setShowTokenFormModal(true);
                                     }}><RefreshCw size={12} />Regenerate</button>
-                                    <button className={`${styles["token-action-btn"]} ${styles["delete"]}`} onClick={() => { setSelectedEnv(env.public_id); setTokenMode('Live'); setShowTokenDeleteModal(true); }}><Trash2 size={12} />Delete</button>
-                                  </div>
+                                    <button
+                                      className={`${styles["token-action-btn"]} ${styles["delete"]}`}
+                                      onClick={() => {
+
+                                        const envName =
+                                          env.environment_name;
+
+                                        const liveToken =
+                                          allTokens[
+                                          `${envName}_LIVE`
+                                          ];
+
+                                        console.log(
+                                          "LIVE TOKEN FOUND:",
+                                          liveToken
+                                        );
+
+                                        if (!liveToken) {
+                                          return;
+                                        }
+
+                                        setSelectedEnv(env.public_id);
+
+                                        setTokenMode("LIVE");
+
+                                        setCurrentToken(liveToken);
+
+                                        setTimeout(() => {
+                                          setShowTokenDeleteModal(true);
+                                        }, 0);
+                                      }}
+                                    >
+                                      <Trash2 size={12} />
+                                      Delete
+                                    </button>                               </div>
                                 </div>
                               </div>
                             </div>
@@ -2697,7 +3120,7 @@ export default function ProjectView() {
               {/* ✅ Updated Header - Same style as Manage Users & Add Environment */}
               <div className={styles["user-panel-header"]}>
                 <div className={styles["user-panel-header-left"]}>
-                  <Copy size={20} />
+
                   <h3>Clone Environment</h3>
                 </div>
                 <button className={styles["user-panel-close"]} onClick={() => setShowCloneModal(false)}>
@@ -3414,7 +3837,25 @@ export default function ProjectView() {
       {
         showTokenDeleteModal && (
           <div className={styles["pc-modal-overlay"]} onClick={() => setShowTokenDeleteModal(false)}>
-            <div className={`${styles["pc-modal"]} ${styles["pc-modal-small"]}`} onClick={e => e.stopPropagation()}><div className={styles["pc-modal-header"]}><Trash2 size={22} color="#ef4444" /><h3>Delete Token?</h3></div><div className={styles["pc-modal-body"]}><div className={styles["modal-token-info"]}><div><Globe size={14} /> Environment: <strong>{environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv}</strong></div>{currentToken && <><div><Key size={14} /> Token: <strong>{currentToken.name}</strong></div><div><Calendar size={14} /> Created: {formatDate(currentToken.created)}</div></>}</div><p className={styles["warning-text"]}>This will permanently revoke API access.</p></div><div className={styles["pc-modal-footer"]}><button className={styles["pc-btn-cancel"]} onClick={() => setShowTokenDeleteModal(false)}>Cancel</button><button className={styles["pc-btn-primary"]} onClick={handleTokenDelete} style={{ background: '#ef4444' }}>Delete Token</button></div></div>
+            <div className={`${styles["pc-modal"]} ${styles["pc-modal-small"]}`} onClick={e => e.stopPropagation()}><div className={styles["pc-modal-header"]}><Trash2 size={22} color="#ef4444" /><h3>Delete Token?</h3></div><div className={styles["pc-modal-body"]}><div className={styles["modal-token-info"]}><div><Globe size={14} /> Environment: <strong>{environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv}</strong></div>{currentToken && <><div><Key size={14} /> Token: <strong>{currentToken.name}</strong></div><div><Calendar size={14} /> Created: {formatDate(currentToken.created)}</div></>}</div><p className={styles["warning-text"]}>This will permanently revoke API access.</p></div><div className={styles["pc-modal-footer"]}><button className={styles["pc-btn-cancel"]} onClick={() => setShowTokenDeleteModal(false)}>Cancel</button><button
+              type="button"
+              className={styles["pc-btn-primary"]}
+              style={{ background: "#ef4444" }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                console.log("DELETE BUTTON CLICKED");
+
+                handleTokenDelete();
+              }}
+            >
+              Delete Token
+            </button></div></div>
           </div>
         )
       }

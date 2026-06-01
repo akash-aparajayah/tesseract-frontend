@@ -229,3 +229,38 @@ export const reorderProviders = async (
 
   return res.data;
 };
+
+
+// Get provider health status
+export const getProviderHealth = async (environmentId: string, providerId: string) => {
+  const response = await api.get(`/environments/${environmentId}/providers/${providerId}/health`);
+  return response.data;
+};
+
+// Toggle provider health status
+export const toggleProviderHealth = async (
+  environmentId: string,
+  providerId: string,
+  isActive: boolean
+) => {
+  const response = await api.patch(
+    `/environments/${environmentId}/providers/${providerId}/health`,
+    { is_active: isActive }
+  );
+  return response.data;
+};
+
+// Connect to provider health WebSocket
+export const connectProviderHealthSocket = (
+  environmentId: string,
+  onMessage: (data: any) => void
+) => {
+  const wsUrl = 'ws://localhost:8000'; // or your production URL
+  const ws = new WebSocket(`${wsUrl}/ws/environments/${environmentId}/providers/health`);
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    onMessage(data);
+  };
+
+  return ws;
+};

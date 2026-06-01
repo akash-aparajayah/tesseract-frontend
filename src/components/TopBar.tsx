@@ -247,14 +247,17 @@ export default function TopBar() {
       {showPasswordModal && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalBox}>
-            <button
-              className={styles.closeButton}
-              onClick={() => setShowPasswordModal(false)}
-              title="Close"
-            >
-              <FaTimes />
-            </button>
-            <h2>Change Password</h2>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+              <h2 style={{ margin: 0 }}>Change Password</h2>
+              <button
+                className={styles.closeButton}
+                onClick={() => setShowPasswordModal(false)}
+                title="Close"
+                style={{ marginLeft: 0 }}
+              >
+                <FaTimes />
+              </button>
+            </div>
             <form onSubmit={handlePasswordChange}>
               <div className={styles.passwordWrapper}>
                 <input
@@ -311,15 +314,18 @@ export default function TopBar() {
       {showLogoutModal && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalBox} style={{ maxWidth: "400px" }}>
-            <button
-              className={styles.closeButton}
-              onClick={handleCancelLogout}
-              title="Close"
-            >
-              <FaTimes />
-            </button>
-            <h2>Confirm Logout</h2>
-            <p style={{ color: "#64748b", marginBottom: "24px", marginTop: "12px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+              <h2 style={{ margin: 0 }}>Confirm Logout</h2>
+              <button
+                className={styles.closeButton}
+                onClick={handleCancelLogout}
+                title="Close"
+                style={{ marginLeft: 0 }}
+              >
+                <FaTimes />
+              </button>
+            </div>
+            <p style={{ color: "#64748b", marginBottom: "24px" }}>
               Are you sure you want to logout from your account?
             </p>
             <div className={styles.modalActions}>
@@ -335,16 +341,13 @@ export default function TopBar() {
                 className={styles.saveButton}
                 onClick={handleConfirmLogout}
                 disabled={isLoggingOut}
-                style={{ background: isLoggingOut ? "#94a3b8" : "#ef4444" }}
+                style={{
+                  background: isLoggingOut ? "#94a3b8" : "#ef4444",
+                  cursor: isLoggingOut ? "not-allowed" : "pointer",
+                  opacity: isLoggingOut ? 0.7 : 1
+                }}
               >
-                {isLoggingOut ? (
-                  <>
-                    <FaSignOutAlt style={{ marginRight: "8px", animation: "spin 1s linear infinite" }} />
-                    Logging out...
-                  </>
-                ) : (
-                  "Logout"
-                )}
+                {isLoggingOut ? "Logging out..." : "Logout"}
               </button>
             </div>
           </div>

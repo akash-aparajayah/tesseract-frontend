@@ -210,7 +210,7 @@
    SETTINGS ROTATION
 ========================================================= */
 .settingsIcon:hover svg {
-  transform: rotate(45deg);
+  color: var(--primary-blue);
 }
 
 /* =========================================================
@@ -601,10 +601,7 @@
 
 .closeButton:hover {
   color: var(--danger);
-
   background: rgba(211, 47, 47, 0.08);
-
-  transform: rotate(90deg);
 }
 
 /* =========================================================
