@@ -108,13 +108,21 @@ interface Props {
     onChange: (name: string, value: string) => void;
     excludeFields?: string[];
     title?: string;
+    schema?: Array<{       // ADD THIS
+        key: string;
+        label: string;
+        placeholder?: string;
+        description?: string;
+        is_secret?: boolean;
+    }>;
 }
 
 const FormValidation: React.FC<Props> = ({
     fields,
     onChange,
     excludeFields = ["mode", "endpoint", "id"],
-    title = "Credentials"
+    title = "Credentials",
+    schema
 }) => {
     const [touched, setTouched] = useState<Record<string, boolean>>({});
     const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
@@ -135,6 +143,11 @@ const FormValidation: React.FC<Props> = ({
     }, [fields, excludeFields]);
 
     const getLabel = (key: string): string => {
+        // Use schema label if available
+        if (schema) {
+            const field = schema.find(f => f.key === key);
+            if (field?.label) return field.label;
+        }
         return key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').replace(/^./, s => s.toUpperCase());
     };
 
@@ -171,7 +184,11 @@ const FormValidation: React.FC<Props> = ({
                                 value={fields[key] || ""}
                                 onChange={(e) => onChange(key, e.target.value)}
                                 onBlur={() => setTouched(prev => ({ ...prev, [key]: true }))}
-                                placeholder={`Enter ${getLabel(key)}`}
+                                placeholder={
+                                    schema
+                                        ? (schema.find(f => f.key === key)?.placeholder || `Enter ${getLabel(key)}`)
+                                        : `Enter ${getLabel(key)}`
+                                }
                                 className={styles.input}
                             />
 

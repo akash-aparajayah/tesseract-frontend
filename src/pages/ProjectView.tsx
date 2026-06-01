@@ -221,6 +221,10 @@ export default function ProjectView() {
   // statuschanging
   const [statusChanging, setStatusChanging] = useState(false);
 
+  const initialLoadDone = useRef(false);
+  const tokensInitialized = useRef(false);
+  const [providerFormKey, setProviderFormKey] = useState(0);
+  const [providerSchema, setProviderSchema] = useState<any[]>([]);
 
   const fetchUsersForEnvironment = async (env?: any) => {
     if (!projectId) return;
@@ -561,7 +565,6 @@ export default function ProjectView() {
       const mapped: Record<string, ApiToken> = {};
 
       apiKeys.forEach((token: any) => {
-        // Use passed envs instead of state
         const env = envs.find(
           (e: any) => e.public_id === token.environment_id
         );
@@ -589,8 +592,10 @@ export default function ProjectView() {
 
       console.log("Mapped tokens:", mapped);
 
-      if (Object.keys(mapped).length > 0) {
+      // Only set tokens once during initial load
+      if (!tokensInitialized.current) {
         setAllTokens(mapped);
+        tokensInitialized.current = true;
       }
 
     } catch (error) {
@@ -662,14 +667,6 @@ export default function ProjectView() {
     }
   };
 
-  const loadProviders = () => {
-    const env = environments.find((e: any) => e.public_id === selectedEnv);
-    if (env) loadProvidersForEnv(env);
-  };
-
-  const updateAllServiceCounts = () => {
-    setServiceProviderCounts(prev => ({ ...prev, [activeService]: providers.length }));
-  };
 
 
   // const handleCreateEnvironment = () => {
@@ -926,7 +923,7 @@ export default function ProjectView() {
             ...providerFields,
             mode: modeFilter,
           },
-          mode: modeFilter,
+          mode: modeFilter?.toUpperCase(),
           endpoint: providerFields.endpoint || service?.service_base_endpoint || "",
         };
 
@@ -975,12 +972,10 @@ export default function ProjectView() {
     const providerName = e.target.value;
     setSelectedProvider(providerName);
 
-    // Find the provider from the list
     const provider = providersList.find((p: any) => p.name === providerName);
 
     if (provider?.public_id) {
       try {
-        // Fetch provider details to get credential schema
         const res = await getProviderById(provider.public_id);
         console.log("Provider details:", res);
 
@@ -993,6 +988,11 @@ export default function ProjectView() {
         nf["mode"] = modeFilter;
 
         setProviderFields(nf);
+        setProviderFormKey(prev => prev + 1);
+
+        // STORE THE SCHEMA for FormValidation to use
+        setProviderSchema(schema);
+
       } catch (error) {
         console.error("Failed to fetch provider schema:", error);
       }
@@ -1000,12 +1000,8 @@ export default function ProjectView() {
   };
 
   const handleFieldChange = (n: string, v: string) => setProviderFields(prev => ({ ...prev, [n]: v }));
-  const togglePasswordVisibility = (n: string) => setShowPasswords(prev => ({ ...prev, [n]: !prev[n] }));
-
   // ---- TOKEN FUNCTIONS ----
-  const saveToken = (pId: string, env: string, mode: string, token: ApiToken) => {
-    localStorage.setItem(`token_${pId}_${env}_${mode}`, JSON.stringify(token));
-  };
+
   // const getAllTokens = (pId: string): Record<string, ApiToken> => {
   //   const tokens: Record<string, ApiToken> = {};
   //   Object.keys(localStorage).forEach(key => {
@@ -1017,9 +1013,6 @@ export default function ProjectView() {
   //   });
   //   return tokens;
   // };
-  const deleteToken = (pId: string, env: string, mode: string) => {
-    localStorage.removeItem(`token_${pId}_${env}_${mode}`);
-  };
 
   const handleTokenGenerate = async () => {
     if (!tokenName.trim() || !selectedEnv || !projectId || !tokenMode) return;
@@ -1034,24 +1027,7 @@ export default function ProjectView() {
         return;
       }
 
-      const payload = {
-        project_id: projectId,
-        environment_id: env.public_id,
-        note: tokenName.trim(),
-        mode: tokenMode.toUpperCase(),
-        expires_in_days:
-          tokenExpiration === "never"
-            ? null
-            : tokenExpiration === "7"
-              ? 7
-              : tokenExpiration === "30"
-                ? 30
-                : tokenExpiration === "60"
-                  ? 60
-                  : tokenExpiration === "90"
-                    ? 90
-                    : Number(tokenCustomDays),
-      };
+      const envName = env.environment_name || "";
 
       let res;
 
@@ -1059,52 +1035,74 @@ export default function ProjectView() {
       if (isRegenerating && currentToken?.id) {
         res = await regenerateApiKey(
           currentToken.id,
-
+          {
+            note: tokenName.trim(),
+            expires_in_days:
+              tokenExpiration === "never"
+                ? null
+                : tokenExpiration === "7"
+                  ? 7
+                  : tokenExpiration === "30"
+                    ? 30
+                    : tokenExpiration === "60"
+                      ? 60
+                      : tokenExpiration === "90"
+                        ? 90
+                        : Number(tokenCustomDays),
+          }
         );
       } else {
         // CREATE
-        res = await createApiKey(payload);
+        res = await createApiKey({
+          project_id: projectId,
+          environment_id: env.public_id,
+          note: tokenName.trim(),
+          mode: tokenMode.toUpperCase(),
+          expires_in_days:
+            tokenExpiration === "never"
+              ? null
+              : tokenExpiration === "7"
+                ? 7
+                : tokenExpiration === "30"
+                  ? 30
+                  : tokenExpiration === "60"
+                    ? 60
+                    : tokenExpiration === "90"
+                      ? 90
+                      : Number(tokenCustomDays),
+        });
       }
 
-      const tokenData = res.data.data;
+      const tokenData = res.data.data || res.data;
 
       const token: ApiToken = {
-        id:
-          tokenData.public_id ||
-          currentToken?.id ||
-          "",
+        id: tokenData.public_id || currentToken?.id || "",
         name: tokenData.note || "",
         token: tokenData.key || tokenData.api_key || "",
         projectId: projectId || "",
-        environmentName:
-          environments.find((e: any) => e.public_id === selectedEnv)
-            ?.environment_name || "",
-        mode: tokenData.mode || "",
+        environmentName: envName,
+        mode: tokenData.mode || tokenMode || "",
         created: tokenData.created_at || "",
         expires: tokenData.expires_at || "",
-        expiresInDays: tokenData.expires_in_days ?? 0,
+        expiresInDays: tokenData.expires_in_days ?? null,
         revealed: false,
       };
 
+      // Update token directly in state
       setAllTokens((prev) => ({
         ...prev,
-        [`${selectedEnv}_${token.mode}`]: token,
+        [`${envName}_${token.mode}`]: token,
       }));
 
       setGeneratedToken(token);
-
-      await loadApiKeys();
-
       setShowTokenFormModal(false);
 
-      const envName = environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv;
       showToast(
-        `Token ${isRegenerating ? "regenerated" : "generated"
-        } for ${envName}`,
+        `Token ${isRegenerating ? "regenerated" : "generated"} for ${envName}`,
         "success"
       );
 
-      // RESET
+      // RESET - do this before refreshing tokens
       setTokenName("");
       setTokenExpiration("30");
       setTokenCustomDays("");
@@ -1114,7 +1112,6 @@ export default function ProjectView() {
 
     } catch (error: any) {
       console.error("Token generation failed:", error);
-
       showToast(
         error?.response?.data?.message ||
         "Failed to generate token",
@@ -1402,6 +1399,7 @@ export default function ProjectView() {
 
   // ---- EFFECTS ----
   useEffect(() => {
+    tokensInitialized.current = false;
     const initialize = async () => {
       if (!projectId) return;
 
@@ -1521,57 +1519,6 @@ export default function ProjectView() {
     setServiceProviderCounts(counts);
   };
 
-
-  const loadApiKeys = async () => {
-    if (!projectId) return;
-    setTokensLoading(true);
-
-    try {
-      const res = await getApiKeys(projectId);
-      const apiKeys = res?.data?.data || [];
-
-      const mapped: Record<string, ApiToken> = {};
-
-      apiKeys.forEach((token: any) => {
-        const env = environments.find(
-          (e: any) => e.public_id === token.environment_id
-        );
-
-        // Skip if environment not found
-        if (!env) {
-          console.log("Skipping token - environment not found:", token.environment_id);
-          return;
-        }
-
-        const environmentName = env.environment_name;
-
-        mapped[`${environmentName}_${token.mode}`] = {
-          id: token.public_id || token.id || "",
-          name: token.note || "",
-          token: token.key || token.api_key || "",
-          projectId: token.project_id || "",
-          environmentName,
-          mode: token.mode || "",
-          created: token.created_at || "",
-          expires: token.expires_at || "",
-          expiresInDays: token.expires_in_days ?? null,
-          revealed: false,
-        };
-      });
-
-      console.log("Mapped tokens:", mapped);
-
-      // Only update if we have valid mappings
-      if (Object.keys(mapped).length > 0) {
-        setAllTokens(prev => ({ ...prev, ...mapped })); // Merge instead of overwrite
-      }
-
-    } catch (error) {
-      console.error("Failed to load API keys:", error);
-    } finally {
-      setTokensLoading(false);
-    }
-  };
 
   useEffect(() => {
 
@@ -2568,7 +2515,17 @@ export default function ProjectView() {
                                 <div className={`${styles["mode-token-row"]} ${styles["token-expiry-row"]}`}>
                                   <div className={styles["expiry-left"]}><Clock size={12} /><span className={sandboxToken.expiresInDays && sandboxToken.expiresInDays <= 7 ? styles["expiring-soon"] : ''}>{calculateExpiryLabel(sandboxToken.expires, sandboxToken.expiresInDays)}</span></div>
                                   <div className={styles["mode-token-actions"]}>
-                                    <button className={`${styles["token-action-btn"]} ${styles["regenerate"]}`} onClick={() => { setSelectedEnv(env.public_id); setCurrentToken(sandboxToken); setShowRegenModal(true); }}><RefreshCw size={12} />Regenerate</button>
+                                    <button className={`${styles["token-action-btn"]} ${styles["regenerate"]}`} onClick={() => {
+                                      setSelectedEnv(env.public_id);
+                                      setCurrentToken(sandboxToken);
+                                      setTokenMode('Sandbox');
+                                      setTokenName("");
+                                      setTokenExpiration("30");
+                                      setTokenCustomDays("");
+                                      setTokenCustomDate("");
+                                      setIsRegenerating(true);
+                                      setShowTokenFormModal(true);
+                                    }}><RefreshCw size={12} />Regenerate</button>
                                     <button className={`${styles["token-action-btn"]} ${styles["delete"]}`} onClick={() => { setSelectedEnv(env.public_id); setCurrentToken(sandboxToken); setShowTokenDeleteModal(true); }}><Trash2 size={12} />Delete</button>
                                   </div>
                                 </div>
@@ -2596,8 +2553,18 @@ export default function ProjectView() {
                                 <div className={`${styles["mode-token-row"]} ${styles["token-expiry-row"]}`}>
                                   <div className={styles["expiry-left"]}><Clock size={12} /><span className={liveToken.expiresInDays && liveToken.expiresInDays <= 7 ? styles["expiring-soon"] : ''}>{calculateExpiryLabel(liveToken.expires, liveToken.expiresInDays)}</span></div>
                                   <div className={styles["mode-token-actions"]}>
-                                    <button className={`${styles["token-action-btn"]} ${styles["regenerate"]}`} onClick={() => { setSelectedEnv(env.public_id); setCurrentToken(liveToken); setShowRegenModal(true); }}><RefreshCw size={12} />Regenerate</button>
-                                    <button className={`${styles["token-action-btn"]} ${styles["delete"]}`} onClick={() => { setSelectedEnv(env.public_id); setCurrentToken(liveToken); setShowTokenDeleteModal(true); }}><Trash2 size={12} />Delete</button>
+                                    <button className={`${styles["token-action-btn"]} ${styles["regenerate"]}`} onClick={() => {
+                                      setSelectedEnv(env.public_id);
+                                      setCurrentToken(liveToken);
+                                      setTokenMode('Live');
+                                      setTokenName("");
+                                      setTokenExpiration("30");
+                                      setTokenCustomDays("");
+                                      setTokenCustomDate("");
+                                      setIsRegenerating(true);
+                                      setShowTokenFormModal(true);
+                                    }}><RefreshCw size={12} />Regenerate</button>
+                                    <button className={`${styles["token-action-btn"]} ${styles["delete"]}`} onClick={() => { setSelectedEnv(env.public_id); setTokenMode('Live'); setShowTokenDeleteModal(true); }}><Trash2 size={12} />Delete</button>
                                   </div>
                                 </div>
                               </div>
@@ -2631,7 +2598,7 @@ export default function ProjectView() {
               {/* ✅ Updated Header - Same style as Manage Users */}
               <div className={styles["user-panel-header"]}>
                 <div className={styles["user-panel-header-left"]}>
-                  <Plus size={20} />
+
                   <h3>Add Environment</h3>
                 </div>
                 <button className={styles["user-panel-close"]} onClick={() => {
@@ -2917,7 +2884,9 @@ export default function ProjectView() {
                     providerFields &&
                     Object.keys(providerFields).length > 0 && (
                       <FormValidation
+                        key={selectedProvider}
                         fields={providerFields}
+                        schema={providerSchema}
                         onChange={handleFieldChange}
                       />
                     )}
@@ -3229,233 +3198,138 @@ export default function ProjectView() {
       }
 
       {/* Token Generate Form Modal */}
-      {/* Token Generate Form Modal */}
-      {
-        showTokenFormModal &&
-        createPortal(
-          <>
+      {showTokenFormModal && (
+        <>
+          <div
+            className={styles["pc-drawer-backdrop"]}
+            onClick={() => setShowTokenFormModal(false)}
+          ></div>
+
+          <div className={styles["pc-slide-panel-fortokengeneration"]}>
             <div
-              className={styles["pc-drawer-backdrop"]}
-              onClick={() => setShowTokenFormModal(false)}
-            ></div>
+              className={`${styles["pc-modal"]} ${styles["token-form-modal"]}`}
+              onClick={e => e.stopPropagation()}
+            >
+              <div className={styles["token-form-header"]}>
+                <h3>
+                  {isRegenerating ? 'Regenerate Token' : 'Generate Token'}
+                </h3>
+                <button
+                  className={styles["pc-modal-close"]}
+                  onClick={() => setShowTokenFormModal(false)}
+                >
+                  <X size={20} />
+                </button>
+              </div>
 
-            <div className={styles["pc-slide-panel"]}>
-              <div
-                className={`${styles["pc-modal"]} ${styles["token-form-modal"]}`}
-                onClick={e => e.stopPropagation()}
-              >
-
-                <div className={styles["pc-modal-header"]}>
-                  <h3>
-                    {isRegenerating
-                      ? 'Regenerate Token'
-                      : 'Generate Token'}
-                  </h3>
-
-                  <button
-                    className={styles["pc-modal-close"]}
-                    onClick={() => setShowTokenFormModal(false)}
-                  >
-                    <X size={20} />
-                  </button>
+              <div className={styles["token-form-body"]}>
+                <div className={styles["modal-token-info"]}>
+                  <div>
+                    <Globe size={14} />
+                    Environment:
+                    <strong>
+                      {environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv}
+                    </strong>
+                  </div>
                 </div>
 
-                <div className={styles["pc-modal-body"]}>
+                <div className={styles["pc-form-group"]}>
+                  <label>Note</label>
+                  <input
+                    type="text"
+                    placeholder="What's this token for?"
+                    value={tokenName}
+                    onChange={(e) => setTokenName(e.target.value)}
+                    className={styles["pc-input"]}
+                    autoFocus
+                  />
+                </div>
 
-                  <div className={styles["modal-token-info"]}>
-                    <div>
-                      <Globe size={14} />
-
-                      Environment:
-                      <strong>
-                        {
-                          environments.find(
-                            (e: any) =>
-                              e.public_id === selectedEnv
-                          )?.environment_name || selectedEnv
-                        }
-                      </strong>
-                    </div>
-                  </div>
-
-                  <div className={styles["pc-form-group"]}>
-                    <label>Note</label>
-
-                    <input
-                      type="text"
-                      placeholder="What's this token for?"
-                      value={tokenName}
-                      onChange={(e) =>
-                        setTokenName(e.target.value)
-                      }
-                      className={styles["pc-input"]}
-                      autoFocus
-                    />
-                  </div>
-
-                  <div className={styles["pc-form-group"]}>
-                    <label>Expiration</label>
-
-                    <div className={styles["expiration-options"]}>
-                      {[
-                        { value: "7", label: "7 Days" },
-                        { value: "30", label: "30 Days" },
-                        { value: "60", label: "60 Days" },
-                        { value: "90", label: "90 Days" },
-                        { value: "custom", label: "Custom" },
-                        { value: "never", label: "Never" }
-                      ].map(opt => (
-
-                        <div
-                          key={opt.value}
-                          className={`${styles["expiration-option"]} ${tokenExpiration === opt.value
-                            ? styles["active"]
-                            : ''
-                            }`}
-                          onClick={() =>
-                            setTokenExpiration(opt.value)
-                          }
-                        >
-
-                          <div className={styles["expiration-label"]}>
-                            {opt.label}
-                          </div>
-
-                          <div className={styles["expiration-date"]}>
-                            {
-                              opt.value === "never"
-                                ? "—"
-                                : opt.value === "custom"
-                                  ? (
-                                    tokenCustomDate
-                                      ? formatDate(tokenCustomDate)
-                                      : "Pick a date"
-                                  )
-                                  : getExpiryDate(opt.value)
-                            }
-                          </div>
-
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {tokenExpiration === "custom" && (
-
-                    <div className={styles["pc-form-group"]}>
-                      <label>Select Expiry Date</label>
-
+                <div className={styles["pc-form-group"]}>
+                  <label>Expiration</label>
+                  <div className={styles["expiration-options"]}>
+                    {[
+                      { value: "7", label: "7 Days" },
+                      { value: "30", label: "30 Days" },
+                      { value: "60", label: "60 Days" },
+                      { value: "90", label: "90 Days" },
+                      { value: "custom", label: "Custom" },
+                      { value: "never", label: "Never" }
+                    ].map(opt => (
                       <div
-                        className={styles["token-date-wrapper"]}
-                        onClick={() => {
-                          if (tokenDateRef.current) {
-                            tokenDateRef.current.showPicker();
-                          }
-                        }}
+                        key={opt.value}
+                        className={`${styles["expiration-option"]} ${tokenExpiration === opt.value ? styles["active"] : ''}`}
+                        onClick={() => setTokenExpiration(opt.value)}
                       >
-
-                        <input
-                          type="date"
-                          value={tokenCustomDate}
-                          onChange={(e) => {
-
-                            setTokenCustomDate(e.target.value);
-
-                            const now = new Date();
-
-                            const expiry = new Date(
-                              e.target.value
-                            );
-
-                            const diffDays =
-                              Math.ceil(
-                                (
-                                  expiry.getTime() -
-                                  now.getTime()
-                                ) /
-                                (
-                                  1000 *
-                                  60 *
-                                  60 *
-                                  24
-                                )
-                              );
-
-                            setTokenCustomDays(
-                              String(
-                                diffDays > 0
-                                  ? diffDays
-                                  : 1
-                              )
-                            );
-                          }}
-
-                          ref={tokenDateRef}
-
-                          className={`${styles["pc-input"]} ${styles["token-date-input"]}`}
-
-                          min={
-                            new Date()
-                              .toISOString()
-                              .split('T')[0]
+                        <div className={styles["expiration-label"]}>{opt.label}</div>
+                        <div className={styles["expiration-date"]}>
+                          {opt.value === "never"
+                            ? "—"
+                            : opt.value === "custom"
+                              ? (tokenCustomDate ? formatDate(tokenCustomDate) : "Pick a date")
+                              : getExpiryDate(opt.value)
                           }
-                        />
-
-                        <Calendar
-                          className={styles["token-date-icon"]}
-                          size={16}
-                        />
-
+                        </div>
                       </div>
-                    </div>
-                  )}
-
-                  <div className={styles["token-warning"]}>
-                    <AlertTriangle size={16} />
-
-                    <span>
-                      The token will only be shown once after creation.
-                    </span>
+                    ))}
                   </div>
-
                 </div>
 
-                <div className={styles["pc-modal-footer"]}>
+                {tokenExpiration === "custom" && (
+                  <div className={styles["pc-form-group"]}>
+                    <label>Select Expiry Date</label>
+                    <div
+                      className={styles["token-date-wrapper"]}
+                      onClick={() => {
+                        if (tokenDateRef.current) {
+                          tokenDateRef.current.showPicker();
+                        }
+                      }}
+                    >
+                      <input
+                        type="date"
+                        value={tokenCustomDate}
+                        onChange={(e) => {
+                          setTokenCustomDate(e.target.value);
+                          const now = new Date();
+                          const expiry = new Date(e.target.value);
+                          const diffDays = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                          setTokenCustomDays(String(diffDays > 0 ? diffDays : 1));
+                        }}
+                        ref={tokenDateRef}
+                        className={`${styles["pc-input"]} ${styles["token-date-input"]}`}
+                        min={new Date().toISOString().split('T')[0]}
+                      />
+                      <Calendar className={styles["token-date-icon"]} size={16} />
+                    </div>
+                  </div>
+                )}
 
-                  <button
-                    className={styles["pc-btn-cancel"]}
-                    onClick={() =>
-                      setShowTokenFormModal(false)
-                    }
-                  >
-                    Cancel
-                  </button>
-
-                  <button
-                    className={styles["pc-btn-primary"]}
-                    onClick={handleTokenGenerate}
-                    disabled={
-                      !tokenName.trim() ||
-                      !tokenMode
-                    }
-                  >
-                    {
-                      isRegenerating
-                        ? 'Regenerate Token'
-                        : 'Generate Token'
-                    }
-                  </button>
-
+                <div className={styles["token-warning"]}>
+                  <AlertTriangle size={16} />
+                  <span>The token will only be shown once after creation.</span>
                 </div>
+              </div>
 
+              <div className={styles["pc-modal-footer"]}>
+                <button
+                  className={styles["pc-btn-cancel"]}
+                  onClick={() => setShowTokenFormModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className={styles["pc-btn-primary"]}
+                  onClick={handleTokenGenerate}
+                  disabled={!tokenName.trim() || !tokenMode}
+                >
+                  {isRegenerating ? 'Regenerate Token' : 'Generate Token'}
+                </button>
               </div>
             </div>
-          </>,
-          document.getElementById(
-            "global-slide-panel-root"
-          )!
-        )
-      }
+          </div>
+        </>
+      )}
 
       {/* Token Reveal Modal */}
       {

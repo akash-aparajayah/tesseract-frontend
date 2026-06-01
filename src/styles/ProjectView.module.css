@@ -1257,6 +1257,64 @@
     animation: fadeIn 0.2s ease;
 }
 
+/* ===== ADD/MODIFY THESE STYLES ===== */
+
+/* Make token form modal work with slide panel */
+.pc-slide-panel .token-form-modal {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: #fff;
+}
+
+/* Fix token form modal header in slide panel */
+.pc-slide-panel .token-form-modal .pc-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px;
+    border-bottom: 1px solid #e2e8f0;
+    flex-shrink: 0;
+}
+
+.pc-slide-panel .token-form-modal .pc-modal-header h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+}
+
+/* Fix token form modal body in slide panel */
+.pc-slide-panel .token-form-modal .pc-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+}
+
+/* Fix token form modal footer in slide panel */
+.pc-slide-panel .token-form-modal .pc-modal-footer {
+    display: flex;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid #e2e8f0;
+    flex-shrink: 0;
+    background: #fff;
+}
+
+.pc-slide-panel .token-form-modal .pc-modal-footer button {
+    flex: 1;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Update token form modal max-width for slide panel */
+.pc-slide-panel .token-form-modal {
+    max-width: none !important;
+    width: 100%;
+}
+
 .pc-slide-panel .pc-modal {
     display: flex;
     flex-direction: column;
@@ -1290,7 +1348,7 @@
     top: 0;
     right: 0;
 
-    width: 575px;
+    width: 570px;
     max-width: 90vw;
     height: 100%;
 
@@ -1304,6 +1362,36 @@
     flex-direction: column;
 
     animation: projectDrawerSlideIn 0.35s ease;
+}
+
+.pc-slide-panel-fortokengeneration {
+    position: fixed;
+
+    top: 0;
+    right: 0;
+
+    width: 570px;
+    max-width: 90vw;
+    height: 100%;
+
+    background: #fff;
+
+    z-index: 1001;
+
+    box-shadow: -8px 0 30px rgba(0, 0, 0, 0.15);
+
+    display: flex;
+    flex-direction: column;
+
+    animation: projectDrawerSlideIn 0.35s ease;
+}
+
+.pc-slide-panel-fortokengeneration .pc-model {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    border-radius: 0;
+    gap: 0;
 }
 
 @keyframes projectDrawerSlideIn {
@@ -1913,7 +2001,6 @@ body:has(.pc-modal-overlay.slide-panel) {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    animation: projectDrawerSlideIn 0.35s ease;
     box-shadow: -8px 0 30px rgba(0, 0, 0, 0.15);
 }
 
@@ -1942,6 +2029,7 @@ body:has(.pc-modal-overlay.slide-panel) {
     justify-content: space-between;
     padding: 24px 24px 16px;
     border-bottom: 1px solid #e2e8f0;
+    background: linear-gradient(135deg, #0f3d91, #0b2f6b);
 }
 
 .user-panel-header-left {
@@ -1955,6 +2043,7 @@ body:has(.pc-modal-overlay.slide-panel) {
     font-weight: 700;
     color: #0f172a;
     margin: 0;
+    color: white;
 }
 
 .user-panel-close {
@@ -1964,9 +2053,9 @@ body:has(.pc-modal-overlay.slide-panel) {
     width: 32px;
     height: 32px;
     border: none;
-    background: #f1f5f9;
+    background: rgba(255, 255, 255, 0.2);
     border-radius: 8px;
-    color: #64748b;
+    color: #fbfbfb;
     cursor: pointer;
 }
 
@@ -2491,6 +2580,33 @@ body:has(.pc-modal-overlay.slide-panel) {
 /* Token Form Modal */
 .token-form-modal {
     max-width: 600px !important;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.token-form-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.token-form-header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.token-form-body {
+    padding: 24px;
+    flex: 1;
+    overflow-y: auto;
 }
 
 .modal-token-info {

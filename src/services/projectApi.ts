@@ -201,8 +201,8 @@ export const createApiKey = (data: any) =>
 export const getApiKeys = (projectId: string) =>
   api.get(`/token/get-api-keys?project_id=${projectId}`);
 
-export const regenerateApiKey = (id: string) =>
-  api.patch(`/token/regenerate-api-key/${id}`);
+export const regenerateApiKey = (id: string, payload?: any) =>
+  api.patch(`/token/regenerate-api-key/${id}`, payload);
 
 export const deleteApiKey = (id: string) =>
   api.delete(`/token/delete-api-key/${id}`);

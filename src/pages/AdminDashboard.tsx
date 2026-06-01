@@ -282,31 +282,31 @@ const AdminPanel: React.FC = () => {
     }, 400);
   };
 
-const passwordRegex =
-  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-const validateForm = () => {
-  if (!formData.name.trim()) {
-    return "Name is required";
-  }
+  const passwordRegex =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+  const validateForm = () => {
+    if (!formData.name.trim()) {
+      return "Name is required";
+    }
 
-  if (!formData.email.trim()) {
-    return "Email is required";
-  }
+    if (!formData.email.trim()) {
+      return "Email is required";
+    }
 
-  if (!formData.password) {
-    return "Password is required";
-  }
+    if (!formData.password) {
+      return "Password is required";
+    }
 
-  if (formData.password.length < 8) {
-    return "Password must be at least 8 characters";
-  }
+    if (formData.password.length < 8) {
+      return "Password must be at least 8 characters";
+    }
 
-  if (!passwordRegex.test(formData.password)) {
-    return "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character";
-  }
+    if (!passwordRegex.test(formData.password)) {
+      return "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character";
+    }
 
-  return null;
-};
+    return null;
+  };
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -630,96 +630,162 @@ const validateForm = () => {
                 <X size={20} />
               </button>
             </div>
-            <form onSubmit={handleCreateSubmit} className={styles.drawerForm}>
-              {formError && <div className={styles.formError}>{formError}</div>}
+            <div className={styles.drawerBody}>
+              <form
+                id="create-user-form"
+                onSubmit={handleCreateSubmit}
+                className={styles.drawerForm}
+              >
+                {formError && (
+                  <div className={styles.formError}>{formError}</div>
+                )}
 
-              <div className={styles.formGroup}>
-                <label>
-                  Full Name <span className={styles.requiredStar}>*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter full name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  autoFocus
-                />
-              </div>
+                <div className={styles.formGroup}>
+                  <label>
+                    Full Name{" "}
+                    <span className={styles.requiredStar}>*</span>
+                  </label>
 
-              <div className={styles.formGroup}>
-                <label>
-                  Email <span className={styles.requiredStar}>*</span>
-                </label>
-                <input
-                  type="email"
-                  placeholder="user@example.com"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label>
-                  Password <span className={styles.requiredStar}>*</span>{" "}
-                  <span className={styles.passwordHint}>(min 8 characters)</span>
-                </label>
-                <div className={styles.passwordWrapper}>
-                  <Lock size={16} className={styles.passwordIcon} />
                   <input
-                    type="password"
-                    placeholder="Enter password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    type="text"
+                    placeholder="Enter full name"
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        name: e.target.value,
+                      })
+                    }
+                    autoFocus
                   />
                 </div>
-              </div>
 
-              <div className={styles.formGroup}>
-                <label>
-                  Role <span className={styles.requiredStar}>*</span>
-                </label>
-                <select
-                  value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value as never })}
-                >
-                  <option value="USER">User</option>
-                  <option value="ADMIN">Admin</option>
-                  <option value="SUPER_ADMIN">Super Admin</option>
-                </select>
-              </div>
+                <div className={styles.formGroup}>
+                  <label>
+                    Email{" "}
+                    <span className={styles.requiredStar}>*</span>
+                  </label>
 
-              <div className={styles.formGroup}>
-                <label>
-                  Status <span className={styles.requiredStar}>*</span>
-                </label>
-                <select
-                  value={formData.active ? "active" : "inactive"}
-                  onChange={(e) => setFormData({ ...formData, active: e.target.value === "active" })}
-                >
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-              </div>
+                  <input
+                    type="email"
+                    placeholder="user@example.com"
+                    value={formData.email}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        email: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label>
+                    Password{" "}
+                    <span className={styles.requiredStar}>*</span>{" "}
+                    <span className={styles.passwordHint}>
+                      (min 8 characters)
+                    </span>
+                  </label>
+
+                  <div className={styles.passwordWrapper}>
+                    <Lock
+                      size={16}
+                      className={styles.passwordIcon}
+                    />
+
+                    <input
+                      type="password"
+                      placeholder="Enter password"
+                      value={formData.password}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          password: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label>
+                    Role{" "}
+                    <span className={styles.requiredStar}>*</span>
+                  </label>
+
+                  <select
+                    value={formData.role}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        role: e.target.value as never,
+                      })
+                    }
+                  >
+                    <option value="USER">User</option>
+                    <option value="ADMIN">Admin</option>
+                    <option value="SUPER_ADMIN">
+                      Super Admin
+                    </option>
+                  </select>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label>
+                    Status{" "}
+                    <span className={styles.requiredStar}>*</span>
+                  </label>
+
+                  <select
+                    value={formData.active ? "active" : "inactive"}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        active: e.target.value === "active",
+                      })
+                    }
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              </form>
 
               <div className={styles.drawerActions}>
-                <button type="button" className={styles.cancelBtn} onClick={closeDrawerWithAnimation}>
+                <button
+                  type="button"
+                  className={styles.cancelBtn}
+                  onClick={closeDrawerWithAnimation}
+                >
                   Cancel
                 </button>
-                <button type="submit" className={styles.submitBtn} disabled={creating}>
+
+                <button
+                  type="submit"
+                  form="create-user-form"
+                  className={styles.submitBtn}
+                  disabled={creating}
+                >
                   {creating ? (
                     <>
-                      <Loader2 size={16} className={styles.spinner} /> Creating...
+                      <Loader2
+                        size={16}
+                        className={styles.spinner}
+                      />
+                      Creating...
                     </>
                   ) : (
                     "Create User"
                   )}
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </>
-      )}
-    </div>
+      )
+      }
+    </div >
   );
 };
 
