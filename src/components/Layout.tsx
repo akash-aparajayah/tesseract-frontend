@@ -31,6 +31,8 @@ export default function Layout() {
             </div>
           </div>
         </div>
+        {/* GLOBAL PANEL ROOT */}
+        <div id="global-slide-panel-root"></div>
       </div>
     </div>
   );

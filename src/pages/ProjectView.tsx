@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useParams } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import styles from "../styles/ProjectView.module.css";
@@ -919,12 +920,13 @@ export default function ProjectView() {
           service_type_id: service?.public_id,
           provider_id: provider?.public_id,
           provider_name: provider?.name,
+          provider_slug: provider?.slug,
           credentials: {
             ...providerFields,
             mode: modeFilter,
           },
           mode: modeFilter,
-          // endpoint: providerFields.endpoint || service?.service_base_endpoint || "",
+          endpoint: providerFields.endpoint || service?.service_base_endpoint || "",
         };
 
         await createProvider(payload);
@@ -2623,17 +2625,22 @@ export default function ProjectView() {
 
 
       {/* Add Environment Modal */}
-      {
-        showAddEnvModal && (
-          <>
-            <div className={styles["pc-drawer-backdrop"]}></div>
+      {showAddEnvModal && (
+        <>
+          <div className={styles["pc-drawer-backdrop"]}></div>
 
-            <div className={styles["pc-slide-panel"]}>
-              <div className={styles["pc-modal"]} onClick={e => e.stopPropagation()}>
-                <div className={styles["pc-modal-header"]}><h3><Plus size={18} /> Add Environment</h3><button className={styles["pc-modal-close"]} onClick={() => {
+          <div className={styles["pc-slide-panel"]}>
+            <div className={styles["pc-modal"]} onClick={e => e.stopPropagation()}>
+
+              {/* ✅ Updated Header - Same style as Manage Users */}
+              <div className={styles["user-panel-header"]}>
+                <div className={styles["user-panel-header-left"]}>
+                  <Plus size={20} />
+                  <h3>Add Environment</h3>
+                </div>
+                <button className={styles["user-panel-close"]} onClick={() => {
                   setPendingCloseAction(() => () => {
                     setShowAddEnvModal(false);
-
                     setNewEnvName("");
                     setIsCustomEnv(false);
                     setCustomEnvInput("");
@@ -2641,52 +2648,55 @@ export default function ProjectView() {
                   setShowUnsavedModal(true);
                 }}>
                   <X size={20} />
-                </button></div>
-                <div className={styles["pc-modal-body"]}>
-                  <p className={styles["pc-modal-desc"]}>Select an environment or create a custom one</p>
-                  <div className={styles["pc-env-options"]}>
-                    {['Local', 'Dev', 'Staging', 'Live'].filter(
-                      env =>
-                        !environments.some(
-                          (e: any) => e.environment_name === env
-                        )
-                    ).map(env => (
-                      <div key={env} className={`${styles["pc-env-option"]} ${newEnvName === env && !isCustomEnv ? styles["selected"] : ''}`} onClick={() => { setNewEnvName(env); setIsCustomEnv(false); }}>
-                        <span className={styles["pc-env-option-icon"]}>{getEnvIcon(env)}</span><span>{env}</span>{newEnvName === env && !isCustomEnv && <Check size={18} />}
-                      </div>
-                    ))}
-                    <div className={`${styles["pc-env-option"]} ${styles["custom"]} ${isCustomEnv ? styles["selected"] : ''}`} onClick={() => { setIsCustomEnv(true); setNewEnvName(""); }}>
-                      <span className={styles["pc-env-option-icon"]}><Wrench size={18} /></span><span>Custom Environment</span>{isCustomEnv && <Check size={18} />}
-                    </div>
-                  </div>
-                  {isCustomEnv && <div className={styles["pc-form-group"]}><label>Environment Name *</label><input type="text" placeholder="e.g., Production" value={customEnvInput} onChange={(e) => setCustomEnvInput(e.target.value)} className={styles["pc-input"]} autoFocus /></div>}
-                </div>
-                <div className={styles["pc-modal-footer"]}>
-                  <button className={styles["pc-btn-cancel"]} onClick={() => {
-                    setPendingCloseAction(() => () => {
-                      setShowAddEnvModal(false);
-                      setNewEnvName("");
-                      setIsCustomEnv(false);
-                      setCustomEnvInput("");
-                    });
-                    setShowUnsavedModal(true);
-                  }}>
-                    Cancel
-                  </button>
-                  <button
-                    className={styles["pc-btn-primary"]}
-                    onClick={handleAddEnvironment}
-                    disabled={saving}
-                    style={{ backgroundColor: SERVICE_COLORS[activeService], border: 'none' }}
-                  >
-                    {saving ? 'Creating...' : 'Create Environment'}
-                  </button>
-                </div>
+                </button>
               </div>
+
+              <div className={styles["pc-modal-body"]}>
+                <p className={styles["pc-modal-desc"]}>Select an environment or create a custom one</p>
+                <div className={styles["pc-env-options"]}>
+                  {['Local', 'Dev', 'Staging', 'Live'].filter(
+                    env =>
+                      !environments.some(
+                        (e: any) => e.environment_name === env
+                      )
+                  ).map(env => (
+                    <div key={env} className={`${styles["pc-env-option"]} ${newEnvName === env && !isCustomEnv ? styles["selected"] : ''}`} onClick={() => { setNewEnvName(env); setIsCustomEnv(false); }}>
+                      <span className={styles["pc-env-option-icon"]}>{getEnvIcon(env)}</span><span>{env}</span>{newEnvName === env && !isCustomEnv && <Check size={18} />}
+                    </div>
+                  ))}
+                  <div className={`${styles["pc-env-option"]} ${styles["custom"]} ${isCustomEnv ? styles["selected"] : ''}`} onClick={() => { setIsCustomEnv(true); setNewEnvName(""); }}>
+                    <span className={styles["pc-env-option-icon"]}><Wrench size={18} /></span><span>Custom Environment</span>{isCustomEnv && <Check size={18} />}
+                  </div>
+                </div>
+                {isCustomEnv && <div className={styles["pc-form-group"]}><label>Environment Name *</label><input type="text" placeholder="e.g., Production" value={customEnvInput} onChange={(e) => setCustomEnvInput(e.target.value)} className={styles["pc-input"]} autoFocus /></div>}
+              </div>
+
+              <div className={styles["pc-modal-footer"]}>
+                <button className={styles["pc-btn-cancel"]} onClick={() => {
+                  setPendingCloseAction(() => () => {
+                    setShowAddEnvModal(false);
+                    setNewEnvName("");
+                    setIsCustomEnv(false);
+                    setCustomEnvInput("");
+                  });
+                  setShowUnsavedModal(true);
+                }}>
+                  Cancel
+                </button>
+                <button
+                  className={styles["pc-btn-primary"]}
+                  onClick={handleAddEnvironment}
+                  disabled={saving}
+                  style={{ backgroundColor: SERVICE_COLORS[activeService], border: 'none' }}
+                >
+                  {saving ? 'Creating...' : 'Create Environment'}
+                </button>
+              </div>
+
             </div>
-          </>
-        )
-      }
+          </div>
+        </>
+      )}
 
       {/* Edit Environment Modal */}
       {
@@ -2714,13 +2724,24 @@ export default function ProjectView() {
       }
 
       {/* Clone Modal */}
-      {
-        showCloneModal && (<>
+      {showCloneModal && (
+        <>
           <div className={styles["pc-drawer-backdrop"]} />
 
           <div className={styles["pc-slide-panel"]}>
             <div className={styles["pc-modal"]} onClick={e => e.stopPropagation()}>
-              <div className={styles["pc-modal-header"]}><h3><Copy size={18} /> Clone Environment</h3><button className={styles["pc-modal-close"]} onClick={() => setShowCloneModal(false)}><X size={20} /></button></div>
+
+              {/* ✅ Updated Header - Same style as Manage Users & Add Environment */}
+              <div className={styles["user-panel-header"]}>
+                <div className={styles["user-panel-header-left"]}>
+                  <Copy size={20} />
+                  <h3>Clone Environment</h3>
+                </div>
+                <button className={styles["user-panel-close"]} onClick={() => setShowCloneModal(false)}>
+                  <X size={20} />
+                </button>
+              </div>
+
               <div className={styles["pc-modal-body"]}>
                 <div className={styles["clone-source-info"]}>
                   <label>Source Environment</label>
@@ -2731,7 +2752,8 @@ export default function ProjectView() {
                     {environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv}
                   </div>
                 </div>
-                <div className={styles["pc-form-group"]}><label>Select Target Environment</label>
+                <div className={styles["pc-form-group"]}>
+                  <label>Select Target Environment</label>
                   <div className={styles["pc-env-options"]}>
                     {['Local', 'Dev', 'Staging', 'Live'].filter(env =>
                       env !== selectedEnv &&
@@ -2746,32 +2768,45 @@ export default function ProjectView() {
                     </div>
                   </div>
                 </div>
-                {cloneCustomMode && <div className={styles["pc-form-group"]}><label>Custom Environment Name *</label><input type="text" placeholder="Enter environment name" value={cloneCustomName} onChange={(e) => setCloneCustomName(e.target.value)} className={styles["pc-input"]} autoFocus /></div>}
+                {cloneCustomMode && (
+                  <div className={styles["pc-form-group"]}>
+                    <label>Custom Environment Name *</label>
+                    <input type="text" placeholder="Enter environment name" value={cloneCustomName} onChange={(e) => setCloneCustomName(e.target.value)} className={styles["pc-input"]} autoFocus />
+                  </div>
+                )}
               </div>
+
               <div className={styles["pc-modal-footer"]}>
                 <button className={styles["pc-btn-cancel"]} onClick={() => setShowCloneModal(false)}>Cancel</button>
                 <button className={styles["pc-btn-primary"]} onClick={executeClone} disabled={(!cloneCustomMode && !cloneTarget) || (cloneCustomMode && !cloneCustomName.trim())}>Clone Environment</button>
               </div>
+
             </div>
           </div>
         </>
-        )
-      }
+      )}
 
       {/* Add/Edit Provider Modal */}
-      {
-        showAddProviderModal && (<>
+      {showAddProviderModal && (
+        <>
           <div className={styles["pc-drawer-backdrop"]} />
 
           <div className={styles["pc-slide-panel"]}>
-            <div className={`${styles["pc-modal"]} ${styles["pc-modal-provider"]}`} onClick={e => e.stopPropagation()}>
-              <div className={styles["pc-modal-header"]}>
-                <div className={styles["pc-modal-header-left"]}>
-                  <span className={styles["pc-modal-service-badge"]} style={{ backgroundColor: `${SERVICE_COLORS[activeService]}15`, color: SERVICE_COLORS[activeService], border: `1px solid ${SERVICE_COLORS[activeService]}40` }}>{SERVICE_ICONS[activeService]}<span>{activeService}</span></span>
+            <div className={styles["pc-modal"]} onClick={e => e.stopPropagation()}>
+
+              {/* ✅ Updated Header - Same style as Manage Users */}
+              <div className={styles["user-panel-header"]}>
+                <div className={styles["user-panel-header-left"]}>
+                  <span className={styles["pc-modal-service-badge"]} style={{ backgroundColor: `${SERVICE_COLORS[activeService]}15`, color: SERVICE_COLORS[activeService], border: `1px solid ${SERVICE_COLORS[activeService]}40` }}>
+                    {SERVICE_ICONS[activeService]}<span>{activeService}</span>
+                  </span>
                   <h3>{editingProvider ? 'Edit Provider' : 'Add Provider'}</h3>
                 </div>
-                <button className={styles["pc-modal-close"]} onClick={() => { setPendingCloseAction(() => () => { setShowAddProviderModal(false); setEditingProvider(null); }); setShowUnsavedModal(true); }}><X size={20} /></button>
+                <button className={styles["user-panel-close"]} onClick={() => { setPendingCloseAction(() => () => { setShowAddProviderModal(false); setEditingProvider(null); }); setShowUnsavedModal(true); }}>
+                  <X size={20} />
+                </button>
               </div>
+
               <div className={styles["pc-modal-env-info-row"]}>
                 <div className={styles["pc-modal-env-info"]}>
                   <Globe size={14} />
@@ -2784,25 +2819,20 @@ export default function ProjectView() {
                     {modeFilter} Mode
                   </span>
                 </div>
-
               </div>
+
               <div className={styles["pc-modal-body"]}>
-                <div className={styles["pc-form-group"]}><label>Select Provider *</label>
+                <div className={styles["pc-form-group"]}>
+                  <label>Select Provider *</label>
                   <select value={selectedProvider} onChange={handleProviderChange} className={styles["pc-select"]} disabled={!!editingProvider}>
                     <option value="">-- Choose provider --</option>
                     {providersList
                       .filter((p: any) => {
-                        // Always show if editing this provider
                         if (editingProvider?.name === p.name) return true;
-
-                        // Check if this provider already exists in current mode
                         const existsInCurrentMode = providers.some(
                           (prov) => prov.name === p.name && prov.fields.mode === modeFilter
                         );
-
-                        // Hide if already configured in this mode
                         if (existsInCurrentMode) return false;
-
                         return true;
                       })
                       .map((p: any) => (
@@ -2819,6 +2849,7 @@ export default function ProjectView() {
                   />
                 )}
               </div>
+
               <div className={styles["pc-modal-footer"]}>
                 <button className={styles["pc-btn-cancel"]} onClick={() => {
                   setPendingCloseAction(() => () => {
@@ -2834,13 +2865,10 @@ export default function ProjectView() {
                 <button
                   className={styles["pc-btn-primary"]}
                   onClick={() => {
-                    // Trigger validation for ALL fields by dispatching a custom event
                     window.dispatchEvent(new CustomEvent('validateAllFields'));
-
-                    // Small delay to let validation show
                     setTimeout(() => {
                       if (hasErrors(providerFields)) {
-                        return; // Just show field errors, no toast
+                        return;
                       }
                       saveProvider();
                     }, 100);
@@ -2851,26 +2879,39 @@ export default function ProjectView() {
                   {saving ? 'Saving...' : editingProvider ? 'Update Provider' : 'Add Provider'}
                 </button>
               </div>
+
             </div>
           </div>
         </>
-        )
-      }
+      )}
 
       {/* Delete Environment Modal */}
-      {
-        showDeleteEnvModal && (
-          <div className={styles["pc-modal-overlay"]} onClick={() => setShowDeleteEnvModal(false)}>
-            <div className={`${styles["pc-modal"]} ${styles["pc-modal-small"]}`} onClick={e => e.stopPropagation()}><div className={styles["pc-modal-header"]}><h3>Delete Environment</h3><button className={styles["pc-modal-close"]} onClick={() => setShowDeleteEnvModal(false)}><X size={18} /></button></div><div className={styles["pc-modal-body"]}><p>Are you sure you want to delete <strong>{deletingEnvName}</strong> environment?</p><div className={styles["warning-text"]}>This action cannot be undone.</div></div><div className={styles["pc-modal-footer"]}><button className={styles["pc-btn-cancel"]} onClick={() => setShowDeleteEnvModal(false)}>Cancel</button><button
-              type="button"
-              className={styles["pc-btn-danger"]}
-              onClick={handleDeleteEnvironment}
-            >
-              Delete Environment
-            </button></div></div>
+      {showDeleteEnvModal && (
+        <div className={styles["pc-modal-overlay"]} onClick={() => setShowDeleteEnvModal(false)}>
+          <div className={styles["pc-modal-small"]} onClick={e => e.stopPropagation()}>
+            <div className={styles["pc-modal-header"]}>
+              <h3>Delete Environment</h3>
+              <button className={styles["pc-modal-close"]} onClick={() => setShowDeleteEnvModal(false)}>
+                <X size={18} />
+              </button>
+            </div>
+            <div className={styles["pc-modal-body"]}>
+              <p>Are you sure you want to delete <strong>{deletingEnvName}</strong> environment?</p>
+              <div className={styles["warning-text"]}>This action cannot be undone.</div>
+            </div>
+            <div className={styles["pc-modal-footer"]}>
+              <button className={styles["pc-btn-cancel"]} onClick={() => setShowDeleteEnvModal(false)}>Cancel</button>
+              <button
+                type="button"
+                className={styles["pc-btn-danger"]}
+                onClick={handleDeleteEnvironment}
+              >
+                Delete Environment
+              </button>
+            </div>
           </div>
-        )
-      }
+        </div>
+      )}
 
       {/* Cannot Delete Modal */}
       {
@@ -2917,6 +2958,180 @@ export default function ProjectView() {
           </div>
         </div>
       )}
+
+      {/* User Assignment Panel*/}
+      {
+        showUserPanel && (
+          <>
+            <div className={styles["pc-drawer-backdrop"]} onClick={() => setShowUserPanel(false)}></div>
+            <div className={styles["pc-slide-panel"]}>
+
+              <div className={styles["user-panel"]} onClick={e => e.stopPropagation()}>
+                <div className={styles["user-panel-header"]}><div className={styles["user-panel-header-left"]}><User size={20} /><h3>Manage Users - {environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv}</h3></div><button className={styles["user-panel-close"]} onClick={() => setShowUserPanel(false)}><X size={20} /></button></div>
+                <div className={styles["user-panel-tabs"]}>
+                  <button className={`${styles["user-panel-tab"]} ${userActiveTab === 'assign' ? styles["active"] : ''}`} onClick={() => { setUserActiveTab('assign'); setSelectedUsers(new Set()); setSelectAll(false); }}><UserPlus size={14} /> Unassigned Users</button>
+                  <button className={`${styles["user-panel-tab"]} ${userActiveTab === 'unassign' ? styles["active"] : ''}`} onClick={() => { setUserActiveTab('unassign'); setSelectedUsers(new Set()); setSelectAll(false); }}><UserMinus size={14} /> Assigned Users</button>
+                </div>
+                <div className={styles["user-panel-search-row"]}>
+                  <div className={styles["user-panel-search"]}>
+                    <Search size={16} className={styles["user-panel-search-icon"]} />
+                    <input
+                      type="text"
+                      placeholder="Search users..."
+                      value={userSearchTerm}
+                      onChange={(e) => setUserSearchTerm(e.target.value)}
+                      className={styles["user-panel-search-input"]}
+                    />
+                    {userSearchTerm && (
+                      <button className={styles["user-panel-search-clear"]} onClick={() => setUserSearchTerm("")}>
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Replace the select with this custom dropdown */}
+                  <div className={styles["user-panel-filter-wrapper"]} ref={userFilterRef}>
+                    <div
+                      className={`${styles["user-panel-filter-trigger"]} ${userFilterDropdownOpen ? styles["open"] : ''}`}
+                      onClick={() => setUserFilterDropdownOpen(!userFilterDropdownOpen)}
+                    >
+                      <div className={styles["filter-trigger-left"]}>
+                        <Filter size={14} className={styles["filter-icon"]} />
+                        <span className={styles["filter-selected-text"]}>
+                          {userFilter === 'all' ? 'All Status' : userFilter === 'active' ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                      <ChevronDown size={16} className={styles["filter-chevron"]} />
+                    </div>
+                    {userFilterDropdownOpen && (
+                      <div className={styles["user-panel-filter-menu"]}>
+                        <div
+                          className={`${styles["user-panel-filter-item"]} ${userFilter === 'all' ? styles["selected"] : ''}`}
+                          onClick={() => {
+                            setUserFilter('all');
+                            setUserFilterDropdownOpen(false);
+                          }}
+                        >
+                          <span>All Status</span>
+                          {userFilter === 'all' && <Check size={14} />}
+                        </div>
+                        <div
+                          className={`${styles["user-panel-filter-item"]} ${userFilter === 'active' ? styles["selected"] : ''}`}
+                          onClick={() => {
+                            setUserFilter('active');
+                            setUserFilterDropdownOpen(false);
+                          }}
+                        >
+                          <div className={`${styles["filter-item-dot"]} ${styles["active"]}`}></div>
+                          <span>Active</span>
+                          {userFilter === 'active' && <Check size={14} />}
+                        </div>
+                        <div
+                          className={`${styles["user-panel-filter-item"]} ${userFilter === 'inactive' ? styles["selected"] : ''}`}
+                          onClick={() => {
+                            setUserFilter('inactive');
+                            setUserFilterDropdownOpen(false);
+                          }}
+                        >
+                          <div className={`${styles["filter-item-dot"]} ${styles["inactive"]}`}></div>
+                          <span>Inactive</span>
+                          {userFilter === 'inactive' && <Check size={14} />}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className={styles["user-panel-table-wrapper"]}>
+                  <table className={styles["user-panel-table"]}><thead><tr><th className={styles["col-checkbox"]}><input type="checkbox" checked={selectAll} onChange={handleSelectAll} className={styles["user-checkbox"]} /></th><th className={styles["col-user"]} style={{ textAlign: 'center' }}>User</th><th className={styles["col-status"]}>Status</th></tr></thead>
+
+                    <tbody>
+                      {filteredUserList.length === 0 ? (
+                        <tr>
+                          <td colSpan={3} className={styles["user-empty-state"]}>
+                            {userSearchTerm.trim() ? (
+                              <>
+                                <img
+                                  src={noDataIllustration}
+                                  alt="No data"
+                                  className={styles["user-empty-illustration-img"]}
+                                />
+                                <div className={styles["user-empty-message"]}>
+                                  <h4>No results found</h4>
+                                  <p>Try adjusting your search term</p>
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <img
+                                  src={noDataIllustration}
+                                  alt="No data"
+                                  className={styles["user-empty-illustration-img"]}
+                                />
+                                <div className={styles["user-empty-message"]}>
+                                  <h4>
+                                    {userActiveTab === 'assign'
+                                      ? 'No users available to assign'
+                                      : 'No users assigned yet'}
+                                  </h4>
+                                  <p>
+                                    {userActiveTab === 'assign'
+                                      ? 'All users are already assigned to this environment'
+                                      : 'Assign users to this environment to get started'}
+                                  </p>
+                                </div>
+                              </>
+                            )}
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredUserList.map(user => (
+                          <tr key={user.id} className={selectedUsers.has(user.id) ? styles["selected"] : ''}>
+                            <td className={styles["col-checkbox"]}><input type="checkbox" checked={selectedUsers.has(user.id)} onChange={() => handleUserSelect(user.id)} className={styles["user-checkbox"]} /></td>
+                            <td className={styles["col-user"]}><div className={styles["user-cell"]}><span className={styles["user-name"]}>{user.name}</span><span className={styles["user-email"]}>{user.email}</span></div></td>
+                            <td className={styles["col-status"]}><span className={`${styles["user-status-badge"]} ${styles[user.status]}`}>
+                              {user.status === 'active' ? <Check size={12} /> : <AlertCircle size={12} />}
+                              {user.status}
+                            </span></td>
+                          </tr>
+                        )))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className={styles["user-panel-footer"]}>
+                  <button
+                    className={styles["user-panel-action-btn"]}
+                    onClick={
+                      userActiveTab === 'assign'
+                        ? handleAssignUsers
+                        : handleUnassignUsers
+                    }
+                    disabled={selectedUsers.size === 0}
+                    style={{
+                      background:
+                        userActiveTab === 'assign'
+                          ? '#6366f1'
+                          : '#ef4444'
+                    }}
+                  >
+                    {userActiveTab === 'assign' ? (
+                      <>
+                        <UserPlus size={16} />
+                        Assign Selected ({selectedUsers.size})
+                      </>
+                    ) : (
+                      <>
+                        <UserMinus size={16} />
+                        Unassign Selected ({selectedUsers.size})
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
+        )
+
+      }
 
       {/* Token Generate Form Modal */}
       {
@@ -3052,174 +3267,7 @@ export default function ProjectView() {
         )
       }
 
-      {/* User Assignment Panel*/}
-      {
-        showUserPanel && (
-          <div className={styles["user-panel-overlay"]} onClick={() => setShowUserPanel(false)}>
-            <div className={styles["user-panel"]} onClick={e => e.stopPropagation()}>
-              <div className={styles["user-panel-header"]}><div className={styles["user-panel-header-left"]}><User size={20} /><h3>Manage Users - {environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv}</h3></div><button className={styles["user-panel-close"]} onClick={() => setShowUserPanel(false)}><X size={20} /></button></div>
-              <div className={styles["user-panel-tabs"]}>
-                <button className={`${styles["user-panel-tab"]} ${userActiveTab === 'assign' ? styles["active"] : ''}`} onClick={() => { setUserActiveTab('assign'); setSelectedUsers(new Set()); setSelectAll(false); }}><UserPlus size={14} /> Unassigned Users</button>
-                <button className={`${styles["user-panel-tab"]} ${userActiveTab === 'unassign' ? styles["active"] : ''}`} onClick={() => { setUserActiveTab('unassign'); setSelectedUsers(new Set()); setSelectAll(false); }}><UserMinus size={14} /> Assigned Users</button>
-              </div>
-              <div className={styles["user-panel-search-row"]}>
-                <div className={styles["user-panel-search"]}>
-                  <Search size={16} className={styles["user-panel-search-icon"]} />
-                  <input
-                    type="text"
-                    placeholder="Search users..."
-                    value={userSearchTerm}
-                    onChange={(e) => setUserSearchTerm(e.target.value)}
-                    className={styles["user-panel-search-input"]}
-                  />
-                  {userSearchTerm && (
-                    <button className={styles["user-panel-search-clear"]} onClick={() => setUserSearchTerm("")}>
-                      <X size={14} />
-                    </button>
-                  )}
-                </div>
 
-                {/* Replace the select with this custom dropdown */}
-                <div className={styles["user-panel-filter-wrapper"]} ref={userFilterRef}>
-                  <div
-                    className={`${styles["user-panel-filter-trigger"]} ${userFilterDropdownOpen ? styles["open"] : ''}`}
-                    onClick={() => setUserFilterDropdownOpen(!userFilterDropdownOpen)}
-                  >
-                    <div className={styles["filter-trigger-left"]}>
-                      <Filter size={14} className={styles["filter-icon"]} />
-                      <span className={styles["filter-selected-text"]}>
-                        {userFilter === 'all' ? 'All Status' : userFilter === 'active' ? 'Active' : 'Inactive'}
-                      </span>
-                    </div>
-                    <ChevronDown size={16} className={styles["filter-chevron"]} />
-                  </div>
-                  {userFilterDropdownOpen && (
-                    <div className={styles["user-panel-filter-menu"]}>
-                      <div
-                        className={`${styles["user-panel-filter-item"]} ${userFilter === 'all' ? styles["selected"] : ''}`}
-                        onClick={() => {
-                          setUserFilter('all');
-                          setUserFilterDropdownOpen(false);
-                        }}
-                      >
-                        <span>All Status</span>
-                        {userFilter === 'all' && <Check size={14} />}
-                      </div>
-                      <div
-                        className={`${styles["user-panel-filter-item"]} ${userFilter === 'active' ? styles["selected"] : ''}`}
-                        onClick={() => {
-                          setUserFilter('active');
-                          setUserFilterDropdownOpen(false);
-                        }}
-                      >
-                        <div className={`${styles["filter-item-dot"]} ${styles["active"]}`}></div>
-                        <span>Active</span>
-                        {userFilter === 'active' && <Check size={14} />}
-                      </div>
-                      <div
-                        className={`${styles["user-panel-filter-item"]} ${userFilter === 'inactive' ? styles["selected"] : ''}`}
-                        onClick={() => {
-                          setUserFilter('inactive');
-                          setUserFilterDropdownOpen(false);
-                        }}
-                      >
-                        <div className={`${styles["filter-item-dot"]} ${styles["inactive"]}`}></div>
-                        <span>Inactive</span>
-                        {userFilter === 'inactive' && <Check size={14} />}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className={styles["user-panel-table-wrapper"]}>
-                <table className={styles["user-panel-table"]}><thead><tr><th className={styles["col-checkbox"]}><input type="checkbox" checked={selectAll} onChange={handleSelectAll} className={styles["user-checkbox"]} /></th><th className={styles["col-user"]} style={{ textAlign: 'center' }}>User</th><th className={styles["col-status"]}>Status</th></tr></thead>
-
-                  <tbody>
-                    {filteredUserList.length === 0 ? (
-                      <tr>
-                        <td colSpan={3} className={styles["user-empty-state"]}>
-                          {userSearchTerm.trim() ? (
-                            <>
-                              <img
-                                src={noDataIllustration}
-                                alt="No data"
-                                className={styles["user-empty-illustration-img"]}
-                              />
-                              <div className={styles["user-empty-message"]}>
-                                <h4>No results found</h4>
-                                <p>Try adjusting your search term</p>
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              <img
-                                src={noDataIllustration}
-                                alt="No data"
-                                className={styles["user-empty-illustration-img"]}
-                              />
-                              <div className={styles["user-empty-message"]}>
-                                <h4>
-                                  {userActiveTab === 'assign'
-                                    ? 'No users available to assign'
-                                    : 'No users assigned yet'}
-                                </h4>
-                                <p>
-                                  {userActiveTab === 'assign'
-                                    ? 'All users are already assigned to this environment'
-                                    : 'Assign users to this environment to get started'}
-                                </p>
-                              </div>
-                            </>
-                          )}
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredUserList.map(user => (
-                        <tr key={user.id} className={selectedUsers.has(user.id) ? styles["selected"] : ''}>
-                          <td className={styles["col-checkbox"]}><input type="checkbox" checked={selectedUsers.has(user.id)} onChange={() => handleUserSelect(user.id)} className={styles["user-checkbox"]} /></td>
-                          <td className={styles["col-user"]}><div className={styles["user-cell"]}><span className={styles["user-name"]}>{user.name}</span><span className={styles["user-email"]}>{user.email}</span></div></td>
-                          <td className={styles["col-status"]}><span className={`${styles["user-status-badge"]} ${styles[user.status]}`}>
-                            {user.status === 'active' ? <Check size={12} /> : <AlertCircle size={12} />}
-                            {user.status}
-                          </span></td>
-                        </tr>
-                      )))}
-                  </tbody>
-                </table>
-              </div>
-              <div className={styles["user-panel-footer"]}>
-                <button
-                  className={styles["user-panel-action-btn"]}
-                  onClick={
-                    userActiveTab === 'assign'
-                      ? handleAssignUsers
-                      : handleUnassignUsers
-                  }
-                  disabled={selectedUsers.size === 0}
-                  style={{
-                    background:
-                      userActiveTab === 'assign'
-                        ? '#6366f1'
-                        : '#ef4444'
-                  }}
-                >
-                  {userActiveTab === 'assign' ? (
-                    <>
-                      <UserPlus size={16} />
-                      Assign Selected ({selectedUsers.size})
-                    </>
-                  ) : (
-                    <>
-                      <UserMinus size={16} />
-                      Unassign Selected ({selectedUsers.size})
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        )
-      }
 
       {/* Token Leave Confirmation Modal */}
       {

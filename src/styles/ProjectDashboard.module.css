@@ -1434,18 +1434,27 @@
 
 .dashboard-slide-panel {
     position: absolute;
+
     top: 0;
     right: 0;
+
     width: 575px;
     max-width: 90vw;
-    height: calc(100% - 0px);
+
+    height: 100%;
+
     background: #fff;
-    z-index: 1001;
-    box-shadow: -8px 0 30px rgba(0, 0, 0, 0.15);
+
+    z-index: 2000;
+
     display: flex;
     flex-direction: column;
 
-    animation: dashboardSlideInRight 0.5s ease;
+    box-shadow: -8px 0 30px rgba(0, 0, 0, 0.15);
+
+    animation: dashboardSlideInRight 0.35s ease;
+
+    overflow: hidden;
 }
 
 @keyframes dashboardSlideInRight {

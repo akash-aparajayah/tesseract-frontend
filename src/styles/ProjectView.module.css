@@ -5,13 +5,14 @@
 /* ===== PROJECT VIEW PAGE ===== */
 .project-view-page {
     width: 100%;
-    min-height: 100vh;
+    height: 100%;
     background: #f8fafc;
     padding: 24px;
-    height: 100%;
+    box-sizing: border-box;
+
     overflow-y: auto;
     overflow-x: hidden;
-    isolation: isolate;
+
 }
 
 /* ===== BREADCRUMBS ===== */
@@ -822,8 +823,7 @@
     position: sticky;
     top: 20px;
     align-self: flex-start;
-    max-height: calc(100vh - 100px);
-    overflow-y: auto;
+
     flex-shrink: 0;
 }
 
@@ -1257,13 +1257,40 @@
     animation: fadeIn 0.2s ease;
 }
 
+.pc-slide-panel .pc-modal {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    border-radius: 0;
+    gap: 0;
+}
+
+.pc-slide-panel .pc-modal-header {
+    flex-shrink: 0;
+    padding: 24px;
+}
+
+.pc-slide-panel .pc-modal-body {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.pc-slide-panel .pc-modal-footer {
+    flex-shrink: 0;
+    position: sticky;
+    bottom: 0;
+    background: #fff;
+    padding: 16px 24px;
+    border-top: 1px solid #e5e7eb;
+}
+
 .pc-slide-panel {
     position: absolute;
 
     top: 0;
     right: 0;
 
-    width: 575px;
+    width: 540px;
     max-width: 90vw;
     height: 100%;
 
@@ -1294,7 +1321,76 @@
 }
 
 .pc-modal-small {
-    max-width: 480px;
+    max-width: 440px;
+    width: 100%;
+    background: white;
+    border-radius: 24px;
+    padding: 28px;
+    animation: modalPop 0.25s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.pc-modal-small .pc-modal-header {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+.pc-modal-small .pc-modal-header h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+}
+
+.pc-modal-small .pc-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #94a3b8;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+}
+
+.pc-modal-small .pc-modal-close:hover {
+    background: #f1f5f9;
+    color: #ef4444;
+}
+
+.pc-modal-small .pc-modal-body {
+    padding: 0;
+}
+
+.pc-modal-small .pc-modal-body p {
+    text-align: center;
+}
+
+.pc-modal-small .pc-modal-footer {
+    display: flex;
+    gap: 12px;
+}
+
+.pc-modal-small .pc-modal-footer button {
+    flex: 1;
+}
+
+.pc-modal-small .pc-btn-cancel,
+.pc-modal-small .pc-btn-danger {
+    flex: 1;
+    width: 100%;
+    min-width: 0;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 @keyframes modalSlideUp {
@@ -1311,6 +1407,7 @@
 
 .pc-modal-body p {
     text-align: center;
+    padding-top: 10px;
 }
 
 .pc-modal-header {
@@ -1410,7 +1507,7 @@
 .pc-modal-desc {
     color: #64748b;
     font-size: 13px;
-    margin: 0 0 16px 0;
+    margin: 0 0 25px 0;
 }
 
 .pc-form-group {
@@ -1422,7 +1519,7 @@
     font-size: 13px;
     font-weight: 600;
     color: #475569;
-    margin-bottom: 6px;
+    margin-bottom: 12px;
 }
 
 .pc-input {
@@ -1655,6 +1752,7 @@
     border-radius: 10px;
     padding: 16px;
     margin-bottom: 16px;
+    margin-top: 20px;
 }
 
 .clone-source-info label {
@@ -1722,7 +1820,6 @@
 .pc-modal {
     background: white;
     border-radius: 24px;
-    padding: 28px;
     animation: modalPop 0.25s ease;
     display: flex;
     flex-direction: column;
@@ -2492,7 +2589,8 @@ body:has(.pc-modal-overlay.slide-panel) {
 
 /* Token Reveal Modal */
 .token-reveal-modal {
-    max-width: 550px !important;
+    max-width: 710px !important;
+    padding: 15px;
 }
 
 .reveal-success {
@@ -3274,6 +3372,8 @@ body:has(.pc-modal-overlay.slide-panel) {
     border-radius: 10px;
     padding: 10px 14px;
     gap: 12px;
+    margin-top: 20px;
+    margin-bottom: 20px;
 }
 
 .environmentSectionWrapper {
@@ -3356,8 +3456,23 @@ body:has(.pc-modal-overlay.slide-panel) {
     overflow: hidden !important;
 }
 
+.page-content {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
 /* Lock body scroll when slide panel is visible */
 body:has(.pc-modal-overlay.slide-panel) {
+    overflow: hidden !important;
+}
+
+body:has(.pc-drawer-backdrop) {
+    overflow: hidden !important;
+}
+
+/* Also lock the page content */
+.page-content:has(.pc-drawer-backdrop) {
     overflow: hidden !important;
 }
 

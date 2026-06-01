@@ -75,17 +75,21 @@ body,
 .dashboard-content {
   flex: 1;
   min-width: 0;
-  overflow: hidden;
+
   box-sizing: border-box;
   background-color: #f9fafb;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .page-content {
   flex: 1;
   min-height: 0;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 40px;
 }
 
 /* =========================================================
