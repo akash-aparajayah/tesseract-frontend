@@ -1061,3 +1061,16 @@ body,
     justify-content: space-between;
   }
 }
+
+.configured-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+     background:var( --success-bg);
+     color:var(--success);
+     align-items: center;
+     display: flex;
+      gap: 4px;
+      margin-left: auto;
+}
