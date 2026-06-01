@@ -1778,7 +1778,7 @@ export default function ProjectView() {
   };
 
   const handleCancelEdit = () => { if (project) setEditForm({ name: project.name, description: project.description || "", status: project.status }); setIsEditing(false); };
-  // ✅ PLACE IT HERE - Before console.log and before if (pageLoading)
+
   useEffect(() => {
     if (providers.length > 0) {
       const firstProvider = providers[0];
