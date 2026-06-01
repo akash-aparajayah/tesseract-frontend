@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import Toast from "../components/common/Toast";
 
 export interface ToastMessage {
@@ -8,29 +8,56 @@ export interface ToastMessage {
 }
 
 export const useToast = () => {
-  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [toast, setToast] = useState<ToastMessage | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
 
   const showToast = useCallback((message: string, type: "success" | "error") => {
-    const id = Date.now();
-    setToasts((prev) => [...prev, { id, message, type }]);
-  }, []); // No dependencies needed because setToasts is stable
+    // Clear any existing timer
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
 
-  const removeToast = useCallback((id: number) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+    const id = Date.now();
+
+    // Replace existing toast with new one
+    setToast({ id, message, type });
+
+    // Auto-dismiss after 3 seconds
+    timerRef.current = setTimeout(() => {
+      setToast(null);
+    }, 3000);
+  }, []);
+
+  const removeToast = useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    setToast(null);
   }, []);
 
   const ToastContainer = useCallback(() => (
     <div className="toast-container">
-      {toasts.map((toast) => (
+      {toast && (
         <Toast
           key={toast.id}
           message={toast.message}
           type={toast.type}
-          onClose={() => removeToast(toast.id)}
+          onClose={() => removeToast()}
         />
-      ))}
+      )}
     </div>
-  ), [toasts, removeToast]);
+  ), [toast, removeToast]);
 
   return { showToast, ToastContainer };
 };

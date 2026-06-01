@@ -177,9 +177,7 @@ export default function ProjectView() {
   const [userFilter, setUserFilter] = useState("all");
 
   // Main tab state
-  const [activeMainTab, setActiveMainTab] = useState<"environments" | "tokens">(() => {
-    return (localStorage.getItem(`activeTab_${projectId}`) as "environments" | "tokens") || "environments";
-  });
+  const [activeMainTab, setActiveMainTab] = useState<"environments" | "tokens">("environments");
   // Token states
   const [allTokens, setAllTokens] = useState<Record<string, ApiToken>>({});
   const [tokenSearchTerm, setTokenSearchTerm] = useState("");
@@ -219,6 +217,9 @@ export default function ProjectView() {
   const [pageLoading, setPageLoading] = useState(true);
   const [environmentsLoading, setEnvironmentsLoading] = useState(true);
   const [tokensLoading, setTokensLoading] = useState(false);
+
+  // statuschanging
+  const [statusChanging, setStatusChanging] = useState(false);
 
 
   const fetchUsersForEnvironment = async (env?: any) => {
@@ -1398,6 +1399,7 @@ export default function ProjectView() {
     }
   };
 
+
   // ---- EFFECTS ----
   useEffect(() => {
     const initialize = async () => {
@@ -1796,19 +1798,13 @@ export default function ProjectView() {
         <div className={styles["main-tabs-wrapper"]}>
           <button
             className={`${styles["main-tab"]} ${activeMainTab === 'environments' ? styles["active"] : ''}`}
-            onClick={() => {
-              setActiveMainTab('environments');
-              localStorage.setItem(`activeTab_${projectId}`, 'environments');
-            }}
+            onClick={() => setActiveMainTab('environments')}
           >
             <Globe size={16} /> Environments
           </button>
           <button
             className={`${styles["main-tab"]} ${activeMainTab === 'tokens' ? styles["active"] : ''}`}
-            onClick={() => {
-              setActiveMainTab('tokens');
-              localStorage.setItem(`activeTab_${projectId}`, 'tokens');
-            }}
+            onClick={() => setActiveMainTab('tokens')}
           >
             <Key size={16} /> Manage Token
           </button>
@@ -2787,103 +2783,202 @@ export default function ProjectView() {
       )}
 
       {/* Add/Edit Provider Modal */}
-      {showAddProviderModal && (
-        <>
-          <div className={styles["pc-drawer-backdrop"]} />
+      {showAddProviderModal &&
+        createPortal(
+          <>
+            <div
+              className={styles["pc-drawer-backdrop"]}
+              onClick={() => setShowAddProviderModal(false)}
+            />
 
-          <div className={styles["pc-slide-panel"]}>
-            <div className={styles["pc-modal"]} onClick={e => e.stopPropagation()}>
+            <div className={styles["pc-slide-panel"]}>
+              <div
+                className={styles["pc-modal"]}
+                onClick={e => e.stopPropagation()}
+              >
 
-              {/* ✅ Updated Header - Same style as Manage Users */}
-              <div className={styles["user-panel-header"]}>
-                <div className={styles["user-panel-header-left"]}>
-                  <span className={styles["pc-modal-service-badge"]} style={{ backgroundColor: `${SERVICE_COLORS[activeService]}15`, color: SERVICE_COLORS[activeService], border: `1px solid ${SERVICE_COLORS[activeService]}40` }}>
-                    {SERVICE_ICONS[activeService]}<span>{activeService}</span>
-                  </span>
-                  <h3>{editingProvider ? 'Edit Provider' : 'Add Provider'}</h3>
+                {/* ✅ Updated Header - Same style as Manage Users */}
+                <div className={styles["user-panel-header"]}>
+                  <div className={styles["user-panel-header-left"]}>
+                    <span
+                      className={styles["pc-modal-service-badge"]}
+                      style={{
+                        backgroundColor: `${SERVICE_COLORS[activeService]}15`,
+                        color: SERVICE_COLORS[activeService],
+                        border: `1px solid ${SERVICE_COLORS[activeService]}40`
+                      }}
+                    >
+                      {SERVICE_ICONS[activeService]}
+                      <span>{activeService}</span>
+                    </span>
+
+                    <h3>
+                      {editingProvider
+                        ? 'Edit Provider'
+                        : 'Add Provider'}
+                    </h3>
+                  </div>
+
+                  <button
+                    className={styles["user-panel-close"]}
+                    onClick={() => {
+                      setPendingCloseAction(() => () => {
+                        setShowAddProviderModal(false);
+                        setEditingProvider(null);
+                      });
+
+                      setShowUnsavedModal(true);
+                    }}
+                  >
+                    <X size={20} />
+                  </button>
                 </div>
-                <button className={styles["user-panel-close"]} onClick={() => { setPendingCloseAction(() => () => { setShowAddProviderModal(false); setEditingProvider(null); }); setShowUnsavedModal(true); }}>
-                  <X size={20} />
-                </button>
-              </div>
 
-              <div className={styles["pc-modal-env-info-row"]}>
-                <div className={styles["pc-modal-env-info"]}>
-                  <Globe size={14} />
-                  <span>Environment: <strong>{environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv}</strong></span>
+                <div className={styles["pc-modal-env-info-row"]}>
+                  <div className={styles["pc-modal-env-info"]}>
+                    <Globe size={14} />
+
+                    <span>
+                      Environment:
+                      <strong>
+                        {
+                          environments.find(
+                            (e: any) =>
+                              e.public_id === selectedEnv
+                          )?.environment_name || selectedEnv
+                        }
+                      </strong>
+                    </span>
+                  </div>
+
+                  <div className={styles["pc-modal-mode-info"]}>
+                    <span
+                      className={`${styles["pc-mode-badge"]} ${modeFilter === 'Live'
+                        ? styles["live"]
+                        : styles["sandbox"]
+                        }`}
+                    >
+                      {modeFilter === 'Live'
+                        ? <Rocket size={14} />
+                        : <Wrench size={14} />}
+
+                      {modeFilter} Mode
+                    </span>
+                  </div>
                 </div>
 
-                <div className={styles["pc-modal-mode-info"]}>
-                  <span className={`${styles["pc-mode-badge"]} ${modeFilter === 'Live' ? styles["live"] : styles["sandbox"]}`}>
-                    {modeFilter === 'Live' ? <Rocket size={14} /> : <Wrench size={14} />}
-                    {modeFilter} Mode
-                  </span>
+                <div className={styles["pc-modal-body"]}>
+                  <div className={styles["pc-form-group"]}>
+                    <label>Select Provider *</label>
+
+                    <select
+                      value={selectedProvider}
+                      onChange={handleProviderChange}
+                      className={styles["pc-select"]}
+                      disabled={!!editingProvider}
+                    >
+                      <option value="">
+                        -- Choose provider --
+                      </option>
+
+                      {providersList
+                        .filter((p: any) => {
+                          // Always allow the currently editing provider
+                          if (editingProvider?.name === p.name) {
+                            return true;
+                          }
+
+                          // Check if this provider exists in the CURRENT mode only
+                          const existsInCurrentMode = providers.some(
+                            (prov) =>
+                              prov.name === p.name &&
+                              prov.fields.mode?.toLowerCase() === modeFilter.toLowerCase()
+                          );
+
+                          // Only hide if it exists in the current mode
+                          if (existsInCurrentMode) {
+                            return false;
+                          }
+
+                          return true;
+                        })
+                        .map((p: any) => (
+                          <option
+                            key={p.public_id}
+                            value={p.name}
+                          >
+                            {p.name}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+
+                  {selectedProvider &&
+                    providerFields &&
+                    Object.keys(providerFields).length > 0 && (
+                      <FormValidation
+                        fields={providerFields}
+                        onChange={handleFieldChange}
+                      />
+                    )}
                 </div>
-              </div>
 
-              <div className={styles["pc-modal-body"]}>
-                <div className={styles["pc-form-group"]}>
-                  <label>Select Provider *</label>
-                  <select value={selectedProvider} onChange={handleProviderChange} className={styles["pc-select"]} disabled={!!editingProvider}>
-                    <option value="">-- Choose provider --</option>
-                    {providersList
-                      .filter((p: any) => {
-                        if (editingProvider?.name === p.name) return true;
-                        const existsInCurrentMode = providers.some(
-                          (prov) => prov.name === p.name && prov.fields.mode === modeFilter
-                        );
-                        if (existsInCurrentMode) return false;
-                        return true;
-                      })
-                      .map((p: any) => (
-                        <option key={p.public_id} value={p.name}>
-                          {p.name}
-                        </option>
-                      ))}
-                  </select>
+                <div className={styles["pc-modal-footer"]}>
+                  <button
+                    className={styles["pc-btn-cancel"]}
+                    onClick={() => {
+                      setPendingCloseAction(() => () => {
+                        setShowAddProviderModal(false);
+                        setEditingProvider(null);
+                        setSelectedProvider("");
+                        setProviderFields({});
+                      });
+
+                      setShowUnsavedModal(true);
+                    }}
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    className={styles["pc-btn-primary"]}
+                    onClick={() => {
+                      window.dispatchEvent(
+                        new CustomEvent('validateAllFields')
+                      );
+
+                      setTimeout(() => {
+
+                        if (hasErrors(providerFields)) {
+                          return;
+                        }
+
+                        saveProvider();
+
+                      }, 100);
+                    }}
+                    disabled={saving}
+                    style={{
+                      backgroundColor:
+                        SERVICE_COLORS[activeService],
+                      border: 'none'
+                    }}
+                  >
+                    {saving
+                      ? 'Saving...'
+                      : editingProvider
+                        ? 'Update Provider'
+                        : 'Add Provider'}
+                  </button>
                 </div>
-                {selectedProvider && providerFields && Object.keys(providerFields).length > 0 && (
-                  <FormValidation
-                    fields={providerFields}
-                    onChange={handleFieldChange}
-                  />
-                )}
-              </div>
 
-              <div className={styles["pc-modal-footer"]}>
-                <button className={styles["pc-btn-cancel"]} onClick={() => {
-                  setPendingCloseAction(() => () => {
-                    setShowAddProviderModal(false);
-                    setEditingProvider(null);
-                    setSelectedProvider("");
-                    setProviderFields({});
-                  });
-                  setShowUnsavedModal(true);
-                }}>
-                  Cancel
-                </button>
-                <button
-                  className={styles["pc-btn-primary"]}
-                  onClick={() => {
-                    window.dispatchEvent(new CustomEvent('validateAllFields'));
-                    setTimeout(() => {
-                      if (hasErrors(providerFields)) {
-                        return;
-                      }
-                      saveProvider();
-                    }, 100);
-                  }}
-                  disabled={saving}
-                  style={{ backgroundColor: SERVICE_COLORS[activeService], border: 'none' }}
-                >
-                  {saving ? 'Saving...' : editingProvider ? 'Update Provider' : 'Add Provider'}
-                </button>
               </div>
-
             </div>
-          </div>
-        </>
-      )}
+          </>,
+          document.getElementById(
+            "global-slide-panel-root"
+          )!
+        )}
 
       {/* Delete Environment Modal */}
       {showDeleteEnvModal && (
@@ -3134,48 +3229,231 @@ export default function ProjectView() {
       }
 
       {/* Token Generate Form Modal */}
+      {/* Token Generate Form Modal */}
       {
-        showTokenFormModal && (
+        showTokenFormModal &&
+        createPortal(
           <>
-            <div className={styles["pc-drawer-backdrop"]}></div>
+            <div
+              className={styles["pc-drawer-backdrop"]}
+              onClick={() => setShowTokenFormModal(false)}
+            ></div>
 
             <div className={styles["pc-slide-panel"]}>
-              <div className={`${styles["pc-modal"]} ${styles["token-form-modal"]}`} onClick={e => e.stopPropagation()}>
-                <div className={styles["pc-modal-header"]}><h3>{isRegenerating ? 'Regenerate Token' : 'Generate Token'}</h3><button className={styles["pc-modal-close"]} onClick={() => setShowTokenFormModal(false)}><X size={20} /></button></div>
+              <div
+                className={`${styles["pc-modal"]} ${styles["token-form-modal"]}`}
+                onClick={e => e.stopPropagation()}
+              >
+
+                <div className={styles["pc-modal-header"]}>
+                  <h3>
+                    {isRegenerating
+                      ? 'Regenerate Token'
+                      : 'Generate Token'}
+                  </h3>
+
+                  <button
+                    className={styles["pc-modal-close"]}
+                    onClick={() => setShowTokenFormModal(false)}
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
                 <div className={styles["pc-modal-body"]}>
+
                   <div className={styles["modal-token-info"]}>
-                    <div><Globe size={14} /> Environment: <strong>{
-                      environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv
-                    }</strong></div>
+                    <div>
+                      <Globe size={14} />
+
+                      Environment:
+                      <strong>
+                        {
+                          environments.find(
+                            (e: any) =>
+                              e.public_id === selectedEnv
+                          )?.environment_name || selectedEnv
+                        }
+                      </strong>
+                    </div>
                   </div>
-                  <div className={styles["pc-form-group"]}><label>Note</label><input type="text" placeholder="What's this token for?" value={tokenName} onChange={(e) => setTokenName(e.target.value)} className={styles["pc-input"]} autoFocus /></div>
-                  <div className={styles["pc-form-group"]}><label>Expiration</label>
+
+                  <div className={styles["pc-form-group"]}>
+                    <label>Note</label>
+
+                    <input
+                      type="text"
+                      placeholder="What's this token for?"
+                      value={tokenName}
+                      onChange={(e) =>
+                        setTokenName(e.target.value)
+                      }
+                      className={styles["pc-input"]}
+                      autoFocus
+                    />
+                  </div>
+
+                  <div className={styles["pc-form-group"]}>
+                    <label>Expiration</label>
+
                     <div className={styles["expiration-options"]}>
-                      {[{ value: "7", label: "7 Days" }, { value: "30", label: "30 Days" }, { value: "60", label: "60 Days" }, { value: "90", label: "90 Days" }, { value: "custom", label: "Custom" }, { value: "never", label: "Never" }].map(opt => (
-                        <div key={opt.value} className={`${styles["expiration-option"]} ${tokenExpiration === opt.value ? styles["active"] : ''}`} onClick={() => setTokenExpiration(opt.value)}>
-                          <div className={styles["expiration-label"]}>{opt.label}</div>
-                          <div className={styles["expiration-date"]}>{opt.value === "never" ? "—" : opt.value === "custom" ? (tokenCustomDate ? formatDate(tokenCustomDate) : "Pick a date") : getExpiryDate(opt.value)}</div>
+                      {[
+                        { value: "7", label: "7 Days" },
+                        { value: "30", label: "30 Days" },
+                        { value: "60", label: "60 Days" },
+                        { value: "90", label: "90 Days" },
+                        { value: "custom", label: "Custom" },
+                        { value: "never", label: "Never" }
+                      ].map(opt => (
+
+                        <div
+                          key={opt.value}
+                          className={`${styles["expiration-option"]} ${tokenExpiration === opt.value
+                            ? styles["active"]
+                            : ''
+                            }`}
+                          onClick={() =>
+                            setTokenExpiration(opt.value)
+                          }
+                        >
+
+                          <div className={styles["expiration-label"]}>
+                            {opt.label}
+                          </div>
+
+                          <div className={styles["expiration-date"]}>
+                            {
+                              opt.value === "never"
+                                ? "—"
+                                : opt.value === "custom"
+                                  ? (
+                                    tokenCustomDate
+                                      ? formatDate(tokenCustomDate)
+                                      : "Pick a date"
+                                  )
+                                  : getExpiryDate(opt.value)
+                            }
+                          </div>
+
                         </div>
                       ))}
                     </div>
                   </div>
+
                   {tokenExpiration === "custom" && (
-                    <div className={styles["pc-form-group"]}><label>Select Expiry Date</label>
-                      <div className={styles["token-date-wrapper"]} onClick={() => { if (tokenDateRef.current) tokenDateRef.current.showPicker(); }}>
-                        <input type="date" value={tokenCustomDate} onChange={(e) => { setTokenCustomDate(e.target.value); const now = new Date(); const expiry = new Date(e.target.value); const diffDays = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)); setTokenCustomDays(String(diffDays > 0 ? diffDays : 1)); }} ref={tokenDateRef} className={`${styles["pc-input"]} ${styles["token-date-input"]}`} min={new Date().toISOString().split('T')[0]} />
-                        <Calendar className={styles["token-date-icon"]} size={16} />
+
+                    <div className={styles["pc-form-group"]}>
+                      <label>Select Expiry Date</label>
+
+                      <div
+                        className={styles["token-date-wrapper"]}
+                        onClick={() => {
+                          if (tokenDateRef.current) {
+                            tokenDateRef.current.showPicker();
+                          }
+                        }}
+                      >
+
+                        <input
+                          type="date"
+                          value={tokenCustomDate}
+                          onChange={(e) => {
+
+                            setTokenCustomDate(e.target.value);
+
+                            const now = new Date();
+
+                            const expiry = new Date(
+                              e.target.value
+                            );
+
+                            const diffDays =
+                              Math.ceil(
+                                (
+                                  expiry.getTime() -
+                                  now.getTime()
+                                ) /
+                                (
+                                  1000 *
+                                  60 *
+                                  60 *
+                                  24
+                                )
+                              );
+
+                            setTokenCustomDays(
+                              String(
+                                diffDays > 0
+                                  ? diffDays
+                                  : 1
+                              )
+                            );
+                          }}
+
+                          ref={tokenDateRef}
+
+                          className={`${styles["pc-input"]} ${styles["token-date-input"]}`}
+
+                          min={
+                            new Date()
+                              .toISOString()
+                              .split('T')[0]
+                          }
+                        />
+
+                        <Calendar
+                          className={styles["token-date-icon"]}
+                          size={16}
+                        />
+
                       </div>
                     </div>
                   )}
-                  <div className={styles["token-warning"]}><AlertTriangle size={16} /><span>The token will only be shown once after creation.</span></div>
+
+                  <div className={styles["token-warning"]}>
+                    <AlertTriangle size={16} />
+
+                    <span>
+                      The token will only be shown once after creation.
+                    </span>
+                  </div>
+
                 </div>
+
                 <div className={styles["pc-modal-footer"]}>
-                  <button className={styles["pc-btn-cancel"]} onClick={() => setShowTokenFormModal(false)}>Cancel</button>
-                  <button className={styles["pc-btn-primary"]} onClick={handleTokenGenerate} disabled={!tokenName.trim() || !tokenMode}>{isRegenerating ? 'Regenerate Token' : 'Generate Token'}</button>
+
+                  <button
+                    className={styles["pc-btn-cancel"]}
+                    onClick={() =>
+                      setShowTokenFormModal(false)
+                    }
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    className={styles["pc-btn-primary"]}
+                    onClick={handleTokenGenerate}
+                    disabled={
+                      !tokenName.trim() ||
+                      !tokenMode
+                    }
+                  >
+                    {
+                      isRegenerating
+                        ? 'Regenerate Token'
+                        : 'Generate Token'
+                    }
+                  </button>
+
                 </div>
+
               </div>
             </div>
-          </>
+          </>,
+          document.getElementById(
+            "global-slide-panel-root"
+          )!
         )
       }
 
@@ -3324,22 +3602,29 @@ export default function ProjectView() {
               )}
             </div>
             <div className={styles["pc-modal-footer"]}>
-              <button className={styles["pc-btn-cancel"]} onClick={() => {
-                setShowStatusModal(false);
-                setPendingStatusChange(null);
-              }}>Cancel</button>
+              <button
+                className={styles["pc-btn-cancel"]}
+                onClick={() => {
+                  setShowStatusModal(false);
+                  setPendingStatusChange(null);
+                }}
+                disabled={statusChanging}
+              >
+                Cancel
+              </button>
               <button
                 className={
                   pendingStatusChange.newStatus === 'active'
                     ? styles["pc-btn-primary"]
                     : styles["pc-btn-danger"]
                 }
+                disabled={statusChanging}
                 onClick={async () => {
+                  if (!pendingStatusChange || statusChanging) return;
 
-                  if (!pendingStatusChange) return;
+                  setStatusChanging(true);
 
                   try {
-
                     await updateEnvironment(
                       pendingStatusChange.env,
                       {
@@ -3366,22 +3651,23 @@ export default function ProjectView() {
                     );
 
                     setShowStatusModal(false);
-
                     setPendingStatusChange(null);
 
                   } catch (error: any) {
-
                     console.error(error);
-
                     showToast(
                       error?.response?.data?.message ||
                       "Failed to update environment status",
                       "error"
                     );
+                  } finally {
+                    setStatusChanging(false);
                   }
                 }}
               >
-                {pendingStatusChange.newStatus === 'active' ? (
+                {statusChanging ? (
+                  <>Processing...</>
+                ) : pendingStatusChange.newStatus === 'active' ? (
                   <> Yes, Activate</>
                 ) : (
                   <><AlertTriangle size={16} /> Yes, Deactivate</>
