@@ -271,108 +271,92 @@ export default function ProjectView() {
 
   const fetchProviderHealth = async (envPublicId: string, providerPublicId: string) => {
     try {
-      // TODO: Replace with actual API endpoint when available
+      // The health data is already included in getProvidersByEnvironmentId response
+      // No separate API call needed since we get is_active, last_error_message, last_failed_at
+      // from the main providers endpoint
+
+      // If you have a separate health endpoint in future, you can use:
       // const response = await getProviderHealth(envPublicId, providerPublicId);
-      // const data = response.data;
 
-      // Mock response structure - remove when API is ready
-      const data = {
-        isActive: true,
-        error: null,
-        errorTimestamp: null
-      };
-
-      setProviderHealth(prev => ({
-        ...prev,
-        [providerPublicId]: {
-          isActive: data.isActive,
-          error: data.error || undefined,
-          errorTimestamp: data.errorTimestamp || undefined
-        }
-      }));
-
-      return data;
+      return null;
     } catch (error) {
       console.error("Failed to fetch provider health:", error);
       return null;
     }
-  }; const handleProviderHealthToggle = async (providerId: string, envPublicId: string) => {
-    if (isTogglingProvider === providerId) return;
+  };
+
+  const handleProviderHealthToggle = async (
+    providerId: string,
+    envPublicId: string
+  ) => {
+
+    if (isTogglingProvider === providerId) {
+      return;
+    }
 
     setIsTogglingProvider(providerId);
 
     try {
-      const currentHealth = providerHealth[providerId];
-      const newStatus = !currentHealth?.isActive;
 
-      // TODO: Replace with actual API endpoint when available
-      // await toggleProviderHealth(envPublicId, providerId, newStatus);
+      const currentHealth =
+        providerHealth[providerId];
 
-      // Optimistic update
+      const newStatus =
+        !currentHealth?.isActive;
+
+      // REAL API CALL
+      await updateProvider(
+        providerId,
+        {
+          is_active: newStatus,
+        }
+      );
+
+      // UPDATE LOCAL STATE
       setProviderHealth(prev => ({
         ...prev,
         [providerId]: {
+          ...prev[providerId],
           isActive: newStatus,
-          error: prev[providerId]?.error,
-          errorTimestamp: prev[providerId]?.errorTimestamp
         }
       }));
 
+      // REFRESH PROVIDERS FROM BACKEND
+      const env = environments.find(
+        (e: any) => e.public_id === envPublicId
+      );
+
+      if (env) {
+        await loadProvidersForEnv(env);
+      }
+
       showToast(
-        `Provider ${newStatus ? 'activated' : 'deactivated'} successfully`,
+        `Provider ${newStatus
+          ? "activated"
+          : "deactivated"
+        } successfully`,
         "success"
       );
-    } catch (error: any) {
-      console.error("Failed to toggle provider health:", error);
 
-      // Revert optimistic update
-      setProviderHealth(prev => ({
-        ...prev,
-        [providerId]: {
-          isActive: !prev[providerId]?.isActive,
-          error: prev[providerId]?.error,
-          errorTimestamp: prev[providerId]?.errorTimestamp
-        }
-      }));
+    } catch (error: any) {
+
+      console.error(
+        "Failed to toggle provider health:",
+        error
+      );
 
       showToast(
-        error?.response?.data?.message || "Failed to update provider status",
+        error?.response?.data?.message ||
+        "Failed to update provider status",
         "error"
       );
+
     } finally {
+
       setIsTogglingProvider(null);
+
     }
   };
-  useEffect(() => {
-    if (!selectedEnv || !providers.length) return;
-
-    // TODO: Replace with actual WebSocket/SSE endpoint when available
-    // const ws = new WebSocket(`ws://your-api/providers/${selectedEnv}/health`);
-
-    // Mock WebSocket implementation - remove when API is ready
-    const mockHealthCheck = setInterval(() => {
-      providers.forEach(provider => {
-        // Simulate random errors for testing
-        // Remove this mock logic when connecting to real backend
-        if (Math.random() < 0.1) { // 10% chance of error for testing
-          setProviderHealth(prev => ({
-            ...prev,
-            [provider.id]: {
-              isActive: false,
-              error: `Connection failed: ${new Date().toLocaleTimeString()}`,
-              errorTimestamp: new Date().toISOString()
-            }
-          }));
-        }
-      });
-    }, 30000); // Check every 30 seconds
-
-    return () => {
-      clearInterval(mockHealthCheck);
-      // Cleanup WebSocket connection when real endpoint is available
-      // ws.close();
-    };
-  }, [selectedEnv, providers]);
 
   const fetchProvidersForService = async (servicePublicId: string) => {
     try {
@@ -481,7 +465,6 @@ export default function ProjectView() {
   };
 
   const loadProvidersForEnv = async (env: any) => {
-
     if (!projectId || !serviceData) return;
 
     const service = serviceData.find(
@@ -499,7 +482,6 @@ export default function ProjectView() {
     }
 
     try {
-
       const res = await getProvidersByEnvironmentId(
         env.public_id,
         service.public_id
@@ -511,41 +493,60 @@ export default function ProjectView() {
         ...(data.sandbox || []),
         ...(data.live || []),
       ];
+
       const firstProvider = allProviders[0];
       setServiceEndpoint(
-        firstProvider?.endpoint || ""
+        service?.service_base_endpoint || ""
       );
 
-      setProviders(
-        allProviders.map((p: any) => ({
-          id: p.public_id || p.id,
-          name: p.provider_name || p.name,
-          fields: {
-            ...(p.credentials || {}),
-            mode: p.mode || p.credentials?.mode || "",
-            endpoint: p.endpoint,
-          },
-        }))
-      );
+      // Map providers and extract health data from API
+      const mappedProviders = allProviders.map((p: any) => ({
+        id: p.public_id || p.id,
+        name: p.provider_name || p.name,
+        fields: {
+          ...(p.credentials || {}),
+          mode: p.mode || p.credentials?.mode || "",
+          endpoint:
+            service?.service_base_endpoint || "",
+        },
+        // Store API response data for health status
+        is_active: p.is_active,
+        last_error_message: p.last_error_message,
+        last_failed_at: p.last_failed_at,
+      }));
+
+      setProviders(mappedProviders);
+
+      // Update provider health from API response
+      const healthUpdates: Record<string, {
+        isActive: boolean;
+        error?: string;
+        errorTimestamp?: string;
+      }> = {};
+
+      allProviders.forEach((p: any) => {
+        const providerId = p.public_id || p.id;
+        healthUpdates[providerId] = {
+          isActive: p.is_active !== false, // true if active, false if inactive
+          error: p.last_error_message || undefined,
+          errorTimestamp: p.last_failed_at || undefined,
+        };
+      });
+
+      setProviderHealth(prev => ({
+        ...prev,
+        ...healthUpdates
+      }));
 
       setServiceProviderCounts((prev) => ({
         ...prev,
         [activeService]: allProviders.length,
       }));
 
-      allProviders.forEach(async (provider: any) => {
-        await fetchProviderHealth(env.public_id, provider.public_id || provider.id);
-      });
-
       return allProviders;
 
     } catch (error) {
-
-      console.error(
-        "Failed to load providers",
-        error
-      );
-
+      console.error("Failed to load providers", error);
       setProviders([]);
       setServiceEndpoint("");
       return [];
@@ -1779,22 +1780,6 @@ export default function ProjectView() {
 
   const handleCancelEdit = () => { if (project) setEditForm({ name: project.name, description: project.description || "", status: project.status }); setIsEditing(false); };
 
-  useEffect(() => {
-    if (providers.length > 0) {
-      const firstProvider = providers[0];
-      if (firstProvider) {
-        setProviderHealth(prev => ({
-          ...prev,
-          [firstProvider.id]: {
-            isActive: false,
-            error: "Connection failed: SMS gateway timeout after 30 seconds. Unable to reach Twilio API endpoint. Please check your credentials and network connectivity.",
-            errorTimestamp: new Date().toISOString()
-          }
-        }));
-      }
-    }
-  }, [providers]);
-
   // This must come AFTER all hooks
   console.log("SKELETON CHECK - pageLoading:", pageLoading, "!project:", !project, "environmentsLoading:", environmentsLoading);
 
@@ -2553,7 +2538,7 @@ export default function ProjectView() {
                               filteredProviders.map((provider, index) => {
                                 const health = providerHealth[provider.id];
                                 const isActive = health?.isActive !== false; // Default to active if no status
-                                const hasError = health?.error && !isActive;
+                                const hasError = !isActive && health?.error ? true : false;
                                 const serviceColor = SERVICE_COLORS[activeService];
                                 const borderColor = isActive ? serviceColor : '#ef4444';
 

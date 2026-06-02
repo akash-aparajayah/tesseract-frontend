@@ -17,6 +17,7 @@ import { useNavigate } from "react-router-dom";
 import styles from "../componentStyles/Topbar.module.css";
 import Toast from "./common/Toast";
 import { updatePasswordApi } from "@/services/authApi";
+import GlobalSearch from "./common/GlobalSearch";
 
 interface ToastState {
   id: number;
@@ -28,6 +29,13 @@ interface DecodedToken {
   name?: string;
   email?: string;
   role?: string;
+}
+
+interface Props {
+  projects?: any[];
+  environments?: any[];
+  providers?: any[];
+  users?: any[];
 }
 
 const formatRole = (role?: string) => {
@@ -56,10 +64,14 @@ const getUserFromToken = () => {
   }
 };
 
-export default function TopBar() {
+export default function TopBar({
+  projects = [],
+  environments = [],
+  providers = [],
+  users = [],
+}: Props) {
   const navigate = useNavigate();
 
-  const [search, setSearch] = useState("");
   const [bellActive, setBellActive] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newPassword, setNewPassword] = useState("");
@@ -98,10 +110,6 @@ export default function TopBar() {
     setTimeout(() => setBellActive(false), 600);
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Search:", search);
-  };
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -185,15 +193,12 @@ export default function TopBar() {
 
       <header className={styles.topBar}>
         <div className={styles.topBarLeft}>
-          <form className={styles.searchForm} onSubmit={handleSearch}>
-            <FaSearch className={styles.searchIcon} />
-            <input
-              type="text"
-              placeholder="Search..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </form>
+          <GlobalSearch
+            projects={projects}
+            environments={environments}
+            providers={providers}
+            users={users}
+          />
         </div>
 
         <div className={styles.topBarRight}>

@@ -3,9 +3,147 @@ import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
 import Breadcrumb from "./Breadcrumb";
 import PageLoader from "./common/Loader";
+import { useEffect, useState } from "react";
+
+import {
+  getProjects,
+  getAllProjectsAndEnvironments,
+} from "@/services/projectApi";
+
+import {
+  getAllUsersApi,
+} from "@/services/adminApi";
 
 export default function Layout() {
   const navigation = useNavigation();
+  const [globalProjects, setGlobalProjects] =
+    useState<any[]>([]);
+
+  const [globalEnvironments, setGlobalEnvironments] =
+    useState<any[]>([]);
+
+  const [globalProviders, setGlobalProviders] =
+    useState<any[]>([]);
+
+  const [globalUsers, setGlobalUsers] =
+    useState<any[]>([]);
+
+  useEffect(() => {
+
+    const loadGlobalSearchData =
+      async () => {
+
+        try {
+
+          // PROJECTS
+          const projectsRes =
+            await getProjects();
+
+          const projects =
+            Array.isArray(projectsRes?.data)
+              ? projectsRes.data
+              : Array.isArray(projectsRes?.data?.projects)
+                ? projectsRes.data.projects
+                : [];
+
+          setGlobalProjects(projects);
+
+          // USERS
+          const usersRes =
+            await getAllUsersApi();
+
+          const users =
+            Array.isArray(usersRes?.data)
+              ? usersRes.data
+              : Array.isArray(usersRes?.data?.users)
+                ? usersRes.data.users
+                : [];
+
+          setGlobalUsers(users);
+
+          // PROJECTS + ENVIRONMENTS
+          const projectsEnvRes =
+            await getAllProjectsAndEnvironments();
+
+          const allProjects =
+            Array.isArray(projectsEnvRes?.data)
+              ? projectsEnvRes.data
+              : Array.isArray(
+                projectsEnvRes?.data?.projects
+              )
+                ? projectsEnvRes.data.projects
+                : [];
+
+          const environments: any[] = [];
+
+          const providers: any[] = [];
+
+          allProjects.forEach(
+            (project: any) => {
+
+              const projectId =
+                project.public_id || project.id;
+
+              // ENVIRONMENTS
+              (project.environments || [])
+                .forEach((env: any) => {
+
+                  environments.push({
+
+                    ...env,
+
+                    label:
+                      env.environment_name,
+
+                    project_id:
+                      projectId,
+
+                  });
+
+                });
+
+              // PROVIDERS
+              (project.providers || [])
+                .forEach((provider: any) => {
+
+                  providers.push({
+
+                    ...provider,
+
+                    label:
+                      provider.provider_name,
+
+                    project_id:
+                      projectId,
+
+                  });
+
+                });
+
+            }
+          );
+
+          setGlobalEnvironments(
+            environments
+          );
+
+          setGlobalProviders(
+            providers
+          );
+
+        } catch (error) {
+
+          console.error(
+            "Global search load failed",
+            error
+          );
+
+        }
+      };
+
+    loadGlobalSearchData();
+
+  }, []);
 
   return (
     <div className="dashboard-layout-wrapper">
@@ -17,7 +155,12 @@ export default function Layout() {
           {/* Main Content Area */}
           <div className="dashboard-content">
             {/* Top Bar */}
-            <TopBar />
+            <TopBar
+              projects={globalProjects}
+              environments={globalEnvironments}
+              providers={globalProviders}
+              users={globalUsers}
+            />
 
             {/* Route Loader */}
             {navigation.state === "loading" && <PageLoader />}
