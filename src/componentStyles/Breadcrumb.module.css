@@ -4,7 +4,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 12px 34px;
-    margin-bottom: 10px;
+    /* margin-bottom: 10px; */
     border-bottom: 1px solid var(--soft-border);
     background: var(--light-bg, #ffffff);
 

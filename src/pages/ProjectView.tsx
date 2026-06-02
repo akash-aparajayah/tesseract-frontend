@@ -7,7 +7,8 @@ import {
   Pencil, FolderOpen, Plus, MessageSquare, Mail, MessageCircle, Plug, Check,
   Save, X, ChevronDown, Server, Copy, Trash2, Globe, Rocket, Wrench,
   Search, AlertTriangle, Home, Monitor, Key,
-  User, UserMinus, UserPlus, AlertCircle, Calendar, Clock, RefreshCw, Filter, Settings
+  User, UserMinus, UserPlus, AlertCircle, Calendar, Clock, RefreshCw, Filter, Settings, 
+  GaugeIcon, LandmarkIcon,Plug2,Layers,FlaskConical
 } from 'lucide-react';
 import { useToast } from "../hooks/useToast";
 import "../styles/Toast.css"
@@ -53,12 +54,25 @@ interface ApiToken {
   revealed: boolean;
 }
 
-const SERVICE_COLORS: Record<string, string> = { SMS: "#10b981", Email: "#6366f1", Whatsapp: "#25D366", WhatsApp: "#25D366" };
-const SERVICE_ICONS: Record<string, React.ReactNode> = {
-  SMS: <MessageSquare size={18} />, Email: <Mail size={18} />, Whatsapp: <MessageCircle size={18} />, WhatsApp: <MessageCircle size={18} />
+const SERVICE_COLORS: Record<string, string> = {
+  SMS: "#10b981",
+  Email: "#6366f1",
+  Whatsapp: "#25D366",
+  WhatsApp: "#25D366",
+  "Credit Score": "#f59e0b",
+  IBV: "#8b5cf6",
 };
 
+const SERVICE_ICONS: Record<string, React.ReactNode> = {
+  SMS: <MessageSquare size={18} />,
+  Email: <Mail size={18} />,
+  Whatsapp: <MessageCircle size={18} />,
+  WhatsApp: <MessageCircle size={18} />,
+  "Credit Score": <GaugeIcon size={18} />,
+  IBV: <LandmarkIcon size={18} />,
+};
 
+  
 // Token Utils
 
 const getExpiryDate = (days: string, customDays?: string): string => {
@@ -1964,7 +1978,7 @@ export default function ProjectView() {
             className={`${styles["main-tab"]} ${activeMainTab === 'environments' ? styles["active"] : ''}`}
             onClick={() => setActiveMainTab('environments')}
           >
-            <Globe size={16} /> Environments
+            <Layers size={16} /> Environments
           </button>
           <button
             className={`${styles["main-tab"]} ${activeMainTab === 'tokens' ? styles["active"] : ''}`}
@@ -2273,7 +2287,7 @@ export default function ProjectView() {
                       }
                       return <span className={`${styles["token-status-dot"]} ${styles["inactive"]}`}></span>;
                     })()}
-                    <Wrench size={14} />
+                    <FlaskConical size={14} />
                     <span className={styles["token-status-name"]}>Sandbox</span>
                     {(() => {
                       const envName = environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv;
@@ -2383,10 +2397,7 @@ export default function ProjectView() {
                           : "INACTIVE"}
                       </span>
                       <span className={styles["toggle-icon"]}>
-                        <svg viewBox="0 0 24 24">
-                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                          <circle cx="12" cy="7" r="4"></circle>
-                        </svg>
+                        <Layers size={16} />
                       </span>
                     </button>
                   </div>
@@ -2528,10 +2539,10 @@ export default function ProjectView() {
                           </div>
                           <div className={styles["pc-mode-tabs"]}>
                             <button className={`${styles["pc-mode-tab"]} ${modeFilter === 'Sandbox' ? `${styles["active"]} ${styles["sandbox"]}` : ''}`} onClick={() => setmodeFilter('Sandbox')}>
-                              <Wrench size={14} /> Sandbox <span className={styles["pc-mode-tab-count"]}>{providers.filter(p => p.fields.mode?.toLowerCase() === 'sandbox').length}</span>
+                              <FlaskConical size={16} /> Sandbox <span className={styles["pc-mode-tab-count"]}>{providers.filter(p => p.fields.mode?.toLowerCase() === 'sandbox').length}</span>
                             </button>
                             <button className={`${styles["pc-mode-tab"]} ${modeFilter === 'Live' ? `${styles["active"]} ${styles["live"]}` : ''}`} onClick={() => setmodeFilter('Live')}>
-                              <Rocket size={14} /> Live <span className={styles["pc-mode-tab-count"]}>{providers.filter(p => p.fields.mode?.toLowerCase() === 'live').length}</span>
+                              <Rocket size={16} /> Live <span className={styles["pc-mode-tab-count"]}>{providers.filter(p => p.fields.mode?.toLowerCase() === 'live').length}</span>
                             </button>
                             {serviceEndpoint && (
                               <div className={styles["pc-endpoint-inline"]}>
@@ -2696,10 +2707,7 @@ export default function ProjectView() {
                                             }
                                           </span>
                                           <span className={styles["toggle-icon"]}>
-                                            <svg viewBox="0 0 24 24">
-                                              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                              <circle cx="12" cy="7" r="4"></circle>
-                                            </svg>
+                                            <Plug2 size={14} />
                                           </span>
                                         </button>
 

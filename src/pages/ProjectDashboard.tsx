@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import styles from "../styles/ProjectDashboard.module.css";
 import {
   Eye, Pencil, Trash2, Plus, Settings, Search, FileText,
-  Users, CheckCircle, XCircle, AlertCircle, X,
+  Users, CheckCircle, XCircle, AlertCircle, X, FolderOpen
 } from 'lucide-react';
 import noDataImg from "../assets/illustration/No data.gif";
 import errorImg from "../assets/illustration/error.svg";
@@ -599,10 +599,7 @@ export default function ProjectDashboard() {
                         onClick={() => toggleStatus(project.id)}
                       >
                         <div className={styles["knob"]}>
-                          <svg viewBox="0 0 24 24" stroke="currentColor">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                            <circle cx="12" cy="7" r="4" />
-                          </svg>
+                         <FolderOpen size={14} />
                         </div>
                         <span className={`${styles["statusText"]} ${styles["textInactive"]}`}>Inactive</span>
                         <span className={`${styles["statusText"]} ${styles["textActive"]}`}>Active</span>

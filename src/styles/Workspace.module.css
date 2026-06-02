@@ -357,7 +357,7 @@ body,
 ========================================================= */
 .serviceScroll {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.7rem;
   overflow-x: auto;
   padding-bottom: 0.125rem;
   scrollbar-width: none;
@@ -375,6 +375,7 @@ body,
   background: var(--surface-card);
   display: flex;
   align-items: center;
+  margin-top: 2px;
   gap: 0.45rem;
   cursor: pointer;
   white-space: nowrap;
@@ -635,7 +636,7 @@ body,
   display: flex;
   align-items: center;
   gap: 0.625rem;
-  width: 54%;
+  width: 60%;
   margin-left: auto;
   margin-bottom: 1.25rem;
   padding: 0.5rem 0.875rem;
@@ -655,7 +656,7 @@ body,
   border-radius: var(--radius-md);
   background: var(--surface-2);
   border: 1px solid var(--border);
-  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   font-size: 0.775rem;
   color: var(--text-primary);
   overflow-x: auto;
@@ -715,20 +716,15 @@ body,
   width: 100%;
   border: none;
   padding: 0.875rem 1.125rem;
-  background: var(--surface-2);
+  background: var(--primary-light);
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--text-primary);
-  transition: background var(--t-fast), color var(--t-fast);
-}
-
-.credentialAccordionHeader:hover {
-  background: var(--primary-light);
   color: var(--primary);
+  transition: background var(--t-fast), color var(--t-fast);
 }
 
 .accordionHeaderLeft {
@@ -806,11 +802,14 @@ body,
   border-radius: var(--radius-md);
   background: var(--surface-2);
   border: 1px solid var(--border);
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   font-size: 0.8rem;
   word-break: break-word;
   color: var(--text-primary);
   transition: border-color var(--t-fast);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .credValue:hover {
@@ -1062,15 +1061,42 @@ body,
   }
 }
 
-.configured-badge {
-    font-size: 10px;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-weight: 600;
-     background:var( --success-bg);
-     color:var(--success);
-     align-items: center;
-     display: flex;
-      gap: 4px;
-      margin-left: auto;
+.primaryBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  border-radius: 40px;
+  background: #4f46e5;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.configured {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  border-radius: 40px;
+  background: #16a34a;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.primaryBadge svg,
+.primaryBadge i {
+  color: #ffffff;
+}
+
+.configured svg,
+.configured i {
+  color: #ffffff;
 }

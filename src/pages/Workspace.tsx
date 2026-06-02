@@ -3,25 +3,29 @@ import { useParams } from "react-router-dom";
 import {
   ChevronDown,
   ChevronRight,
-  FolderOpenDot,
+  FolderOpen,
   FolderClosedIcon,
-  Globe,
+  Layers,
   Search,
   Wrench,
   ChevronUp,
   RotateCcwKeyIcon,
   Server,
   Copy,
-  Cloud,
-  Zap,
+  FlaskConical,
+  Rocket,
   Shield,
   Link,
   Check,
-  CheckCircle2Icon,
+  CircleCheckBigIcon,
   Mail,
   MessageCircle,
   MessageSquare,
   ArrowRightFromLine,
+  GaugeIcon,
+  LandmarkIcon,
+  Star,
+  VenetianMask,
 } from "lucide-react";
 import styles from "../styles/Workspace.module.css";
 import workspaceIllustration from "../assets/illustration/Empty (1).gif";
@@ -117,18 +121,23 @@ const formatExpiry = (expiresAt: string | null) => {
 };
 
 // Helper to get icon based on service type
-const getServiceIcon = (serviceType?: string) => {
+const getServiceIcon = (serviceType?: string, size: number = 20) => {
   switch (serviceType?.toLowerCase()) {
     case "sms":
-      return <MessageCircle size={14} />;
+      return <MessageCircle size={size} />;
     case "email":
-      return <Mail size={14} />;
+      return <Mail size={size} />;
     case "whatsapp":
-      return <MessageSquare size={14} />;
+      return <MessageSquare size={size} />;
+    case "credit score":
+      return <GaugeIcon size={size} />;
+    case "ibv":
+      return <LandmarkIcon size={size} />;
     default:
-      return <Server size={14} />;
+      return <Server size={size} />;
   }
 };
+
 
 // ---------- Credential Accordion (with provider name & description) ----------
 interface CredentialAccordionProps {
@@ -151,17 +160,28 @@ const CredentialAccordion = ({
         "mode",
         "service_type",
         "provider_name",
-        "service_description",
         "endpoint",
       ].includes(key),
   );
 
   const provider = credential.provider_name || "";
   const description = credential.service_description || "";
-  const icon = getServiceIcon(credential.service_type);
+  const icon = getServiceIcon(credential.service_type, 20);
   
   // Determine if we have both provider and description to show the arrow
   const showArrow = provider && description;
+
+
+  // Helper: mask middle characters
+const maskCredential = (value : any, showFirst = 3, showLast = 3, maskChar = '•') => {
+  const str = String(value);
+  if (str.length <= showFirst + showLast) return str;
+  const first = str.slice(0, showFirst);
+  const last = str.slice(-showLast);
+  const maskedLength = Math.min(6, str.length - showFirst - showLast);
+  const middle = maskChar.repeat(maskedLength);
+  return `${first}${middle}${last}`;
+};
 
   return (
     <div className={styles.credentialAccordion}>
@@ -170,11 +190,20 @@ const CredentialAccordion = ({
           {icon}
           {provider && <span>{provider}</span>}
           {showArrow && <ArrowRightFromLine size={14} />}
-          {description && <span>{description}</span>}
+          {/* {description && <span>{description}</span>} */}
           {!provider && !description && <span>Credential #{index + 1}</span>}
-          <span className={styles["configured-badge"]}>
-            <CheckCircle2Icon size={14} /> Configured
-          </span>
+
+          {index === 0 && (
+            <div className={styles.primaryBadge}>
+              <Star size={14} className={styles.primaryIcon} />
+              <span>Primary</span>
+            </div>
+          )}
+          {provider && (
+            <div className={styles.configured}>
+              <CircleCheckBigIcon size={14} /> Configured
+            </div>
+          )}
         </div>
         {isOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
       </button>
@@ -190,7 +219,10 @@ const CredentialAccordion = ({
                 <span className={styles.credLabel}>
                   {key.replace(/_/g, " ").toUpperCase()}
                 </span>
-                <code className={styles.credValue}>{String(value)}</code>
+                <code className={styles.credValue}>
+                  <VenetianMask size={16} />
+                  {maskCredential(value)}
+                </code>
               </div>
             ))}
           </div>
@@ -501,7 +533,7 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
                     onClick={() => toggleProject(project.public_id)}
                   >
                     {isExpanded ? (
-                      <FolderOpenDot size={18} />
+                      <FolderOpen size={18} />
                     ) : (
                       <FolderClosedIcon size={18} />
                     )}
@@ -540,7 +572,7 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
                             data-env={env.environment_name.toLowerCase()}
                             onClick={() => selectEnvironment(project, env)}
                           >
-                            <Globe size={14} />
+                            <Layers size={14} />
                             <span>
                               {env.environment_name
                                 ? env.environment_name.charAt(0).toUpperCase() +
@@ -563,14 +595,16 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
         <div className={styles.topbar}>
           <div className={styles.breadcrumb}>
             <span>
+              <FolderOpen size={15}  style={{ marginRight: "7px", marginTop: "2px" }}/>
               {selectedEnv?.project?.project_name
                 ? selectedEnv.project.project_name.charAt(0).toUpperCase() +
                   selectedEnv.project.project_name.slice(1)
                 : "No project"}
             </span>{" "}
-            <ChevronRight size={12} />
+            <ChevronRight size={13} />
             <span className={styles.activeBreadcrumb}>
               <span>
+                <Layers size={12}  style={{ marginRight: "7px", marginTop: "2px" }}/>
                 {selectedEnv?.environment?.environment_name
                   ? selectedEnv.environment.environment_name
                       .charAt(0)
@@ -579,8 +613,9 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
                   : "No environment"}
               </span>
             </span>
-            <ChevronRight size={12} />
+            <ChevronRight size={13} />
             <span className={styles.activeBreadcrumb}>
+              <Wrench size={12}  style={{ marginRight: "7px", marginTop: "2px" }}/>
               {selectedService?.name || "No service"}
             </span>
           </div>
@@ -599,7 +634,7 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
                   }`}
                   onClick={() => selectService(svc)}
                 >
-                  <Wrench size={12} />
+                  <span>{getServiceIcon(svc.name, 15)}</span>
                   <span>{svc.name}</span>
                 </button>
               ))
@@ -627,7 +662,7 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
                       }`}
                       onClick={() => handleInstanceChange("sandbox")}
                     >
-                      <Cloud size={14} />
+                      <FlaskConical size={15} />
                       <span>Sandbox</span>
                       <span className={styles.countBadge}>
                         {sandboxCount}
@@ -640,7 +675,7 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
                       }`}
                       onClick={() => handleInstanceChange("live")}
                     >
-                      <Zap size={14} />
+                      <Rocket size={15} />
                       <span>Live</span>
                       <span className={styles.countBadge}>{liveCount}</span>
                     </button>
@@ -648,7 +683,7 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
 
                   <div className={styles.tokenSummary}>
                     <div className={styles.tokenKey}>
-                      <RotateCcwKeyIcon size={14} />
+                      <RotateCcwKeyIcon size={15} />
                     </div>
                     <span className={styles.tokenSummaryLabel}>
                       {instanceType === "sandbox" ? "Sandbox" : "Live"} Token
