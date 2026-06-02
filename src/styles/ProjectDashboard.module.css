@@ -1705,5 +1705,5 @@
 
 /* Ensure the modal overlay is ABOVE the slide panel */
 .modal-overlay {
-    z-index: 1002 !important;
+    z-index: 9999 !important;
 }

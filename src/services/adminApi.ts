@@ -2,7 +2,7 @@ import api from "./api";
 
 // get user API
 export const getAllUsersApi = () => {
-    return api.get("/users/get-all-users");
+  return api.get("/users/get-all-users");
 };
 
 //activate or deactivate user API
@@ -50,4 +50,16 @@ export const removeEnvironmentFromUser = async (data: { user_id: string; environ
   const response = await api.patch(`/users/remove-environment-from-user`, data);
   return response?.data;
 }
+
+//update user API
+export const updateUserApi = (
+  id: string,
+  data: {
+    user_name: string;
+    email: string;
+    role: string;
+  }
+) => {
+  return api.patch(`/users/update-user/${id}`, data);
+};
 

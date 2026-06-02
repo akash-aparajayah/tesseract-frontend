@@ -1151,6 +1151,53 @@ export default function ProjectView() {
   //   return tokens;
   // };
 
+  const handleCloseProviderModal = () => {
+
+    const hasProviderChanges =
+
+      selectedProvider.trim() !== "" ||
+
+      Object.entries(providerFields).some(
+        ([key, value]) => {
+
+          // IGNORE mode field
+          if (key === "mode") {
+            return false;
+          }
+
+          return value?.toString().trim() !== "";
+        }
+      )
+
+    if (hasProviderChanges) {
+
+      setPendingCloseAction(() => () => {
+
+        setShowAddProviderModal(false);
+
+        setEditingProvider(null);
+
+        setSelectedProvider("");
+
+        setProviderFields({});
+
+      });
+
+      setShowUnsavedModal(true);
+
+      return;
+    }
+
+    // CLOSE DIRECTLY
+    setShowAddProviderModal(false);
+
+    setEditingProvider(null);
+
+    setSelectedProvider("");
+
+    setProviderFields({});
+  };
+
   const handleTokenGenerate = async () => {
     if (!tokenName.trim() || !selectedEnv || !projectId || !tokenMode) return;
 
@@ -1784,13 +1831,7 @@ export default function ProjectView() {
   console.log("SKELETON CHECK - pageLoading:", pageLoading, "!project:", !project, "environmentsLoading:", environmentsLoading);
 
   // This can now safely return early because ALL hooks are above it
-  if (pageLoading) {
-    return (
-      <div className={styles["project-view-page"]}>
-        ...
-      </div>
-    );
-  }
+
   console.log("SKELETON CHECK - pageLoading:", pageLoading, "!project:", !project, "environmentsLoading:", environmentsLoading);
   if (pageLoading) {
 
@@ -2898,8 +2939,7 @@ export default function ProjectView() {
                                       setTokenExpiration("30");
                                       setTokenCustomDays("");
                                       setTokenCustomDate("");
-                                      setIsRegenerating(true);
-                                      setShowTokenFormModal(true);
+                                      setShowRegenModal(true);
                                     }}><RefreshCw size={12} />Regenerate</button>
                                     <button className={`${styles["token-action-btn"]} ${styles["delete"]}`} onClick={() => { setSelectedEnv(env.public_id); setCurrentToken(sandboxToken); setShowTokenDeleteModal(true); }}><Trash2 size={12} />Delete</button>
                                   </div>
@@ -2936,8 +2976,7 @@ export default function ProjectView() {
                                       setTokenExpiration("30");
                                       setTokenCustomDays("");
                                       setTokenCustomDate("");
-                                      setIsRegenerating(true);
-                                      setShowTokenFormModal(true);
+                                      setShowRegenModal(true);
                                     }}><RefreshCw size={12} />Regenerate</button>
                                     <button
                                       className={`${styles["token-action-btn"]} ${styles["delete"]}`}
@@ -3010,13 +3049,13 @@ export default function ProjectView() {
                   <h3>Add Environment</h3>
                 </div>
                 <button className={styles["user-panel-close"]} onClick={() => {
-                  setPendingCloseAction(() => () => {
-                    setShowAddEnvModal(false);
-                    setNewEnvName("");
-                    setIsCustomEnv(false);
-                    setCustomEnvInput("");
-                  });
-                  setShowUnsavedModal(true);
+                  setShowAddEnvModal(false);
+
+                  setNewEnvName("");
+
+                  setIsCustomEnv(false);
+
+                  setCustomEnvInput("");
                 }}>
                   <X size={20} />
                 </button>
@@ -3044,13 +3083,13 @@ export default function ProjectView() {
 
               <div className={styles["pc-modal-footer"]}>
                 <button className={styles["pc-btn-cancel"]} onClick={() => {
-                  setPendingCloseAction(() => () => {
-                    setShowAddEnvModal(false);
-                    setNewEnvName("");
-                    setIsCustomEnv(false);
-                    setCustomEnvInput("");
-                  });
-                  setShowUnsavedModal(true);
+                  setShowAddEnvModal(false);
+
+                  setNewEnvName("");
+
+                  setIsCustomEnv(false);
+
+                  setCustomEnvInput("");
                 }}>
                   Cancel
                 </button>
@@ -3196,14 +3235,7 @@ export default function ProjectView() {
 
                   <button
                     className={styles["user-panel-close"]}
-                    onClick={() => {
-                      setPendingCloseAction(() => () => {
-                        setShowAddProviderModal(false);
-                        setEditingProvider(null);
-                      });
-
-                      setShowUnsavedModal(true);
-                    }}
+                    onClick={handleCloseProviderModal}
                   >
                     <X size={20} />
                   </button>
@@ -3303,16 +3335,7 @@ export default function ProjectView() {
                 <div className={styles["pc-modal-footer"]}>
                   <button
                     className={styles["pc-btn-cancel"]}
-                    onClick={() => {
-                      setPendingCloseAction(() => () => {
-                        setShowAddProviderModal(false);
-                        setEditingProvider(null);
-                        setSelectedProvider("");
-                        setProviderFields({});
-                      });
-
-                      setShowUnsavedModal(true);
-                    }}
+                    onClick={handleCloseProviderModal}
                   >
                     Cancel
                   </button>
@@ -3775,44 +3798,17 @@ export default function ProjectView() {
       {
         showRegenModal && (
           <div className={styles["pc-modal-overlay"]} onClick={() => setShowRegenModal(false)}>
-            <div className={`${styles["pc-modal"]} ${styles["pc-modal-small"]}`} onClick={e => e.stopPropagation()}><div className={styles["pc-modal-header"]}><RefreshCw size={22} color="#6366f1" /><h3>Regenerate Token?</h3></div><div className={styles["pc-modal-body"]}><div className={styles["modal-token-info"]}><div><Globe size={14} /> Environment: <strong>{environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv}</strong></div>{currentToken && <><div><Key size={14} /> Token: <strong>{currentToken.name}</strong></div><div><Calendar size={14} /> Created: {formatDate(currentToken.created)}</div></>}</div><p className={styles["warning-text"]}>Regenerating will revoke the old token.</p></div><div className={styles["pc-modal-footer"]}><button className={styles["pc-btn-cancel"]} onClick={() => setShowRegenModal(false)}>Cancel</button><button className={styles["pc-btn-primary"]} onClick={async () => {
-              try {
-                if (!currentToken?.id) return;
+            <div className={`${styles["pc-modal"]} ${styles["pc-modal-small"]}`} onClick={e => e.stopPropagation()}><div className={styles["pc-modal-header"]}><RefreshCw size={22} color="#6366f1" /><h3>Regenerate Token?</h3></div><div className={styles["pc-modal-body"]}><div className={styles["modal-token-info"]}><div><Globe size={14} /> Environment: <strong>{environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv}</strong></div>{currentToken && <><div><Key size={14} /> Token: <strong>{currentToken.name}</strong></div><div><Calendar size={14} /> Created: {formatDate(currentToken.created)}</div></>}</div><p className={styles["warning-text"]}>Regenerating will revoke the old token.</p></div><div className={styles["pc-modal-footer"]}><button className={styles["pc-btn-cancel"]} onClick={() => setShowRegenModal(false)}>Cancel</button><button className={styles["pc-btn-primary"]} onClick={() => {
 
-                const res = await regenerateApiKey(currentToken.id);
+              setShowRegenModal(false);
 
-                const tokenData = res.data.data;
+              setIsRegenerating(true);
 
-                const token: ApiToken = {
-                  id: tokenData.public_id || "",
-                  name: tokenData.note || "",
-                  token: tokenData.key || "",
-                  projectId: projectId || "",
-                  environmentName: selectedEnv,
-                  mode: tokenData.mode || "",
-                  created: tokenData.created_at || "",
-                  expires: tokenData.expires_at || "",
-                  expiresInDays: tokenData.expires_in_days || 0,
-                  revealed: false,
-                };
+              setTokenName("");
 
-                setAllTokens((prev) => ({
-                  ...prev,
-                  [`${token.environmentName}_${token.mode}`]: token,
-                }));
+              setTokenMode(currentToken?.mode || "");
 
-                setGeneratedToken(token);
-
-                setShowRegenModal(false);
-
-                const envName = environments.find((e: any) => e.public_id === selectedEnv)?.environment_name || selectedEnv;
-                showToast(`Token regenerated for ${envName}`, "success");
-
-              } catch (error) {
-                console.error(error);
-
-                showToast("Failed to regenerate token", "error");
-              }
+              setShowTokenFormModal(true);
             }}>Continue</button></div></div>
           </div>
         )

@@ -3,7 +3,7 @@
   max-width: 1440px;
   margin: 0 auto;
   min-height: 100vh;
-  padding: 0.4rem;
+  padding: 1.5rem;
   position: relative;
   background: #f8fafc;
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -95,18 +95,36 @@
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
+
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 1;
+  }
 }
 
 /* ========== USER CARD ========== */
 .userCard {
-  background: white;
-  border-radius: 2rem;
+  background: linear-gradient(135deg,
+      #0F1F38 0%,
+      #1a3a5c 50%,
+      #2A5090 100%);
+
+  border-radius: 20px;
+
   position: relative;
+
   overflow: hidden;
-  box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.02);
-  transition: box-shadow 0.3s ease, transform 0.2s ease;
+
+  box-shadow:
+    0 10px 40px rgba(15, 31, 56, 0.3);
+
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
 }
 
 .userCard:hover {
@@ -114,19 +132,17 @@
 }
 
 .userCardGradient {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 6px;
-  background: #1e3a8a;
-  animation: none;
+  display: none;
 }
 
 .userCardContent {
+  position: relative;
+  z-index: 1;
+
   padding: 2rem;
+
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 2rem;
   flex-wrap: wrap;
 }
@@ -148,9 +164,17 @@
 }
 
 @keyframes subtlePulse {
-  0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.3); }
-  70% { box-shadow: 0 0 0 8px rgba(37, 99, 235, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+  0% {
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.3);
+  }
+
+  70% {
+    box-shadow: 0 0 0 8px rgba(37, 99, 235, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
+  }
 }
 
 .avatarPhotoRow {
@@ -197,6 +221,10 @@
 .userInfoWrapper {
   flex: 1;
   min-width: 240px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
 .userTopRow {
@@ -208,35 +236,44 @@
 }
 
 .userName {
-  font-size: 1.8rem;
+  font-size: 2rem;
   font-weight: 700;
   margin: 0;
-  background: linear-gradient(to right, #0f172a, #334155);
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
+
+  color: white;
+
   letter-spacing: -0.02em;
 }
 
-.badgeActive, .badgeInactive {
+.badgeActive,
+.badgeInactive {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.25rem 0.85rem;
-  border-radius: 2rem;
-  font-size: 0.7rem;
+
+  padding: 0.35rem 0.95rem;
+
+  border-radius: 999px;
+
+  font-size: 0.72rem;
+
   font-weight: 600;
-  transition: all 0.2s;
 }
 
 .badgeActive {
-  background: #d1fae5;
-  color: #065f46;
+  background: rgba(16, 185, 129, 0.18);
+
+  color: #6ee7b7;
+
+  border: 1px solid rgba(16, 185, 129, 0.25);
 }
 
 .badgeInactive {
-  background: #fee2e2;
-  color: #991b1b;
+  background: rgba(239, 68, 68, 0.18);
+
+  color: #fca5a5;
+
+  border: 1px solid rgba(239, 68, 68, 0.25);
 }
 
 .userMeta {
@@ -244,34 +281,53 @@
   align-items: center;
   gap: 1rem;
   flex-wrap: wrap;
-  margin-bottom: 1rem;
+  margin-bottom: 15px;
 }
 
 .userEmail {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+
   font-size: 0.9rem;
-  color: #334155;
-  background: #f1f5f9;
-  padding: 0.3rem 1rem;
+
+  color: rgba(255, 255, 255, 0.75);
+
+  background: rgba(255, 255, 255, 0.08);
+
+  padding: 0.4rem 1rem;
+
   border-radius: 2rem;
-  transition: background 0.2s;
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .userEmail:hover {
-  background: #e2e8f0;
+  background: rgba(255, 255, 255, 0.14);
+
+  color: rgba(255, 255, 255, 0.88);
+
+  border-color: rgba(255, 255, 255, 0.16);
 }
 
 .userRole {
-  background: #e0e7ff;
-  padding: 0.3rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+
+  padding: 0.35rem 1rem;
+
   border-radius: 2rem;
-  font-size: 0.7rem;
+
+  font-size: 0.72rem;
+
   font-weight: 700;
-  color: #1e40af;
+
+  color: white;
+
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+
+  letter-spacing: 0.5px;
+
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .userStats {
@@ -284,16 +340,25 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.8rem;
-  color: #475569;
-  background: #f8fafc;
-  padding: 0.25rem 0.75rem;
-  border-radius: 2rem;
-  transition: all 0.2s;
+
+  font-size: 0.82rem;
+
+  color: rgba(255, 255, 255, 0.75);
+
+  background: rgba(255, 255, 255, 0.08);
+
+  padding: 0.4rem 0.9rem;
+
+  border-radius: 999px;
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .statItem:hover {
-  background: #f1f5f9;
+  background: rgba(255, 255, 255, 0.14);
+
+  color: rgba(255, 255, 255, 0.88);
+
   transform: translateY(-1px);
 }
 
@@ -305,52 +370,77 @@
 
 /* Toggle switch improved */
 .switchWrapper {
+  align-self: flex-start;
+
+  margin-top: 4px;
+
   display: flex;
   align-items: center;
   gap: 1rem;
-  background: #f8fafc;
-  padding: 0.5rem 1rem 0.5rem 1.25rem;
-  border-radius: 3rem;
-  border: 1px solid #e2e8f0;
-  transition: all 0.2s;
+
+  background: rgba(255, 255, 255, 0.08);
+
+  padding: 0.65rem 1.2rem;
+
+  border-radius: 999px;
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  backdrop-filter: blur(10px);
 }
 
 .switchWrapper:hover {
-  border-color: #cbd5e1;
-  background: #f1f5f9;
+  background: rgba(255, 255, 255, 0.12);
+
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
 .toggleLabel span {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   font-weight: 500;
-  color: #475569;
+
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .switch {
   position: relative;
+
   width: 52px;
   height: 26px;
-  background: #cbd5e1;
+
+  background: rgba(255, 255, 255, 0.18);
+
   border-radius: 40px;
+
   cursor: pointer;
-  transition: all 0.25s;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+
+  transition: all 0.25s ease;
+
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .switch .slider {
   position: absolute;
+
   top: 3px;
   left: 3px;
-  width: 20px;
-  height: 20px;
+
+  width: 18px;
+  height: 18px;
+
   background: white;
+
   border-radius: 50%;
+
   transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
 .switch.active {
-  background: #2563eb;
+  background: rgba(16, 185, 129, 0.4);
+
+  border-color: rgba(16, 185, 129, 0.3);
 }
 
 .switch.active .slider {
@@ -478,7 +568,7 @@
   position: relative;
   background: white;
   border-radius: 1.25rem;
-  border: 1.7px solid  #c0d0ff;
+  border: 1.7px solid #c0d0ff;
   transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
   overflow: hidden;
   cursor: default;
@@ -487,7 +577,7 @@
 .projectCardGlow {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 100% 0%, rgba(37,99,235,0.03), transparent);
+  background: radial-gradient(circle at 100% 0%, rgba(37, 99, 235, 0.03), transparent);
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.3s;
@@ -675,8 +765,15 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; backdrop-filter: blur(0); }
-  to { opacity: 1; backdrop-filter: blur(6px); }
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0);
+  }
+
+  to {
+    opacity: 1;
+    backdrop-filter: blur(6px);
+  }
 }
 
 .drawer {
@@ -695,8 +792,15 @@
 }
 
 @keyframes slideInRight {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 .drawerHeader {
@@ -717,7 +821,7 @@
 .drawerHeaderIcon {
   width: 40px;
   height: 40px;
-  background: rgba(255,255,255,0.15);
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 1rem;
   display: flex;
   align-items: center;
@@ -727,7 +831,7 @@
 }
 
 .drawerHeaderIcon:hover {
-  background: rgba(255,255,255,0.25);
+  background: rgba(255, 255, 255, 0.25);
   transform: scale(1.02);
 }
 
@@ -745,7 +849,7 @@
 }
 
 .closeDrawerBtn {
-  background: rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.2);
   border: none;
   width: 32px;
   height: 32px;
@@ -793,7 +897,7 @@
 .envCard {
   background: #fafcff;
   border-radius: 1rem;
-  border: 1px solid  #c0d0ff;
+  border: 1px solid #c0d0ff;
   padding: 1rem;
   display: flex;
   align-items: center;
@@ -877,8 +981,13 @@
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .noEnvMessage {
@@ -1020,5 +1129,294 @@
 
   .drawerHeader {
     padding: 1.25rem;
+  }
+}
+
+.userNameEditRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.editIconInline {
+  width: 30px;
+  height: 30px;
+
+  background: rgba(255, 255, 255, 0.1);
+
+  border: 1px solid rgba(255, 255, 255, 0.2);
+
+  border-radius: 8px;
+
+  color: rgba(255, 255, 255, 0.7);
+
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transition: all 0.2s ease;
+}
+
+.editIconInline:hover {
+  background: rgba(255, 255, 255, 0.2);
+
+  color: white;
+}
+
+.inlineEditForm {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.formGroupInline {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formGroupInline label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #f6faff;
+  text-transform: uppercase;
+}
+
+.inlineInput,
+.inlineSelect {
+  width: 100%;
+  height: 44px;
+
+  border: 1px solid #dbe3f0;
+  border-radius: 12px;
+
+  padding: 0 14px;
+
+  background: white;
+
+  font-size: 14px;
+
+  transition: all 0.2s ease;
+}
+
+.inlineSelect {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  cursor: pointer;
+
+  padding-right: 44px;
+
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%231e293b' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+
+  background-repeat: no-repeat;
+
+  background-position: right 14px center;
+
+  background-size: 16px;
+}
+
+.inlineInput:focus,
+.inlineSelect:focus {
+  outline: none;
+
+  border-color: #2563eb;
+
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
+}
+
+.editActionsInline {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.editBottomRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+
+  margin-top: 10px;
+
+  flex-wrap: wrap;
+}
+
+.editMetaRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  flex-wrap: wrap;
+}
+
+.cancelBtnInline,
+.saveBtnInline {
+  height: 42px;
+
+  padding: 0 18px;
+
+  border: none;
+  border-radius: 12px;
+
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  cursor: pointer;
+
+  font-weight: 600;
+
+  transition: all 0.2s ease;
+}
+
+.cancelBtnInline {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.cancelBtnInline:hover {
+  background: #e2e8f0;
+}
+
+.saveBtnInline {
+  background: #2563eb;
+  color: white;
+}
+
+.saveBtnInline:hover {
+  background: #1d4ed8;
+}
+
+.inlineSelect option {
+  background: white;
+  color: #0f172a;
+}
+
+.customSelectWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.customSelect {
+  width: 100%;
+  height: 44px;
+
+  border: 1px solid #dbe3f0;
+  border-radius: 12px;
+
+  background: white;
+
+  padding: 0 14px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  font-size: 14px;
+  font-weight: 500;
+
+  color: #0f172a;
+
+  cursor: pointer;
+
+  transition: all 0.2s ease;
+}
+
+.customSelect:hover {
+  border-color: #bfdbfe;
+}
+
+.customSelect:focus {
+  outline: none;
+
+  border-color: #2563eb;
+
+  box-shadow:
+    0 0 0 4px rgba(37, 99, 235, 0.08);
+}
+
+.customDropdownMenu {
+  position: absolute;
+
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+
+  background:
+    linear-gradient(135deg,
+      #16345c,
+      #1f3f68);
+
+  border-radius: 16px;
+
+  padding: 8px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  backdrop-filter: blur(18px);
+
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.25);
+
+  z-index: 50;
+
+  animation: dropdownFade 0.18s ease;
+}
+
+.dropdownOption {
+  height: 42px;
+
+  border: none;
+
+  background: transparent;
+
+  border-radius: 10px;
+
+  color: rgba(255, 255, 255, 0.82);
+
+  font-size: 14px;
+  font-weight: 500;
+
+  text-align: left;
+
+  padding: 0 14px;
+
+  cursor: pointer;
+
+  transition: all 0.18s ease;
+}
+
+.dropdownOption:hover {
+  background: rgba(255, 255, 255, 0.08);
+
+  color: white;
+}
+
+.dropdownOptionActive {
+  background: rgba(37, 99, 235, 0.22);
+
+  color: white;
+}
+
+@keyframes dropdownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

@@ -6,6 +6,7 @@ import {
   getUserDetailsWithProjectsAndEnvironments,
   activateOrDeactivateUserApi,
   removeEnvironmentFromUser,
+  updateUserApi,
 } from "../services/adminApi";
 import { useToast } from "../hooks/useToast";
 
@@ -21,7 +22,8 @@ import {
   Search,
   Trash2,
   CheckCircle,
-  XCircle,
+  XCircle, Pencil,
+  Save, ChevronDown,
 } from "lucide-react";
 
 /* ---------------- TYPES ---------------- */
@@ -88,6 +90,14 @@ const UserDetailView: React.FC = () => {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [togglingStatus, setTogglingStatus] = useState(false);
   const [deletingEnv, setDeletingEnv] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
+
+  const [editForm, setEditForm] = useState({
+    name: "",
+    email: "",
+    role: "USER" as "ADMIN" | "SUPER_ADMIN" | "USER",
+  });
 
   /* ---------------- FETCH USER ---------------- */
   useEffect(() => {
@@ -173,56 +183,56 @@ const UserDetailView: React.FC = () => {
     setDrawerOpen(true);
   };
 
-const handleDeleteSingleEnvironment = async (envId: string) => {
-  if (!selectedProject || !user) return;
+  const handleDeleteSingleEnvironment = async (envId: string) => {
+    if (!selectedProject || !user) return;
 
-  const envToDelete = selectedProject.environment?.find(
-    (e) => e.public_id === envId
-  );
-  if (!envToDelete) return;
+    const envToDelete = selectedProject.environment?.find(
+      (e) => e.public_id === envId
+    );
+    if (!envToDelete) return;
 
-  setDeletingEnv(envId);
-  try {
-    // Call the API
-    await removeEnvironmentFromUser({
-      user_id: user.id,
-      environment_id: envId,
-      project_id: selectedProject.id,
-    });
+    setDeletingEnv(envId);
+    try {
+      // Call the API
+      await removeEnvironmentFromUser({
+        user_id: user.id,
+        environment_id: envId,
+        project_id: selectedProject.id,
+      });
 
-    // Update local state (optimistic update)
-    const updatedProjects = assignedProjects.map((project) =>
-      project.id === selectedProject.id
-        ? {
+      // Update local state (optimistic update)
+      const updatedProjects = assignedProjects.map((project) =>
+        project.id === selectedProject.id
+          ? {
             ...project,
             environment: project.environment?.filter(
               (env) => env.public_id !== envId
             ),
           }
-        : project
-    );
-    setAssignedProjects(updatedProjects);
+          : project
+      );
+      setAssignedProjects(updatedProjects);
 
-    setSelectedProject((prev) =>
-      prev
-        ? {
+      setSelectedProject((prev) =>
+        prev
+          ? {
             ...prev,
             environment: prev.environment?.filter(
               (env) => env.public_id !== envId
             ),
           }
-        : null
-    );
+          : null
+      );
 
-    // Toast with environment name
-    showToast(`Environment "${envToDelete.env_name}" removed successfully`, "success");
-  } catch (error) {
-    console.error(error);
-    showToast("Failed to remove environment", "error");
-  } finally {
-    setDeletingEnv(null);
-  }
-};
+      // Toast with environment name
+      showToast(`Environment "${envToDelete.env_name}" removed successfully`, "success");
+    } catch (error) {
+      console.error(error);
+      showToast("Failed to remove environment", "error");
+    } finally {
+      setDeletingEnv(null);
+    }
+  };
   const getRoleDisplay = () => {
     switch (user?.role) {
       case "SUPER_ADMIN":
@@ -231,6 +241,57 @@ const handleDeleteSingleEnvironment = async (envId: string) => {
         return "Admin";
       default:
         return "User";
+    }
+  };
+  const startEdit = () => {
+
+    if (!user) return;
+
+    setEditForm({
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    });
+
+    setIsEditing(true);
+  };
+
+  const saveUserEdit = async () => {
+
+    if (!user) return;
+
+    try {
+
+      await updateUserApi(user.id, {
+        user_name: editForm.name,
+        email: editForm.email,
+        role: editForm.role,
+      });
+
+      setUser({
+        ...user,
+        name: editForm.name,
+        email: editForm.email,
+        role: editForm.role,
+      });
+
+
+
+      showToast(
+        "User updated successfully",
+        "success"
+      );
+
+      setIsEditing(false);
+
+    } catch (error) {
+
+      console.error(error);
+
+      showToast(
+        "Failed to update user",
+        "error"
+      );
     }
   };
 
@@ -281,37 +342,196 @@ const handleDeleteSingleEnvironment = async (envId: string) => {
                   </div>
                 </div>
                 <div
-                  className={`${styles.statusDot} ${
-                    user.active ? styles.statusActive : styles.statusInactive
-                  }`}
+                  className={`${styles.statusDot} ${user.active ? styles.statusActive : styles.statusInactive
+                    }`}
                 />
               </div>
             </div>
             <div className={styles.userInfoWrapper}>
               <div className={styles.userTopRow}>
-                <h2 className={styles.userName}>{user.name}</h2>
-                <span
-                  className={
-                    user.active ? styles.badgeActive : styles.badgeInactive
-                  }
-                >
-                  {user.active ? (
-                    <>
-                      <CheckCircle size={12} /> Active
-                    </>
-                  ) : (
-                    <>
-                      <XCircle size={12} /> Inactive
-                    </>
-                  )}
-                </span>
+
+                {!isEditing ? (
+                  <>
+                    <div className={styles.userNameEditRow}>
+
+                      <h2 className={styles.userName}>
+                        {user.name}
+                      </h2>
+
+                      <span
+                        className={
+                          user.active
+                            ? styles.badgeActive
+                            : styles.badgeInactive
+                        }
+                      >
+                        {user.active ? (
+                          <>
+                            <CheckCircle size={12} />
+                            Active
+                          </>
+                        ) : (
+                          <>
+                            <XCircle size={12} />
+                            Inactive
+                          </>
+                        )}
+                      </span>
+
+                      <button
+                        className={styles.editIconInline}
+                        onClick={startEdit}
+                      >
+                        <Pencil size={14} />
+                      </button>
+
+                    </div>
+
+
+                  </>
+                ) : (
+
+                  <div className={styles.inlineEditForm}>
+
+                    <div className={styles.formGroupInline}>
+                      <label>Name</label>
+
+                      <input
+                        className={styles.inlineInput}
+                        value={editForm.name}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            name: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+
+                    <div className={styles.formGroupInline}>
+                      <label>Email</label>
+
+                      <input
+                        className={styles.inlineInput}
+                        value={editForm.email}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            email: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+
+                    <div className={styles.formGroupInline}>
+                      <label>Role</label>
+
+                      <div className={styles.customSelectWrapper}>
+
+                        <button
+                          type="button"
+                          className={styles.customSelect}
+                          onClick={() =>
+                            setRoleDropdownOpen(!roleDropdownOpen)
+                          }
+                        >
+                          <span>
+                            {editForm.role.replace("_", " ")}
+                          </span>
+
+                          <ChevronDown size={16} />
+                        </button>
+
+                        {roleDropdownOpen && (
+
+                          <div className={styles.customDropdownMenu}>
+
+                            {[
+                              "USER",
+                              "ADMIN",
+                              "SUPER_ADMIN",
+                            ].map((role) => (
+
+                              <button
+                                key={role}
+                                type="button"
+                                className={`${styles.dropdownOption} ${editForm.role === role
+                                  ? styles.dropdownOptionActive
+                                  : ""
+                                  }`}
+                                onClick={() => {
+
+                                  setEditForm({
+                                    ...editForm,
+                                    role: role as never,
+                                  });
+
+                                  setRoleDropdownOpen(false);
+                                }}
+                              >
+                                {role.replace("_", " ")}
+                              </button>
+
+                            ))}
+
+                          </div>
+
+                        )}
+
+                      </div>
+                    </div>
+
+                    <div className={styles.editBottomRow}>
+
+                      <div className={styles.editMetaRow}>
+
+                        <div className={styles.userEmail}>
+                          <Mail size={14} />
+                          {editForm.email}
+                        </div>
+
+                        <div className={styles.userRole}>
+                          {editForm.role.replace("_", " ")}
+                        </div>
+
+                      </div>
+
+                      <div className={styles.editActionsInline}>
+
+                        <button
+                          className={styles.cancelBtnInline}
+                          onClick={() => setIsEditing(false)}
+                        >
+                          <X size={14} />
+                          Cancel
+                        </button>
+
+                        <button
+                          className={styles.saveBtnInline}
+                          onClick={saveUserEdit}
+                        >
+                          <Save size={14} />
+                          Save
+                        </button>
+
+                      </div>
+
+                    </div>
+
+                  </div>
+                )}
               </div>
-              <div className={styles.userMeta}>
-                <div className={styles.userEmail}>
-                  <Mail size={14} /> {user.email}
+              {!isEditing && (
+                <div className={styles.userMeta}>
+                  <div className={styles.userEmail}>
+                    <Mail size={14} /> {user.email}
+                  </div>
+
+                  <div className={styles.userRole}>
+                    {getRoleDisplay()}
+                  </div>
                 </div>
-                <div className={styles.userRole}>{getRoleDisplay()}</div>
-              </div>
+              )}
               <div className={styles.userStats}>
                 <div className={styles.statItem}>
                   <Briefcase size={14} />
@@ -410,8 +630,8 @@ const handleDeleteSingleEnvironment = async (envId: string) => {
                         )}
                         {(!project.environment ||
                           project.environment.length === 0) && (
-                          <div className={styles.envEmpty}>No environments</div>
-                        )}
+                            <div className={styles.envEmpty}>No environments</div>
+                          )}
                       </div>
                     </div>
                     <button

@@ -28,7 +28,7 @@ import {
   getAllUsersApi,
   activateOrDeactivateUserApi,
   deleteUserApi,
-  createUserApi,
+  createUserApi, updateUserApi,
 } from "../services/adminApi";
 
 interface Admin {
@@ -171,6 +171,10 @@ const AdminPanel: React.FC = () => {
   const rowsPerPage = 5;
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<Admin | null>(null);
+
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [formData, setFormData] = useState({
@@ -181,6 +185,11 @@ const AdminPanel: React.FC = () => {
     active: true,
   });
   const [creating, setCreating] = useState(false);
+  const [editingUser, setEditingUser] = useState<Admin | null>(null);
+
+  const [updating, setUpdating] = useState(false);
+
+  const isEditMode = !!editingUser;
   const [formError, setFormError] = useState("");
 
   const fetchAdmins = useCallback(async () => {
@@ -250,18 +259,57 @@ const AdminPanel: React.FC = () => {
   };
 
   const handleView = (admin: Admin) => navigate(`/dashboard/user/${admin.id}`);
-  const handleEdit = (admin: Admin) => navigate(`/dashboard/user/${admin.id}/edit`);
-  const handleDelete = async (id: string) => {
+  const handleEdit = (admin: Admin) => {
+
+    setEditingUser(admin);
+
+    setFormData({
+      name: admin.user_name,
+      email: admin.email,
+      password: "",
+      role: admin.role,
+      active: admin.is_active,
+    });
+
+    setFormError("");
+
+    setIsClosing(false);
+
+    setIsDrawerOpen(true);
+
+    setOpenDropdownId(null);
+  }; const handleDelete = async () => {
+    if (!selectedUser) return;
+
     try {
-      await api.deleteAdmin(id);
-      setAdmins((prev) => prev.filter((admin) => admin.id !== id));
+      setDeleteLoading(true);
+
+      await api.deleteAdmin(selectedUser.id);
+
+      setAdmins((prev) =>
+        prev.filter((admin) => admin.id !== selectedUser.id)
+      );
+
       showToast("User deleted successfully", "success");
+
+      setShowDeleteModal(false);
+      setSelectedUser(null);
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "Failed to delete admin", "error");
+      showToast(
+        error instanceof Error
+          ? error.message
+          : "Failed to delete user",
+        "error"
+      );
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
   const openDrawer = () => {
+
+    setEditingUser(null);
+
     setFormData({
       name: "",
       email: "",
@@ -269,8 +317,11 @@ const AdminPanel: React.FC = () => {
       role: "USER",
       active: true,
     });
+
     setFormError("");
+
     setIsClosing(false);
+
     setIsDrawerOpen(true);
   };
 
@@ -346,6 +397,77 @@ const AdminPanel: React.FC = () => {
       }
       showToast(errorMessage, "error");
       setCreating(false);
+    }
+  };
+
+  const handleUpdateSubmit = async (
+    e: React.FormEvent
+  ) => {
+
+    e.preventDefault();
+
+    if (!editingUser) return;
+
+    if (!formData.name.trim()) {
+      setFormError("Name is required");
+      return;
+    }
+
+    if (!formData.email.trim()) {
+      setFormError("Email is required");
+      return;
+    }
+
+    try {
+
+      setUpdating(true);
+
+      await updateUserApi(
+        editingUser.id,
+        {
+          user_name: formData.name.trim(),
+          email: formData.email.trim(),
+          role: formData.role,
+        }
+      );
+
+      setAdmins((prev) =>
+        prev.map((admin) =>
+          admin.id === editingUser.id
+            ? {
+              ...admin,
+              user_name: formData.name,
+              email: formData.email,
+              role: formData.role,
+              is_active: formData.active,
+            }
+            : admin
+        )
+      );
+
+      showToast(
+        "User updated successfully",
+        "success"
+      );
+
+      closeDrawerWithAnimation();
+
+    } catch (error: any) {
+
+      let errorMessage =
+        "Failed to update user";
+
+      if (error.response?.data) {
+        errorMessage =
+          error.response.data.error ||
+          error.response.data.message ||
+          errorMessage;
+      }
+
+      showToast(errorMessage, "error");
+
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -557,7 +679,14 @@ const AdminPanel: React.FC = () => {
                             <button onClick={() => handleEdit(admin)}>
                               <Pencil size={14} /> Edit
                             </button>
-                            <button className={styles.deleteBtn} onClick={() => handleDelete(admin.id)}>
+                            <button
+                              className={styles.deleteBtn}
+                              onClick={() => {
+                                setSelectedUser(admin);
+                                setShowDeleteModal(true);
+                                setOpenDropdownId(null);
+                              }}
+                            >
                               <Trash2 size={14} /> Delete
                             </button>
                           </div>
@@ -625,7 +754,11 @@ const AdminPanel: React.FC = () => {
           />
           <div className={`${styles.drawer} ${isClosing ? styles.drawerClosing : ""}`}>
             <div className={styles.drawerHeader}>
-              <h3>Create New User</h3>
+              <h3>
+                {isEditMode
+                  ? "Edit User"
+                  : "Create New User"}
+              </h3>
               <button className={styles.drawerClose} onClick={closeDrawerWithAnimation}>
                 <X size={20} />
               </button>
@@ -633,7 +766,11 @@ const AdminPanel: React.FC = () => {
             <div className={styles.drawerBody}>
               <form
                 id="create-user-form"
-                onSubmit={handleCreateSubmit}
+                onSubmit={
+                  isEditMode
+                    ? handleUpdateSubmit
+                    : handleCreateSubmit
+                }
                 className={styles.drawerForm}
               >
                 {formError && (
@@ -679,34 +816,35 @@ const AdminPanel: React.FC = () => {
                   />
                 </div>
 
-                <div className={styles.formGroup}>
-                  <label>
-                    Password{" "}
-                    <span className={styles.requiredStar}>*</span>{" "}
-                    <span className={styles.passwordHint}>
-                      (min 8 characters)
-                    </span>
-                  </label>
+                {!isEditMode && (
+                  <div className={styles.formGroup}>
+                    <label>
+                      Password{" "}
+                      <span className={styles.requiredStar}>*</span>{" "}
+                      <span className={styles.passwordHint}>
+                        (min 8 characters)
+                      </span>
+                    </label>
 
-                  <div className={styles.passwordWrapper}>
-                    <Lock
-                      size={16}
-                      className={styles.passwordIcon}
-                    />
+                    <div className={styles.passwordWrapper}>
+                      <Lock
+                        size={16}
+                        className={styles.passwordIcon}
+                      />
 
-                    <input
-                      type="password"
-                      placeholder="Enter password"
-                      value={formData.password}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          password: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                </div>
+                      <input
+                        type="password"
+                        placeholder="Enter password"
+                        value={formData.password}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            password: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>)}
 
                 <div className={styles.formGroup}>
                   <label>
@@ -765,9 +903,25 @@ const AdminPanel: React.FC = () => {
                   type="submit"
                   form="create-user-form"
                   className={styles.submitBtn}
-                  disabled={creating}
+                  disabled={
+                    isEditMode
+                      ? updating
+                      : creating
+                  }
                 >
-                  {creating ? (
+                  {isEditMode ? (
+                    updating ? (
+                      <>
+                        <Loader2
+                          size={16}
+                          className={styles.spinner}
+                        />
+                        Updating...
+                      </>
+                    ) : (
+                      "Update User"
+                    )
+                  ) : creating ? (
                     <>
                       <Loader2
                         size={16}
@@ -785,6 +939,57 @@ const AdminPanel: React.FC = () => {
         </>
       )
       }
+      {showDeleteModal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.deleteModal}>
+            <div className={styles.deleteModalTitle}>
+              <div className={styles.deleteModalIcon}>
+                <Trash2 size={18} />
+              </div>
+
+              <h3>Delete User?</h3>
+            </div>
+
+            <p>
+              Are you sure you want to delete{" "}
+              <strong>{selectedUser?.user_name}</strong>?
+              <br />
+              This action cannot be undone.
+            </p>
+
+            <div className={styles.deleteModalActions}>
+              <button
+                className={styles.cancelDeleteBtn}
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setSelectedUser(null);
+                }}
+                disabled={deleteLoading}
+              >
+                Cancel
+              </button>
+
+              <button
+                className={styles.confirmDeleteBtn}
+                onClick={handleDelete}
+                disabled={deleteLoading}
+              >
+                {deleteLoading ? (
+                  <>
+                    <Loader2
+                      size={16}
+                      className={styles.spinner}
+                    />
+                    Deleting...
+                  </>
+                ) : (
+                  "Delete User"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div >
   );
 };

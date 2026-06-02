@@ -352,10 +352,41 @@ export default function ProjectDashboard() {
 
   // Close with discard check
   const handleClosePanel = (type: "create" | "edit") => {
-    setPendingClose(type);
-    setShowDiscardModal(true);
-  };
 
+    // CREATE PANEL
+    if (type === "create") {
+
+      const hasCreateValues =
+        createForm.project_name.trim() !== "" ||
+        createForm.project_description.trim() !== "" ||
+        createImagePreview !== "";
+
+      if (hasCreateValues) {
+        setPendingClose(type);
+        setShowDiscardModal(true);
+      } else {
+        setShowCreatePanel(false);
+        resetCreateForm();
+      }
+
+      return;
+    }
+
+    // EDIT PANEL
+    if (type === "edit") {
+
+      const hasEditChanges =
+        isFormDirty;
+
+      if (hasEditChanges) {
+        setPendingClose(type);
+        setShowDiscardModal(true);
+      } else {
+        setShowEditPanel(false);
+        setEditingProject(null);
+      }
+    }
+  };
   // Confirm discard
   const handleConfirmDiscard = () => {
     setShowDiscardModal(false);
