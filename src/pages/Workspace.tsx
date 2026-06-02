@@ -17,6 +17,7 @@ import {
   Shield,
   Link,
   Check,
+  CheckCircle2Icon,
   Mail,
   MessageCircle,
   MessageSquare,
@@ -171,6 +172,9 @@ const CredentialAccordion = ({
           {showArrow && <ArrowRightFromLine size={14} />}
           {description && <span>{description}</span>}
           {!provider && !description && <span>Credential #{index + 1}</span>}
+          <span className={styles["configured-badge"]}>
+            <CheckCircle2Icon size={14} /> Configured
+          </span>
         </div>
         {isOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
       </button>
