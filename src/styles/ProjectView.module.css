@@ -791,7 +791,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    margin-bottom: 12px;
+    margin-bottom: 4px;
     font-size: 15px;
 }
 
@@ -832,16 +832,31 @@
     gap: 10px;
     padding: 12px 14px;
     border-radius: 8px;
+
     cursor: pointer;
+
     border-left: 3px solid transparent;
+
+    background: #fbfbfb;
+
+    box-shadow:
+        0 2px 6px rgba(15, 23, 42, 0.04);
+
+    transition:
+        background 0.2s,
+        transform 0.2s;
+
+    margin-bottom: 10px;
 }
 
 .pc-sidebar-item:hover {
-    background: #f8fafc;
+    background: #f0f3f6;
+
+    transform: translateY(-1px);
 }
 
 .pc-sidebar-item.active {
-    background: #f0f2ff;
+    background: #fdfdfd;
 }
 
 .pc-sidebar-icon {
@@ -978,11 +993,21 @@
     margin-bottom: 12px;
     overflow: hidden;
     cursor: default;
-    transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+    transition:
+        transform 0.2s,
+        box-shadow 0.2s,
+        background 0.2s,
+        border-color 0.2s;
 }
 
 .pc-provider-card:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    background: #f8fbff;
+    border-color: #c7d2fe;
+
+    box-shadow:
+        0 4px 12px rgba(99, 102, 241, 0.10);
+
+    transform: translateY(-1px);
 }
 
 .pc-provider-card.dragging {
@@ -1124,7 +1149,7 @@
     gap: 8px;
     padding: 10px 20px;
     border: none;
-    background: transparent;
+    background: #eff1f4;
     font-size: 13px;
     font-weight: 500;
     color: #64748b;
@@ -1135,8 +1160,14 @@
 }
 
 .pc-mode-tab:hover {
-    color: #475569;
-    background: #f1f5f9;
+    color: #1e293b;
+
+    background: #e2e8f0;
+
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 2px 6px rgba(15, 23, 42, 0.06);
 }
 
 .pc-mode-tab.active {
@@ -1146,12 +1177,12 @@
 
 .pc-mode-tab.active.live {
     background: #16a34a;
-    box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3);
+
 }
 
 .pc-mode-tab.active.sandbox {
     background: #d97706;
-    box-shadow: 0 2px 8px rgba(217, 119, 6, 0.3);
+
 }
 
 .pc-mode-tab-count {
@@ -2619,7 +2650,7 @@ body:has(.pc-modal-overlay.slide-panel) {
     align-items: center;
     gap: 6px;
     font-size: 13px;
-    height: 40px;
+    height: 25px;
 }
 
 .expiration-options {

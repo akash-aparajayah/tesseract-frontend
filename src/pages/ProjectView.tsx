@@ -7,8 +7,8 @@ import {
   Pencil, FolderOpen, Plus, MessageSquare, Mail, MessageCircle, Plug, Check,
   Save, X, ChevronDown, Server, Copy, Trash2, Globe, Rocket, Wrench,
   Search, AlertTriangle, Home, Monitor, Key,
-  User, UserMinus, UserPlus, AlertCircle, Calendar, Clock, RefreshCw, Filter, Settings, 
-  GaugeIcon, LandmarkIcon,Plug2,Layers,FlaskConical
+  User, UserMinus, UserPlus, AlertCircle, Calendar, Clock, RefreshCw, Filter, Settings,
+  GaugeIcon, LandmarkIcon, Plug2, Layers, FlaskConical
 } from 'lucide-react';
 import { useToast } from "../hooks/useToast";
 import "../styles/Toast.css"
@@ -72,7 +72,7 @@ const SERVICE_ICONS: Record<string, React.ReactNode> = {
   IBV: <LandmarkIcon size={18} />,
 };
 
-  
+
 // Token Utils
 
 const getExpiryDate = (days: string, customDays?: string): string => {
@@ -2446,7 +2446,12 @@ export default function ProjectView() {
 
 
                         </div>
-                        <div className={styles["pc-sidebar"]}>
+                        <div
+                          className={styles["pc-sidebar"]}
+                          style={{
+                            borderTop: `3px solid ${SERVICE_COLORS[activeService]}`,
+                          }}
+                        >
                           {!serviceData ? (
                             <SkeletonLoader variant="list" count={3} />
                           ) : serviceData && serviceData.map((service: any) => (
@@ -2498,8 +2503,8 @@ export default function ProjectView() {
                                 }
                               }}
                               style={{
-                                borderLeftColor: activeService === service.name ? SERVICE_COLORS[service.name] : 'transparent',
-                                backgroundColor: activeService === service.name ? `${SERVICE_COLORS[service.name]}10` : 'transparent'
+                                borderLeftColor: activeService === service.name ? SERVICE_COLORS[service.name] : '',
+                                backgroundColor: activeService === service.name ? `${SERVICE_COLORS[service.name]}10` : ''
                               }}
                             >
                               <span className={styles["pc-sidebar-icon"]}>{SERVICE_ICONS[service.name]}</span>
