@@ -304,6 +304,22 @@ export default function ProjectView() {
     envPublicId: string
   ) => {
 
+    const currentHealth =
+      providerHealth[providerId];
+
+    if (
+      !currentHealth?.isActive &&
+      currentHealth?.error
+    ) {
+
+      showToast(
+        "Please update provider credentials before activating",
+        "error"
+      );
+
+      return;
+    }
+
     if (isTogglingProvider === providerId) {
       return;
     }
