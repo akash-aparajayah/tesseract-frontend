@@ -2820,6 +2820,23 @@ export default function ProjectView() {
                                             </div>
                                           )}
                                         </div>
+                                        <div className={styles["error-tooltip-header"]}>
+                                          <AlertTriangle size={14} />
+                                          <span>Provider Error</span>
+                                        </div>
+
+                                        <div className={styles["error-tooltip-message"]}>
+                                          {health?.error}
+                                        </div>
+
+                                        {health?.errorTimestamp && (
+                                          <div className={styles["error-tooltip-time"]}>
+                                            Failed at:{" "}
+                                            {new Date(
+                                              health.errorTimestamp
+                                            ).toLocaleString()}
+                                          </div>
+                                        )}
                                       </div>
                                     )}
 
