@@ -14,7 +14,7 @@ body,
 
 :root {
   /* ========= COLORS — Navy Blue & Slate (White background) ========= */
-  --primary: #1e3a8a;        /* deep navy */
+  --primary: #1e3a8a;
   --primary-hover: #1e2c5a;
   --primary-light: #e0e7ff;
   --primary-soft: rgba(30, 58, 138, 0.08);
@@ -26,7 +26,6 @@ body,
   --danger: #dc2626;
   --danger-bg: #fee2e2;
 
-  /* Sandbox & Live custom colors */
   --sandbox-bg: #ffedd5;
   --sandbox-text: #d97706;
   --sandbox-border: #fed7aa;
@@ -34,7 +33,6 @@ body,
   --live-text: #059669;
   --live-border: #a7f3d0;
 
-  /* White background surfaces */
   --bg: #ffffff;
   --surface: #ffffff;
   --surface-2: #f8fafc;
@@ -47,7 +45,6 @@ body,
   --text-secondary: #334155;
   --text-muted: #64748b;
 
-  /* Sidebar — light with subtle border */
   --sidebar-bg: #ffffff;
   --sidebar-text: #334155;
   --sidebar-text-active: #1e3a8a;
@@ -58,7 +55,8 @@ body,
   /* ========= SHADOWS ========= */
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 2px 4px -1px rgba(0, 0, 0, 0.03);
   --shadow-primary: 0 4px 12px rgba(30, 58, 138, 0.12);
 
   /* ========= RADIUS ========= */
@@ -83,7 +81,8 @@ body,
   height: 100vh;
   overflow: hidden;
   background: var(--bg);
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
   font-size: 14px;
   letter-spacing: -0.01em;
   color: var(--text-primary);
@@ -257,7 +256,6 @@ body,
   gap: 0.25rem;
 }
 
-/* Base env button */
 .envButton {
   height: 36px;
   border: none;
@@ -279,7 +277,6 @@ body,
   color: var(--primary);
 }
 
-/* Default active state (navy) - used if no specific class */
 .activeEnv {
   background: var(--primary-light);
   color: var(--primary);
@@ -290,21 +287,20 @@ body,
   color: var(--primary);
 }
 
-/* ===== CUSTOM COLORS FOR SANDBOX & LIVE ===== */
-/* Sandbox active button – amber/orange */
 .envButton.sandbox.activeEnv {
   background: var(--sandbox-bg);
   color: var(--sandbox-text);
 }
+
 .envButton.sandbox.activeEnv svg {
   color: var(--sandbox-text);
 }
 
-/* Live active button – emerald/green */
 .envButton.live.activeEnv {
   background: var(--live-bg);
   color: var(--live-text);
 }
+
 .envButton.live.activeEnv svg {
   color: var(--live-text);
 }
@@ -382,7 +378,8 @@ body,
   font-size: 0.8rem;
   font-weight: 500;
   color: var(--text-secondary);
-  transition: background var(--t-fast), border-color var(--t-fast), color var(--t-fast), box-shadow var(--t-fast);
+  transition: background var(--t-fast), border-color var(--t-fast),
+    color var(--t-fast), box-shadow var(--t-fast);
 }
 
 .serviceChip:hover {
@@ -397,6 +394,7 @@ body,
   color: white;
   border-color: var(--primary);
   box-shadow: var(--shadow-primary);
+  animation: glowPulse 1.5s infinite;
 }
 
 .activeService:hover {
@@ -451,7 +449,7 @@ body,
 }
 
 /* =========================================================
-   SEGMENTED CONTROL (optional styling for sandbox/live)
+   SEGMENTED CONTROL
 ========================================================= */
 .instanceSegmentedControl {
   display: flex;
@@ -475,7 +473,8 @@ body,
   font-size: 0.8rem;
   font-weight: 500;
   color: var(--text-muted);
-  transition: background var(--t-fast), color var(--t-fast), box-shadow var(--t-fast);
+  transition: background var(--t-fast), color var(--t-fast),
+    box-shadow var(--t-fast);
 }
 
 .segmentedButton:hover {
@@ -483,7 +482,6 @@ body,
   color: var(--primary);
   background: var(--primary-light);
   box-shadow: var(--shadow-xs);
-  
 }
 
 .segmentedActive {
@@ -493,19 +491,21 @@ body,
   box-shadow: var(--shadow-xs);
 }
 
-/* Custom colors for segmented buttons (if you add data-env attributes) */
 .segmentedButton[data-env="sandbox"].segmentedActive {
   background: var(--sandbox-bg);
   color: var(--sandbox-text);
 }
+
 .segmentedButton[data-env="sandbox"].segmentedActive .countBadge {
   background: var(--sandbox-border);
   color: var(--sandbox-text);
 }
+
 .segmentedButton[data-env="live"].segmentedActive {
   background: var(--live-bg);
   color: var(--live-text);
 }
+
 .segmentedButton[data-env="live"].segmentedActive .countBadge {
   background: var(--live-border);
   color: var(--live-text);
@@ -599,7 +599,8 @@ body,
   background: var(--surface-2);
   border: 1px solid var(--border);
   color: var(--primary);
-  transition: background var(--t-fast), border-color var(--t-fast), color var(--t-fast), box-shadow var(--t-fast);
+  transition: background var(--t-fast), border-color var(--t-fast),
+    color var(--t-fast), box-shadow var(--t-fast);
 }
 
 .cableIcon:hover {
@@ -615,8 +616,13 @@ body,
 }
 
 @keyframes softPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(30, 58, 138, 0.15); }
-  50%       { box-shadow: 0 0 0 5px rgba(30, 58, 138, 0.06); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(30, 58, 138, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(30, 58, 138, 0.06);
+  }
 }
 
 .blinkingIcon {
@@ -661,7 +667,8 @@ body,
   border-radius: var(--radius-md);
   background: var(--surface-2);
   border: 1px solid var(--border);
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto,
+    sans-serif;
   font-size: 0.775rem;
   color: var(--text-primary);
   overflow-x: auto;
@@ -682,7 +689,8 @@ body,
   cursor: pointer;
   font-size: 0.78rem;
   font-weight: 600;
-  transition: background var(--t-fast), box-shadow var(--t-fast), transform 0.1s ease;
+  transition: background var(--t-fast), box-shadow var(--t-fast),
+    transform 0.1s ease;
 }
 
 .inlineCopyBtn:hover {
@@ -702,6 +710,17 @@ body,
 /* =========================================================
    CREDENTIAL ACCORDION
 ========================================================= */
+@keyframes accordionCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .credentialAccordion {
   margin-bottom: 1rem;
   overflow: hidden;
@@ -709,14 +728,29 @@ body,
   background: var(--surface-card);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-xs);
-  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.25s ease,
+    transform 0.2s ease;
+  animation: accordionCardIn 0.35s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
+
+/* Stagger each accordion card */
+.credentialAccordion:nth-child(1) { animation-delay: 0.05s; }
+.credentialAccordion:nth-child(2) { animation-delay: 0.1s; }
+.credentialAccordion:nth-child(3) { animation-delay: 0.15s; }
+.credentialAccordion:nth-child(4) { animation-delay: 0.2s; }
 
 .credentialAccordion:hover {
   border-color: var(--border-strong);
   box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
 }
 
+/* 
+  Changed from button to div to allow nested buttons (lock + chevron).
+  This fixes the invalid HTML nesting issue. 
+*/
 .credentialAccordionHeader {
   width: 100%;
   border: none;
@@ -725,21 +759,139 @@ body,
   display: flex;
   align-items: center;
   justify-content: space-between;
-  cursor: pointer;
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--primary);
-  transition: background var(--t-fast), color var(--t-fast);
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+  position: relative;
+}
+
+/* Smooth left border indicator that slides in when open */
+.credentialAccordionHeader::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--primary);
+  border-radius: 0 2px 2px 0;
+  transform: scaleY(0);
+  transform-origin: center;
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.credentialAccordion:has(.credentialAccordionContent.open) .credentialAccordionHeader::before {
+  transform: scaleY(1);
+}
+
+/* Clickable left zone — takes up remaining space */
+.accordionClickZone {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.accordionClickZone:hover .accordionHeaderLeft {
+  opacity: 0.8;
 }
 
 .accordionHeaderLeft {
   display: flex;
   align-items: center;
   gap: 0.7rem;
+  transition: opacity var(--t-fast);
 }
 
 .accordionHeaderLeft svg {
   color: var(--primary);
+}
+
+/* Container for all right-side elements */
+.accordionHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: 14px;
+}
+
+/* Chevron toggle — standalone circle button */
+.accordionChevron {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #64748b;
+  background: transparent;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+  flex-shrink: 0;
+  margin-left: 5px;
+}
+
+.accordionChevron:hover {
+  border-color: #94a3b8;
+  background: rgba(148, 163, 184, 0.1);
+  transform: scale(1.05);
+}
+
+.accordionChevron:active {
+  transform: scale(0.95);
+}
+
+.accordionChevron svg {
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Rotate chevron when accordion is open — driven by sibling state */
+.credentialAccordion:has(.credentialAccordionContent.open) .accordionChevron svg {
+  transform: rotate(180deg);
+}
+
+/* Lock button — standalone circle button */
+.lockButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid #cbd5e1;
+  cursor: pointer;
+  color: #64748b;
+  background: transparent;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    background 0.2s ease,
+    transform 0.15s ease,
+    box-shadow 0.2s ease;
+  flex-shrink: 0;
+}
+
+.lockButton:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-soft);
+  transform: scale(1.08);
+  box-shadow: 0 0 0 4px var(--primary-soft);
+}
+
+.lockButton:active {
+  transform: scale(0.93);
+  box-shadow: none;
 }
 
 .credentialDescription {
@@ -756,19 +908,28 @@ body,
   max-height: 0;
   overflow: hidden;
   opacity: 0;
-  transition: max-height 0.35s ease, opacity 0.25s ease;
+  transform: translateY(-10px);
+  transition:
+    max-height 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .credentialAccordionContent.open {
   max-height: 900px;
   opacity: 1;
+  transform: translateY(0);
   border-top: 1px solid var(--border);
+  transition:
+    max-height 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.05s,
+    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.05s;
 }
 
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -776,15 +937,25 @@ body,
   }
 }
 
-.credentialAccordionContent.open .credentialFields {
-  animation: fadeInUp 0.3s ease-out;
+/* Staggered entrance for each credential row — slower, more breathable */
+.credentialAccordionContent.open .credentialRow {
+  animation: fadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* Container */
+.credentialAccordionContent.open .credentialRow:nth-child(1) { animation-delay: 0.10s; }
+.credentialAccordionContent.open .credentialRow:nth-child(2) { animation-delay: 0.16s; }
+.credentialAccordionContent.open .credentialRow:nth-child(3) { animation-delay: 0.22s; }
+.credentialAccordionContent.open .credentialRow:nth-child(4) { animation-delay: 0.28s; }
+.credentialAccordionContent.open .credentialRow:nth-child(5) { animation-delay: 0.34s; }
+.credentialAccordionContent.open .credentialRow:nth-child(6) { animation-delay: 0.40s; }
+
+/* =========================================================
+   CREDENTIAL FIELDS
+========================================================= */
 .credentialFields {
- padding: 1.25rem;
+  padding: 1.25rem;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr)); /* FIXED: minmax(0, 1fr) */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
   background: var(--surface-card);
   border-radius: 1rem;
@@ -796,14 +967,12 @@ body,
   }
 }
 
-/* Row */
 .credentialRow {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-/* Label */
 .credLabel {
   font-size: 0.7rem;
   font-weight: 600;
@@ -812,9 +981,8 @@ body,
   color: var(--text-muted);
 }
 
-/* Value block (icon + divider + code) */
 .credValueBlock {
- display: flex;
+  display: flex;
   align-items: center;
   gap: 0.75rem;
   background: var(--surface-2);
@@ -822,15 +990,14 @@ body,
   border-radius: 0.75rem;
   padding: 0.5rem 0.875rem;
   transition: border-color 0.15s ease;
-  min-width: 0;                /* FIXED: allows flex child to shrink below content */
-  overflow: hidden; 
+  min-width: 0;
+  overflow: hidden;
 }
 
 .credValueBlock:hover {
   border-color: var(--border-strong);
 }
 
-/* Icon container */
 .iconContainer {
   display: flex;
   align-items: center;
@@ -847,7 +1014,6 @@ body,
   stroke-width: 1.5;
 }
 
-/* Vertical divider */
 .verticalDivider {
   width: 1.5px;
   background: var(--border);
@@ -856,10 +1022,10 @@ body,
   flex-shrink: 0;
 }
 
-/* Code value */
 .credValue {
   flex: 1;
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto,
+    sans-serif;
   font-size: 0.79rem;
   font-weight: 500;
   letter-spacing: 0.8px;
@@ -867,20 +1033,298 @@ body,
   background: transparent;
   border: none;
   padding: 3px;
-  overflow-x: auto;            
-  white-space: nowrap;        
+  overflow-x: auto;
+  white-space: nowrap;
 }
 
 .credValue::-webkit-scrollbar {
   height: 4px;
 }
+
 .credValue::-webkit-scrollbar-track {
   background: var(--surface-3);
   border-radius: 4px;
 }
+
 .credValue::-webkit-scrollbar-thumb {
   background: var(--border-strong);
   border-radius: 4px;
+}
+
+/* =========================================================
+   LOCK POPUP
+========================================================= */
+@keyframes overlayIn {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(4px);
+  }
+}
+
+@keyframes slideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(32px) scale(0.95);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.005);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes popupFieldIn {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.popupOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  animation: overlayIn 0.25s ease forwards;
+}
+
+.popupCard {
+  width: 380px;
+  background: var(--surface-card);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  box-shadow:
+    0 20px 60px rgba(15, 23, 42, 0.18),
+    0 4px 16px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+  animation: slideUp 0.35s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
+}
+
+/* Stagger each field inside the popup */
+.popupBody .popupField:nth-child(1) {
+  animation: popupFieldIn 0.28s cubic-bezier(0.4, 0, 0.2, 1) 0.12s both;
+}
+.popupBody .popupField:nth-child(2) {
+  animation: popupFieldIn 0.28s cubic-bezier(0.4, 0, 0.2, 1) 0.18s both;
+}
+.popupBody .popupSubmit {
+  animation: popupFieldIn 0.28s cubic-bezier(0.4, 0, 0.2, 1) 0.24s both;
+}
+
+.popupHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1rem 1.25rem;
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: 0.9rem;
+  font-weight: 700;
+  border-bottom: 1px solid var(--border);
+}
+
+.popupHeader span {
+  flex: 1;
+}
+
+.popupClose {
+    width: 36px;
+  height: 36px;
+
+  margin-left: auto;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: none;
+
+  border-radius: 50%;
+
+  background: transparent;
+
+  cursor: pointer;
+
+  transition: var(--transition);
+}
+
+.popupClose:hover {
+   color: var(--danger);
+  background: rgba(211, 47, 47, 0.08);
+}
+
+.popupBody {
+  padding: 1.5rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.popupField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.popupField label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.popupField input {
+  height: 40px;
+  padding: 0 0.875rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+  width: 100%;
+}
+
+.popupField input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+  background: var(--surface);
+}
+
+.passwordWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.passwordWrapper input {
+  padding-right: 2.5rem;
+}
+
+.eyeBtn {
+  position: absolute;
+  right: 0.625rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  transition: color var(--t-fast);
+}
+
+.eyeBtn:hover {
+  color: var(--primary);
+}
+
+.popupSubmit {
+  height: 42px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--primary);
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
+  margin-top: 0.25rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle shimmer sweep on hover */
+.popupSubmit::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.15) 50%,
+    transparent 60%
+  );
+  transform: translateX(-100%);
+  transition: transform 0.4s ease;
+}
+
+.popupSubmit:hover::after {
+  transform: translateX(100%);
+}
+
+.popupSubmit:hover {
+  background: var(--primary-hover);
+  box-shadow: var(--shadow-primary);
+  transform: translateY(-1px);
+}
+
+.popupSubmit:active {
+  transform: scale(0.97) translateY(0);
+  box-shadow: none;
+}
+
+/* =========================================================
+   PRIMARY BADGE & CONFIGURED
+========================================================= */
+.primaryBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  border-radius: 40px;
+  background: #4f46e5;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.configured {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  border-radius: 40px;
+  background: #16a34a;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.primaryBadge svg,
+.primaryBadge i {
+  color: #ffffff;
+}
+
+.configured svg,
+.configured i {
+  color: #ffffff;
 }
 
 /* =========================================================
@@ -911,9 +1355,15 @@ body,
    BOUNCE SCALE FOR COPY BUTTON
 ========================================================= */
 @keyframes bounceScale {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.08); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* =========================================================
@@ -929,10 +1379,6 @@ body,
   100% {
     box-shadow: 0 0 0 0 rgba(30, 58, 138, 0);
   }
-}
-
-.activeService {
-  animation: glowPulse 1.5s infinite;
 }
 
 /* =========================================================
@@ -980,7 +1426,6 @@ body,
 .globalEmptyState img,
 .mainEmptyState img {
   width: 340px;
- 
 }
 
 .noEnvironmentsMessage,
@@ -1126,44 +1571,9 @@ body,
   .tokenSummary {
     justify-content: space-between;
   }
-}
 
-.primaryBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 14px;
-  border-radius: 40px;
-  background: #4f46e5;
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  border: none;
-  transition: all 0.2s ease;
-}
-
-.configured {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 14px;
-  border-radius: 40px;
-  background: #16a34a;
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  border: none;
-  transition: all 0.2s ease;
-}
-
-.primaryBadge svg,
-.primaryBadge i {
-  color: #ffffff;
-}
-
-.configured svg,
-.configured i {
-  color: #ffffff;
+  .popupCard {
+    width: calc(100vw - 2rem);
+    margin: 1rem;
+  }
 }

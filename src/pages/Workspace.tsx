@@ -19,18 +19,18 @@ import {
   Check,
   CircleCheckBigIcon,
   Mail,
-  MessageCircle,
   MessageSquare,
   ArrowRightFromLine,
   GaugeIcon,
   Star,
   FileLock,
-  LockKeyhole,
-  UnlockKeyhole,
   ShieldCheck,
-  LandmarkIcon,
+  ArrowLeftRight,
+  MessageSquareMore,
+  MessageCircleMore,
+  LockKeyholeIcon,
+  LockKeyholeOpen,
   CreditCard,
-
 } from "lucide-react";
 import styles from "../styles/Workspace.module.css";
 import workspaceIllustration from "../assets/illustration/Empty (1).gif";
@@ -125,21 +125,20 @@ const formatExpiry = (expiresAt: string | null) => {
   return `${daysLeft} day${daysLeft !== 1 ? "s" : ""}`;
 };
 
-// Helper to get icon based on service type
 const getServiceIcon = (serviceType?: string, size: number = 20) => {
   switch (serviceType?.toLowerCase()) {
     case "sms":
-      return <MessageSquare size={size} />;
+      return <MessageSquareMore size={size} />;
     case "email":
       return <Mail size={size} />;
     case "whatsapp":
-      return <MessageCircle size={size} />;
+      return <MessageCircleMore size={size} />;
     case "credit score":
       return <GaugeIcon size={size} />;
     case "ibv":
       return <ShieldCheck size={size} />;
     case "ach":
-      return <LandmarkIcon size={size} />;
+      return <ArrowLeftRight size={size} />;
     case "payment gateway":
       return <CreditCard size={size} />;
     default:
@@ -147,13 +146,79 @@ const getServiceIcon = (serviceType?: string, size: number = 20) => {
   }
 };
 
+// ---------- Lock Popup ----------
+interface LockPopupProps {
+  onClose: () => void;
+}
 
-// ---------- Credential Accordion (with provider name & description) ----------
+const LockPopup = ({ onClose }: LockPopupProps) => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleSubmit = () => {
+    // handle your auth logic here
+    console.log({ email, password });
+    onClose();
+  };
+
+  return (
+    <div className={styles.popupOverlay} onClick={onClose}>
+      <div className={styles.popupCard} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.popupHeader}>
+          <LockKeyholeIcon size={18} />
+          <span>Authenticate to Unlock</span>
+          <button className={styles.popupClose} onClick={onClose}>
+            ✕
+          </button>
+        </div>
+        <div className={styles.popupBody}>
+          <div className={styles.popupField}>
+            <label>Email</label>
+            <input
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div className={styles.popupField}>
+            <label>Password</label>
+            <div className={styles.passwordWrapper}>
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                className={styles.eyeBtn}
+                onClick={() => setShowPassword((p) => !p)}
+              >
+                {showPassword ? (
+                  <LockKeyholeOpen size={15} />
+                ) : (
+                  <LockKeyholeIcon size={15} />
+                )}
+              </button>
+            </div>
+          </div>
+          <button className={styles.popupSubmit} onClick={handleSubmit}>
+            Unlock Credential
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ---------- Credential Accordion ----------
 interface CredentialAccordionProps {
   credential: Credentials;
   index: number;
   isOpen: boolean;
   onToggle: () => void;
+  onLockClick: () => void;
 }
 
 const CredentialAccordion = ({
@@ -161,49 +226,67 @@ const CredentialAccordion = ({
   index,
   isOpen,
   onToggle,
+  onLockClick,
 }: CredentialAccordionProps) => {
-  // Fields to display inside the accordion (exclude meta fields)
   const displayFields = Object.entries(credential).filter(
     ([key]) =>
-      ![
-        "mode",
-        "service_type",
-        "provider_name",
-        "endpoint",
-      ].includes(key),
+      !["mode", "service_type", "provider_name", "endpoint"].includes(key),
   );
 
   const provider = credential.provider_name || "";
   const description = credential.service_description || "";
   const icon = getServiceIcon(credential.service_type, 20);
-  
-  // Determine if we have both provider and description to show the arrow
   const showArrow = provider && description;
 
   return (
     <div className={styles.credentialAccordion}>
-      <button className={styles.credentialAccordionHeader} onClick={onToggle}>
-        <div className={styles.accordionHeaderLeft}>
-          {icon}
-          {provider && <span>{provider}</span>}
-          {showArrow && <ArrowRightFromLine size={14} />}
-          {/* {description && <span>{description}</span>} */}
-          {!provider && !description && <span>Credential #{index + 1}</span>}
+      {/* Use div instead of button so we can nest buttons inside */}
+      <div className={styles.credentialAccordionHeader}>
 
-          {index === 0 && (
-            <div className={styles.primaryBadge}>
-              <Star size={14} className={styles.primaryIcon} />
-              <span>Primary</span>
-            </div>
-          )}
+        {/* Left click zone for toggling */}
+        <div className={styles.accordionClickZone} onClick={onToggle}>
+          <div className={styles.accordionHeaderLeft}>
+            {icon}
+            {provider && <span>{provider}</span>}
+            {showArrow && <ArrowRightFromLine size={14} />}
+            {!provider && !description && <span>Credential #{index + 1}</span>}
+          </div>
+        </div>
+
+        {/* Right side: badges + lock button + chevron */}
+        <div className={styles.accordionHeaderRight}>
+          {index === 0 &&
+            credential.service_type &&
+            ["SMS", "Email", "WhatsApp"].includes(credential.service_type) && (
+              <div className={styles.primaryBadge}>
+                <Star size={14} className={styles.primaryIcon} />
+                <span>Primary</span>
+              </div>
+            )}
           {provider && (
             <div className={styles.configured}>
               <CircleCheckBigIcon size={14} /> Configured
             </div>
           )}
+
+          {/* Lock button — valid standalone button, not nested in another button */}
+          <button
+            className={styles.lockButton}
+            onClick={(e) => {
+              e.stopPropagation();
+              onLockClick();
+            }}
+          >
+            <LockKeyholeIcon size={16} className={styles.lockIcon} />
+          </button>
+
+          {/* Chevron button */}
+          <button className={styles.accordionChevron} onClick={onToggle}>
+            {isOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+          </button>
         </div>
-        {isOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-      </button>
+      </div>
+
       <div
         className={`${styles.credentialAccordionContent} ${
           isOpen ? styles.open : ""
@@ -217,13 +300,10 @@ const CredentialAccordion = ({
                   {key.replace(/_/g, " ").toUpperCase()}
                 </span>
                 <div className={styles.credValueBlock}>
-                  {/* Icon container */}
                   <div className={styles.iconContainer}>
-                    <FileLock size={18}/>
+                    <FileLock size={18} />
                   </div>
-                  {/* Vertical divider line */}
                   <div className={styles.verticalDivider} />
-                  {/* Masked value */}
                   <code className={styles.credValue}>
                     {String(value) || "-"}
                   </code>
@@ -260,12 +340,14 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
   const [instanceType, setInstanceType] = useState<"sandbox" | "live">(
     "sandbox",
   );
-  const [openAccordions, setOpenAccordions] = useState<{
-    [k: number]: boolean;
-  }>({});
-  const [tokensMap, setTokensMap] = useState<Record<string, EnvToken>>({});
 
-  // State for inline endpoint reveal
+  // Single-open accordion: stores the index of the open accordion (null = all closed)
+  const [openAccordionIndex, setOpenAccordionIndex] = useState<number | null>(0);
+
+  // Lock popup state
+  const [lockPopupOpen, setLockPopupOpen] = useState(false);
+
+  const [tokensMap, setTokensMap] = useState<Record<string, EnvToken>>({});
   const [showEndpointInline, setShowEndpointInline] = useState(false);
   const [rotateIcon, setRotateIcon] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -303,15 +385,15 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
               project_name: apiProject.project_name,
               environments: apiProject.environments.map(
                 (apiEnv: ApiEnvironment) => {
-                 const transformedServices: Service[] = apiEnv.services.map(
-                   (apiService: ApiService) => ({
-                     id: apiService.id,
-                     name: apiService.service_name,
-                     serviceEndpoint: apiService.service_endpoint || "",
-                     sandbox: apiService.sandbox || [],
-                     live: apiService.live || [],
-                   }),
-                 );
+                  const transformedServices: Service[] = apiEnv.services.map(
+                    (apiService: ApiService) => ({
+                      id: apiService.id,
+                      name: apiService.service_name,
+                      serviceEndpoint: apiService.service_endpoint || "",
+                      sandbox: apiService.sandbox || [],
+                      live: apiService.live || [],
+                    }),
+                  );
                   return {
                     public_id: apiEnv.public_id,
                     environment_name: apiEnv.environment_name,
@@ -360,7 +442,7 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
               setSelectedEnv({ project: firstProject, environment: firstEnv });
               const firstService = firstEnv.services[0] || null;
               setSelectedSvc(firstService);
-              setOpenAccordions({ 0: true });
+              setOpenAccordionIndex(0); // first accordion open by default
             }
           }
         } else {
@@ -388,7 +470,7 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
     const firstService = env.services[0] || null;
     setSelectedSvc(firstService);
     setInstanceType("sandbox");
-    setOpenAccordions({ 0: true });
+    setOpenAccordionIndex(0);
     setShowEndpointInline(false);
     setCopied(false);
   };
@@ -396,20 +478,21 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
   const selectService = (svc: Service) => {
     setSelectedSvc(svc);
     setInstanceType("sandbox");
-    setOpenAccordions({ 0: true });
+    setOpenAccordionIndex(0);
     setShowEndpointInline(false);
     setCopied(false);
   };
 
   const handleInstanceChange = (type: "sandbox" | "live") => {
     setInstanceType(type);
-    setOpenAccordions({ 0: true });
+    setOpenAccordionIndex(0);
     setShowEndpointInline(false);
     setCopied(false);
   };
 
+  // Single-open: clicking the same index closes it, clicking another opens it
   const toggleAccordion = (i: number) =>
-    setOpenAccordions((prev) => ({ ...prev, [i]: !prev[i] }));
+    setOpenAccordionIndex((prev) => (prev === i ? null : i));
 
   const handleCableClick = () => {
     setRotateIcon(true);
@@ -433,7 +516,6 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
     p.project_name.toLowerCase().includes(search.toLowerCase()),
   );
 
-  // Loading state
   if (loading) {
     return (
       <div className={styles.loadingContainer}>
@@ -505,8 +587,7 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
       : selectedService.live
     : [];
 
-  const currentToken =
-    instanceType === "sandbox" ? sandboxToken : liveToken;
+  const currentToken = instanceType === "sandbox" ? sandboxToken : liveToken;
 
   return (
     <div className={styles.container}>
@@ -600,7 +681,10 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
         <div className={styles.topbar}>
           <div className={styles.breadcrumb}>
             <span>
-              <FolderOpen size={15}  style={{ marginRight: "7px", marginTop: "2px" }}/>
+              <FolderOpen
+                size={15}
+                style={{ marginRight: "7px", marginTop: "2px" }}
+              />
               {selectedEnv?.project?.project_name
                 ? selectedEnv.project.project_name.charAt(0).toUpperCase() +
                   selectedEnv.project.project_name.slice(1)
@@ -609,7 +693,10 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
             <ChevronRight size={13} />
             <span className={styles.activeBreadcrumb}>
               <span>
-                <Layers size={12}  style={{ marginRight: "7px", marginTop: "2px" }}/>
+                <Layers
+                  size={12}
+                  style={{ marginRight: "7px", marginTop: "2px" }}
+                />
                 {selectedEnv?.environment?.environment_name
                   ? selectedEnv.environment.environment_name
                       .charAt(0)
@@ -620,7 +707,10 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
             </span>
             <ChevronRight size={13} />
             <span className={styles.activeBreadcrumb}>
-              <Wrench size={12}  style={{ marginRight: "7px", marginTop: "2px" }}/>
+              <Wrench
+                size={12}
+                style={{ marginRight: "7px", marginTop: "2px" }}
+              />
               {selectedService?.name || "No service"}
             </span>
           </div>
@@ -669,9 +759,7 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
                     >
                       <FlaskConical size={15} />
                       <span>Sandbox</span>
-                      <span className={styles.countBadge}>
-                        {sandboxCount}
-                      </span>
+                      <span className={styles.countBadge}>{sandboxCount}</span>
                     </button>
                     <button
                       data-env="live"
@@ -718,7 +806,6 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
                 </div>
 
                 <div className={styles.envRightGroup}>
-
                   <div
                     className={`${styles.cableIcon} ${
                       rotateIcon ? styles.rotateIcon : ""
@@ -729,7 +816,6 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
                     <Link size={16} />
                   </div>
                 </div>
-
               </div>
 
               {showEndpointInline && selectedService.serviceEndpoint && (
@@ -759,8 +845,9 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
                     key={idx}
                     credential={cred}
                     index={idx}
-                    isOpen={openAccordions[idx] ?? false}
+                    isOpen={openAccordionIndex === idx}
                     onToggle={() => toggleAccordion(idx)}
+                    onLockClick={() => setLockPopupOpen(true)}
                   />
                 ))
               )}
@@ -768,6 +855,9 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
           )}
         </div>
       </div>
+
+      {/* Lock popup rendered at top level to avoid nesting issues */}
+      {lockPopupOpen && <LockPopup onClose={() => setLockPopupOpen(false)} />}
     </div>
   );
 };
