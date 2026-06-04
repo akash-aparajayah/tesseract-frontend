@@ -8,7 +8,7 @@ import {
   Save, X, ChevronDown, Server, Copy, Trash2, Globe, Rocket, Wrench,
   Search, AlertTriangle, Home, Monitor, Key,
   User, UserMinus, UserPlus, AlertCircle, Calendar, Clock, RefreshCw, Filter, Settings,
-  GaugeIcon, LandmarkIcon, Plug2, Layers, FlaskConical
+  GaugeIcon, LandmarkIcon, Plug2, Layers, FlaskConical, LockKeyhole, LockKeyholeOpen
 } from 'lucide-react';
 import { useToast } from "../hooks/useToast";
 import "../styles/Toast.css"
@@ -138,7 +138,8 @@ export default function ProjectView() {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [serviceEndpoint, setServiceEndpoint] =
     useState("");
-  const [serviceProviderCounts, setServiceProviderCounts] = useState<Record<string, number>>({ SMS: 0, Email: 0, Whatsapp: 0 });
+  const [serviceProviderCounts, setServiceProviderCounts] =
+    useState<Record<string, number>>({});
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
   const [expandedProviders, setExpandedProviders] = useState<Record<string, boolean>>({});
   const [openEnvMenu, setOpenEnvMenu] = useState<string | null>(null);
@@ -227,6 +228,26 @@ export default function ProjectView() {
   const [providersLoading, setProvidersLoading] = useState(false);
   const [serviceData, setServiceData] = useState<any>(null);
 
+  const messagingServices =
+    serviceData?.filter(
+      (s: any) => s.is_failover === true
+    ) || [];
+
+  const bankingServices =
+    serviceData?.filter(
+      (s: any) => s.is_failover === false
+    ) || [];
+
+  const activeServiceObj =
+    serviceData?.find(
+      (s: any) =>
+        s.name === activeService
+    );
+
+
+  const isBankingService =
+    activeServiceObj?.is_failover === false;
+
   const [providersList, setProvidersList] = useState<any[]>([]);
 
   const [pageLoading, setPageLoading] = useState(true);
@@ -240,6 +261,12 @@ export default function ProjectView() {
   const tokensInitialized = useRef(false);
   const [providerFormKey, setProviderFormKey] = useState(0);
   const [providerSchema, setProviderSchema] = useState<any[]>([]);
+
+  const [copiedEndpoint, setCopiedEndpoint] =
+    useState<string | null>(null);
+
+  const [credentialsMasked, setCredentialsMasked] =
+    useState(true);
 
   // Provider health status
   const [providerHealth, setProviderHealth] = useState<Record<string, {
@@ -546,6 +573,33 @@ export default function ProjectView() {
       }));
 
       setProviders(mappedProviders);
+
+      setExpandedProviders(prev => {
+
+        // KEEP CURRENT OPEN IF EXISTS
+        const currentOpen =
+          Object.keys(prev).find(
+            key => prev[key]
+          );
+
+        if (
+          currentOpen &&
+          mappedProviders.some(
+            p => p.id === currentOpen
+          )
+        ) {
+          return {
+            [currentOpen]: true,
+          };
+        }
+
+        // OTHERWISE OPEN FIRST
+        return mappedProviders.length > 0
+          ? {
+            [mappedProviders[0].id]: true,
+          }
+          : {};
+      });
 
       // Update provider health from API response
       const healthUpdates: Record<string, {
@@ -1418,16 +1472,46 @@ export default function ProjectView() {
       p.fields.mode?.toLowerCase() ===
       modeFilter.toLowerCase()
   );
-  const handleDragStart = (e: React.DragEvent, index: number) => {
+  const handleDragStart = (
+    e: React.DragEvent,
+    index: number
+  ) => {
+
+    if (isBankingService) {
+      return;
+    }
+
     const provider = filteredProviders[index];
-    setDragIndex(providers.findIndex(p => p.id === provider.id));
+
+    setDragIndex(
+      providers.findIndex(
+        p => p.id === provider.id
+      )
+    );
+
     e.dataTransfer.effectAllowed = 'move';
   };
-  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; };
+  const handleDragOver = (
+    e: React.DragEvent
+  ) => {
+
+    if (isBankingService) {
+      return;
+    }
+
+    e.preventDefault();
+
+    e.dataTransfer.dropEffect = 'move';
+  };
+
   const handleDrop = async (
     e: React.DragEvent,
     dropIndex: number
   ) => {
+
+    if (isBankingService) {
+      return;
+    }
 
     e.preventDefault();
 
@@ -1744,7 +1828,10 @@ export default function ProjectView() {
 
     const counts: Record<string, number> = {};
 
-    for (const service of serviceData) {
+    for (const service of [
+      ...messagingServices,
+      ...bankingServices,
+    ]) {
       try {
         const res = await getProvidersByEnvironmentId(envPublicId, service.public_id);
         const data = res.data || {};
@@ -1769,6 +1856,60 @@ export default function ProjectView() {
     ) {
       return;
     }
+
+    // AUTO SELECT FIRST SERVICE
+    // THAT HAS PROVIDERS
+
+    const autoSelectService = async () => {
+
+      for (const service of serviceData) {
+
+        try {
+
+          const res =
+            await getProvidersByEnvironmentId(
+              selectedEnv,
+              service.public_id
+            );
+
+          const data = res.data || {};
+
+          const total =
+            (data.sandbox?.length || 0) +
+            (data.live?.length || 0);
+
+          // FIRST SERVICE HAVING PROVIDERS
+          if (total > 0) {
+
+            // AVOID EXTRA RE-RENDER
+            if (activeService !== service.name) {
+              setActiveService(service.name);
+            }
+
+            return;
+          }
+
+        } catch (error) {
+
+          console.error(error);
+
+        }
+      }
+
+      // FALLBACK
+      if (
+        serviceData[0] &&
+        activeService !== serviceData[0].name
+      ) {
+
+        setActiveService(
+          serviceData[0].name
+        );
+
+      }
+    };
+
+    autoSelectService();
 
     const env = environments.find(
       (e: any) => e.public_id === selectedEnv
@@ -1797,8 +1938,47 @@ export default function ProjectView() {
 
   }, [
     selectedEnv,
-    activeService,
     activeMainTab,
+  ]);
+
+  useEffect(() => {
+
+    const env = environments.find(
+      (e: any) => e.public_id === selectedEnv
+    );
+
+    if (
+      !env ||
+      env.is_deleted ||
+      !activeService
+    ) {
+      return;
+    }
+
+    const loadData = async () => {
+
+      try {
+
+        await Promise.all([
+          loadProvidersForEnv(env),
+          loadAllServiceCounts(env.public_id),
+        ]);
+
+      } catch (error) {
+
+        console.error(
+          "Failed loading provider data",
+          error
+        );
+
+      }
+    };
+
+    loadData();
+
+  }, [
+    selectedEnv,
+    activeService,
   ]);
 
   const getEnvIcon = (name: string): React.ReactNode => {
@@ -1911,6 +2091,153 @@ export default function ProjectView() {
     return days;
   };
 
+
+  const renderServiceItem = (service: any) => (
+    <div
+      key={service.public_id}
+      className={`${styles["pc-sidebar-item"]} ${activeService === service.name
+        ? styles["active"]
+        : ""
+        }`}
+      onClick={() => {
+        setActiveService(service.name);
+        setmodeFilter("Sandbox");
+        setProviders([]);
+        setServiceEndpoint("");
+
+        const env = environments.find(
+          (e: any) =>
+            e.public_id === selectedEnv
+        );
+
+        if (
+          env?.public_id &&
+          service?.public_id
+        ) {
+          loadAllServiceCounts(
+            env.public_id
+          );
+
+          setProvidersLoading(true);
+
+          getProvidersByEnvironmentId(
+            env.public_id,
+            service.public_id
+          )
+            .then((res) => {
+              const data =
+                res.data || {};
+
+              const allProviders = [
+                ...(data.sandbox || []),
+                ...(data.live || []),
+              ];
+
+              const providerList =
+                allProviders.map(
+                  (p: any) => ({
+                    id:
+                      p.public_id ||
+                      p.id,
+
+                    name:
+                      p.provider_name ||
+                      p.name,
+
+                    fields: {
+                      ...(p.credentials ||
+                        {}),
+                      mode: p.mode,
+                      endpoint:
+                        p.endpoint,
+                    },
+                  })
+                );
+
+              setProviders(
+                providerList
+              );
+
+              setServiceProviderCounts(
+                (prev) => ({
+                  ...prev,
+                  [service.name]:
+                    providerList.length,
+                })
+              );
+            })
+            .catch(() => {
+              setProviders([]);
+
+              setServiceProviderCounts(
+                (prev) => ({
+                  ...prev,
+                  [service.name]: 0,
+                })
+              );
+            })
+            .finally(() => {
+              setProvidersLoading(
+                false
+              );
+            });
+        }
+      }}
+      style={{
+        borderLeftColor:
+          activeService ===
+            service.name
+            ? SERVICE_COLORS[
+            service.name
+            ]
+            : "",
+
+        backgroundColor:
+          activeService ===
+            service.name
+            ? `${SERVICE_COLORS[
+            service.name
+            ]}10`
+            : "",
+      }}
+    >
+      <span
+        className={
+          styles["pc-sidebar-icon"]
+        }
+      >
+        {SERVICE_ICONS[service.name]}
+      </span>
+
+      <div
+        className={
+          styles["pc-sidebar-info"]
+        }
+      >
+        <div
+          className={
+            styles["pc-sidebar-name"]
+          }
+        >
+          {service.name}
+        </div>
+
+        <div
+          className={
+            styles["pc-sidebar-count"]
+          }
+        >
+          {activeService ===
+            service.name
+            ? providers.length
+            : serviceProviderCounts[
+            service.name
+            ] || 0}
+          {" "}providers
+        </div>
+      </div>
+    </div>
+  );
 
 
   return (
@@ -2469,94 +2796,88 @@ export default function ProjectView() {
                           }}
                         >
                           {!serviceData ? (
-                            <SkeletonLoader variant="list" count={3} />
-                          ) : serviceData && serviceData.map((service: any) => (
-                            <div
-                              key={service.public_id}
-                              className={`${styles["pc-sidebar-item"]} ${activeService === service.name ? styles["active"] : ''}`}
-                              onClick={() => {
-                                setActiveService(service.name);
-                                setmodeFilter("Sandbox");
-                                setProviders([]);
-                                setServiceEndpoint("");
-
-                                const env = environments.find((e: any) => e.public_id === selectedEnv);
-                                console.log("Clicked service:", service.name, "Env:", env?.environment_name);
-
-                                if (env?.public_id && service?.public_id) {
-                                  // First, update counts for ALL services
-                                  loadAllServiceCounts(env.public_id);
-
-                                  // Then load providers for the clicked service
-                                  console.log("Fetching providers for service:", service.public_id, "env:", env.public_id);
-
-                                  setProvidersLoading(true);
-                                  getProvidersByEnvironmentId(env.public_id, service.public_id)
-                                    .then(res => {
-                                      console.log("Providers response:", res.data);
-                                      const data = res.data || {};
-                                      const allProviders = [...(data.sandbox || []), ...(data.live || [])];
-                                      const providerList = allProviders.map((p: any) => ({
-                                        id: p.public_id || p.id,
-                                        name: p.provider_name || p.name,
-                                        fields: { ...(p.credentials || {}), mode: p.mode, endpoint: p.endpoint },
-                                      }));
-                                      console.log("Setting providers:", providerList.length);
-                                      setProviders(providerList);
-                                      setServiceProviderCounts(prev => ({
-                                        ...prev,
-                                        [service.name]: providerList.length
-                                      }));
-                                    })
-                                    .catch((error) => {
-                                      console.error("Failed to load providers:", error);
-                                      setProviders([]);
-                                      setServiceProviderCounts(prev => ({ ...prev, [service.name]: 0 }));
-                                    })
-                                    .finally(() => {
-                                      setProvidersLoading(false);
-                                    });
+                            <SkeletonLoader
+                              variant="list"
+                              count={3}
+                            />
+                          ) : (
+                            <>
+                              <div
+                                className={
+                                  styles["serviceGroupHeader"]
                                 }
-                              }}
-                              style={{
-                                borderLeftColor: activeService === service.name ? SERVICE_COLORS[service.name] : '',
-                                backgroundColor: activeService === service.name ? `${SERVICE_COLORS[service.name]}10` : ''
-                              }}
-                            >
-                              <span className={styles["pc-sidebar-icon"]}>{SERVICE_ICONS[service.name]}</span>
-                              <div className={styles["pc-sidebar-info"]}>
-                                <div className={styles["pc-sidebar-name"]}>{service.name}</div>
-                                <div className={styles["pc-sidebar-count"]}>
-                                  {activeService === service.name ? providers.length : (() => {
-                                    // Need to track counts per service separately
-                                    return serviceProviderCounts[service.name] || 0;
-                                  })()} providers
-                                </div>
+                              >
+                                Messaging
                               </div>
-                              {activeService === service.name && (
-                                <div className={styles["pc-sidebar-active-indicator"]} style={{ background: SERVICE_COLORS[service.name] }} />
+
+                              {messagingServices.map(
+                                renderServiceItem
                               )}
-                            </div>
-                          ))}
+
+                              <div
+                                className={
+                                  styles["serviceGroupHeader"]
+                                }
+                              >
+                                Banking
+                              </div>
+
+                              {bankingServices.map(
+                                renderServiceItem
+                              )}
+                            </>
+                          )}
                         </div>
                       </div>
                       <div className={styles["pc-sidebar-wrapper"]} style={{ flex: 1, padding: '16px 16px 16px 0' }}>
                         <h4 className={`${styles["pc-column-label"]} ${styles["pc-column-label-providers"]}`}>Providers</h4>
                         <div className={styles["pc-providers-panel"]} style={{ borderTop: `3px solid ${SERVICE_COLORS[activeService]}` }}>
                           <div className={styles["pc-panel-header"]}>
-                            <div className={styles["pc-panel-title"]}>{SERVICE_ICONS[activeService]}<h3>{activeService} Providers</h3></div>
-                            <button
-                              className={styles["pc-add-btn"]}
-                              style={{ backgroundColor: SERVICE_COLORS[activeService] }}
-                              onClick={async () => {
-                                setEditingProvider(null);
-                                setSelectedProvider("");
-                                setProviderFields({});
-                                setShowAddProviderModal(true);
-                              }}
-                            >
-                              <Plus size={14} /> Add Provider
-                            </button>
+
+                            <div className={styles["pc-panel-title"]}>
+                              {SERVICE_ICONS[activeService]}
+                              <h3>{activeService} Providers</h3>
+                            </div>
+
+                            <div className={styles["pc-panel-actions"]}>
+
+                              <button
+                                className={styles["pc-credential-visibility-btn"]}
+                                onClick={() => {
+                                  setCredentialsMasked(prev => !prev);
+                                }}
+                                title={
+                                  credentialsMasked
+                                    ? "Show credentials"
+                                    : "Hide credentials"
+                                }
+                              >
+                                {credentialsMasked ? (
+                                  <LockKeyhole size={16} />
+                                ) : (
+                                  <LockKeyholeOpen size={16} />
+                                )}
+                              </button>
+
+                              <button
+                                className={styles["pc-add-btn"]}
+                                style={{
+                                  backgroundColor:
+                                    SERVICE_COLORS[activeService]
+                                }}
+                                onClick={async () => {
+                                  setEditingProvider(null);
+                                  setSelectedProvider("");
+                                  setProviderFields({});
+                                  setShowAddProviderModal(true);
+                                }}
+                              >
+                                <Plus size={14} />
+                                Add Provider
+                              </button>
+
+                            </div>
+
                           </div>
                           <div className={styles["pc-mode-tabs"]}>
                             <button className={`${styles["pc-mode-tab"]} ${modeFilter === 'Sandbox' ? `${styles["active"]} ${styles["sandbox"]}` : ''}`} onClick={() => setmodeFilter('Sandbox')}>
@@ -2577,19 +2898,41 @@ export default function ProjectView() {
                                 </span>
 
                                 <button
-                                  className={styles["pc-endpoint-copy-mini"]}
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(
-                                      serviceEndpoint
-                                    );
+                                  type="button"
+                                  className={styles["endpoint-copy-btn"]}
+                                  onClick={async () => {
 
-                                    showToast(
-                                      "Endpoint copied",
-                                      "success"
-                                    );
+                                    try {
+
+                                      await navigator.clipboard.writeText(
+                                        serviceEndpoint
+                                      );
+
+                                      setCopiedEndpoint(serviceEndpoint);
+
+                                      setTimeout(() => {
+
+                                        setCopiedEndpoint(null);
+
+                                      }, 1500);
+
+                                    } catch (error) {
+
+                                      console.error(
+                                        "Failed to copy endpoint",
+                                        error
+                                      );
+
+                                    }
                                   }}
                                 >
-                                  <Copy size={12} />
+                                  {
+                                    copiedEndpoint === serviceEndpoint ? (
+                                      <Check size={16} />
+                                    ) : (
+                                      <Copy size={16} />
+                                    )
+                                  }
                                 </button>
                               </div>
                             )}
@@ -2633,10 +2976,23 @@ export default function ProjectView() {
                                   >
                                     <div
                                       className={styles["pc-provider-card-header"]}
-                                      onClick={() => setExpandedProviders(prev => ({
-                                        ...prev,
-                                        [provider.id]: !prev[provider.id]
-                                      }))}
+                                      onClick={() => {
+
+                                        setExpandedProviders(prev => {
+
+                                          // CLOSE IF SAME PROVIDER CLICKED
+                                          if (prev[provider.id]) {
+                                            return {};
+                                          }
+
+                                          // OPEN ONLY CURRENT PROVIDER
+                                          return {
+                                            [provider.id]: true,
+                                          };
+
+                                        });
+
+                                      }}
                                     >
                                       <div className={styles["pc-provider-title"]}>
                                         <Plug size={14} />
@@ -2732,6 +3088,8 @@ export default function ProjectView() {
                                           </span>
                                         </button>
 
+
+
                                         <div className={styles["pc-provider-actions"]} onClick={(e) => e.stopPropagation()}>
                                           <button
                                             className={styles["pc-edit-btn"]}
@@ -2754,9 +3112,30 @@ export default function ProjectView() {
                                           >
                                             <Trash2 size={14} />
                                           </button>
+                                          <button
+                                            className={`${styles["pc-accordion-toggle"]} ${expandedProviders[provider.id]
+                                              ? styles["expanded"]
+                                              : ""
+                                              }`}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+
+                                              setExpandedProviders(prev => ({
+                                                ...prev,
+                                                [provider.id]: !prev[provider.id]
+                                              }));
+                                            }}
+                                          >
+                                            <ChevronDown size={16} />
+                                          </button>
                                         </div>
                                       </div>
+
+
+
                                     </div>
+
+
 
                                     {/* Error Tooltip */}
                                     {showErrorTooltip === provider.id && hasError && (
