@@ -375,7 +375,7 @@ body,
   background: var(--surface-card);
   display: flex;
   align-items: center;
-  margin-top: 2px;
+  margin-top: 5px;
   gap: 0.45rem;
   cursor: pointer;
   white-space: nowrap;
@@ -443,6 +443,11 @@ body,
   align-items: center;
   justify-content: center;
   position: relative;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
 }
 
 /* =========================================================
@@ -775,45 +780,107 @@ body,
   animation: fadeInUp 0.3s ease-out;
 }
 
+/* Container */
 .credentialFields {
-  padding: 1.125rem;
+ padding: 1.25rem;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr)); /* FIXED: minmax(0, 1fr) */
   gap: 1rem;
   background: var(--surface-card);
+  border-radius: 1rem;
 }
 
+@media (max-width: 640px) {
+  .credentialFields {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Row */
 .credentialRow {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-}
-
-.credLabel {
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.credValue {
-  padding: 0.6rem 0.875rem;
-  border-radius: var(--radius-md);
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  font-size: 0.8rem;
-  word-break: break-word;
-  color: var(--text-primary);
-  transition: border-color var(--t-fast);
-  display: flex;
-  align-items: center;
   gap: 0.5rem;
 }
 
-.credValue:hover {
+/* Label */
+.credLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: capitalize;
+  color: var(--text-muted);
+}
+
+/* Value block (icon + divider + code) */
+.credValueBlock {
+ display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.875rem;
+  transition: border-color 0.15s ease;
+  min-width: 0;                /* FIXED: allows flex child to shrink below content */
+  overflow: hidden; 
+}
+
+.credValueBlock:hover {
   border-color: var(--border-strong);
+}
+
+/* Icon container */
+.iconContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  background: var(--surface-3);
+  border-radius: var(--radius-sm);
+  color: var(--primary);
+}
+
+.iconContainer svg {
+  stroke-width: 1.5;
+}
+
+/* Vertical divider */
+.verticalDivider {
+  width: 1.5px;
+  background: var(--border);
+  align-self: stretch;
+  margin: 4px 0;
+  flex-shrink: 0;
+}
+
+/* Code value */
+.credValue {
+  flex: 1;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 0.79rem;
+  font-weight: 500;
+  letter-spacing: 0.8px;
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  padding: 3px;
+  overflow-x: auto;            
+  white-space: nowrap;        
+}
+
+.credValue::-webkit-scrollbar {
+  height: 4px;
+}
+.credValue::-webkit-scrollbar-track {
+  background: var(--surface-3);
+  border-radius: 4px;
+}
+.credValue::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
 }
 
 /* =========================================================

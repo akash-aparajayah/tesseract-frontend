@@ -8,7 +8,7 @@ import {
   Save, X, ChevronDown, Server, Copy, Trash2, Globe, Rocket, Wrench,
   Search, AlertTriangle, Home, Monitor, Key,
   User, UserMinus, UserPlus, AlertCircle, Calendar, Clock, RefreshCw, Filter, Settings,
-  GaugeIcon, LandmarkIcon, Plug2, Layers, FlaskConical, LockKeyhole, LockKeyholeOpen
+  GaugeIcon, LandmarkIcon, Plug2, Layers, FlaskConical, LockKeyhole, LockKeyholeOpen, CreditCard,ShieldCheck,ArrowLeftRight,Send,
 } from 'lucide-react';
 import { useToast } from "../hooks/useToast";
 import "../styles/Toast.css"
@@ -55,12 +55,16 @@ interface ApiToken {
 }
 
 const SERVICE_COLORS: Record<string, string> = {
-  SMS: "#10b981",
-  Email: "#6366f1",
-  Whatsapp: "#25D366",
+  SMS: "#10b981",              // Emerald
+  Email: "#6366f1",            // Indigo
+  Whatsapp: "#25D366",         // WhatsApp Green
   WhatsApp: "#25D366",
-  "Credit Score": "#f59e0b",
-  IBV: "#8b5cf6",
+
+  "Credit Score": "#f59e0b",   // Amber
+  IBV: "#8b5cf6",              // Violet
+
+  "Payment Gateway": "#3b82f6", // Blue
+  ACH: "#06b6d4",              // Cyan
 };
 
 const SERVICE_ICONS: Record<string, React.ReactNode> = {
@@ -69,7 +73,9 @@ const SERVICE_ICONS: Record<string, React.ReactNode> = {
   Whatsapp: <MessageCircle size={18} />,
   WhatsApp: <MessageCircle size={18} />,
   "Credit Score": <GaugeIcon size={18} />,
-  IBV: <LandmarkIcon size={18} />,
+  IBV: <ShieldCheck size={18} />,
+  "Payment Gateway": <CreditCard size={18} />,
+  ACH: <ArrowLeftRight size={18} />,
 };
 
 
@@ -2807,6 +2813,7 @@ export default function ProjectView() {
                                   styles["serviceGroupHeader"]
                                 }
                               >
+                              <div> <Send size={15}/> </div>
                                 Messaging
                               </div>
 
@@ -2819,8 +2826,9 @@ export default function ProjectView() {
                                   styles["serviceGroupHeader"]
                                 }
                               >
-                                Banking
-                              </div>
+                             <div> <LandmarkIcon  size={15}/> </div>
+                               Banking
+                              </div> 
 
                               {bankingServices.map(
                                 renderServiceItem

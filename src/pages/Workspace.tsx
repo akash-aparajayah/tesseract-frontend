@@ -23,9 +23,14 @@ import {
   MessageSquare,
   ArrowRightFromLine,
   GaugeIcon,
-  LandmarkIcon,
   Star,
-  VenetianMask,
+  FileLock,
+  LockKeyhole,
+  UnlockKeyhole,
+  ShieldCheck,
+  LandmarkIcon,
+  CreditCard,
+
 } from "lucide-react";
 import styles from "../styles/Workspace.module.css";
 import workspaceIllustration from "../assets/illustration/Empty (1).gif";
@@ -124,15 +129,19 @@ const formatExpiry = (expiresAt: string | null) => {
 const getServiceIcon = (serviceType?: string, size: number = 20) => {
   switch (serviceType?.toLowerCase()) {
     case "sms":
-      return <MessageCircle size={size} />;
+      return <MessageSquare size={size} />;
     case "email":
       return <Mail size={size} />;
     case "whatsapp":
-      return <MessageSquare size={size} />;
+      return <MessageCircle size={size} />;
     case "credit score":
       return <GaugeIcon size={size} />;
     case "ibv":
+      return <ShieldCheck size={size} />;
+    case "ach":
       return <LandmarkIcon size={size} />;
+    case "payment gateway":
+      return <CreditCard size={size} />;
     default:
       return <Server size={size} />;
   }
@@ -171,18 +180,6 @@ const CredentialAccordion = ({
   // Determine if we have both provider and description to show the arrow
   const showArrow = provider && description;
 
-
-  // Helper: mask middle characters
-const maskCredential = (value : any, showFirst = 3, showLast = 3, maskChar = 'â€¢') => {
-  const str = String(value);
-  if (str.length <= showFirst + showLast) return str;
-  const first = str.slice(0, showFirst);
-  const last = str.slice(-showLast);
-  const maskedLength = Math.min(6, str.length - showFirst - showLast);
-  const middle = maskChar.repeat(maskedLength);
-  return `${first}${middle}${last}`;
-};
-
   return (
     <div className={styles.credentialAccordion}>
       <button className={styles.credentialAccordionHeader} onClick={onToggle}>
@@ -219,10 +216,18 @@ const maskCredential = (value : any, showFirst = 3, showLast = 3, maskChar = 'â€
                 <span className={styles.credLabel}>
                   {key.replace(/_/g, " ").toUpperCase()}
                 </span>
-                <code className={styles.credValue}>
-                  <VenetianMask size={16} />
-                  {maskCredential(value)}
-                </code>
+                <div className={styles.credValueBlock}>
+                  {/* Icon container */}
+                  <div className={styles.iconContainer}>
+                    <FileLock size={18}/>
+                  </div>
+                  {/* Vertical divider line */}
+                  <div className={styles.verticalDivider} />
+                  {/* Masked value */}
+                  <code className={styles.credValue}>
+                    {String(value) || "-"}
+                  </code>
+                </div>
               </div>
             ))}
           </div>
@@ -713,6 +718,7 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
                 </div>
 
                 <div className={styles.envRightGroup}>
+
                   <div
                     className={`${styles.cableIcon} ${
                       rotateIcon ? styles.rotateIcon : ""
@@ -723,6 +729,7 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
                     <Link size={16} />
                   </div>
                 </div>
+
               </div>
 
               {showEndpointInline && selectedService.serviceEndpoint && (
