@@ -23,12 +23,12 @@ export const getProjects = async () => {
 export const getAllProjectsAndEnvironments = async () => {
   const response = await api.get(`/project/get-all-projects-and-environments`);
   return response?.data;
-}
+};
 
 export const assignUserToProjectEnv = async (data: any) => {
   const response = await api.post(`/project/assign-environment-to-user`, data);
   return response?.data;
-}
+};
 
 /* -------- GET SINGLE PROJECT -------- */
 export const getProjectById = async (projectId: string) => {
@@ -38,15 +38,24 @@ export const getProjectById = async (projectId: string) => {
 
 /* -------- UPDATE PROJECT -------- */
 export const updateProject = async (projectId: string, data: any) => {
-  const response = await api.patch(`/project/update-project/${projectId}`, data);
+  const response = await api.patch(
+    `/project/update-project/${projectId}`,
+    data,
+  );
   return response.data;
 };
 
 /* -------- UPDATE PROJECT STATUS -------- */
-export const updateProjectStatus = async (projectId: string, isActive: boolean) => {
-  const response = await api.patch(`/project/update-project-status/${projectId}`, {
-    isActive: isActive,
-  });
+export const updateProjectStatus = async (
+  projectId: string,
+  isActive: boolean,
+) => {
+  const response = await api.patch(
+    `/project/update-project-status/${projectId}`,
+    {
+      isActive: isActive,
+    },
+  );
   return response.data;
 };
 
@@ -61,8 +70,14 @@ export const deleteProject = async (projectId: string) => {
 ======================================================== */
 
 /* -------- CREATE ENVIRONMENT -------- */
-export const createEnvironment = async (projectId: string, data: { environment_name: string; public_id?: string }) => {
-  const response = await api.post(`/project/create-environment/${projectId}`, data);
+export const createEnvironment = async (
+  projectId: string,
+  data: { environment_name: string; public_id?: string },
+) => {
+  const response = await api.post(
+    `/project/create-environment/${projectId}`,
+    data,
+  );
   return response.data;
 };
 
@@ -77,13 +92,9 @@ export const updateEnvironment = async (
   data: {
     environment_name?: string;
     is_active?: boolean;
-  }
+  },
 ) => {
-
-  const res = await api.patch(
-    `/project/update-environment/${id}`,
-    data
-  );
+  const res = await api.patch(`/project/update-environment/${id}`, data);
 
   return res.data;
 };
@@ -92,23 +103,15 @@ export const cloneEnvironment = async (
   id: string,
   payload: {
     environment_name: string;
-  }
+  },
 ) => {
-  const res = await api.post(
-    `/project/clone-environment/${id}`,
-    payload
-  );
+  const res = await api.post(`/project/clone-environment/${id}`, payload);
 
   return res.data;
 };
 
-export const deleteEnvironment = async (
-  id: string
-) => {
-
-  const res = await api.delete(
-    `/project/delete-environment/${id}`
-  );
+export const deleteEnvironment = async (id: string) => {
+  const res = await api.delete(`/project/delete-environment/${id}`);
 
   return res.data;
 };
@@ -129,7 +132,9 @@ export const getAllServices = async () => {
 
 /* -------- GET PROVIDERS BY SERVICE -------- */
 export const getProvidersByServiceId = async (serviceId: string) => {
-  const response = await api.get(`/services/get-providers-by-service-id/${serviceId}`);
+  const response = await api.get(
+    `/services/get-providers-by-service-id/${serviceId}`,
+  );
   return response.data;
 };
 
@@ -155,18 +160,22 @@ export const createProvider = async (data: {
 };
 
 /* -------- GET PROVIDERS BY ENVIRONMENT -------- */
-export const getProvidersByEnvironmentId = async (environmentId: string, serviceTypeId: string) => {
-  const response = await api.get(`/services/get-all-providers-by-environment/${environmentId}?services_type_id=${serviceTypeId}`);
+export const getProvidersByEnvironmentId = async (
+  environmentId: string,
+  serviceTypeId: string,
+) => {
+  const response = await api.get(
+    `/services/get-all-providers-by-environment/${environmentId}?services_type_id=${serviceTypeId}`,
+  );
   return response.data;
 };
 
-
-
 /* -------- UPDATE PROVIDER -------- */
 export const updateProvider = async (providerId: string, data: any) => {
-  const response = await api.patch(`/services/update-provider/${providerId}`,
-    { ...data, id: providerId },
-  );
+  const response = await api.patch(`/services/update-provider/${providerId}`, {
+    ...data,
+    id: providerId,
+  });
   return response.data;
 };
 
@@ -177,10 +186,13 @@ export const deleteProvider = async (providerId: string) => {
 };
 
 /* -------- GET ASSIGNED UNASSIGNED EMPLOYEES -------- */
-export const getAssignedUnassignedEmployees = async (projectId: string, environmentId: string) => {
+export const getAssignedUnassignedEmployees = async (
+  projectId: string,
+  environmentId: string,
+) => {
   const response = await api.get(
     `/project/get-assigned-unassigned-employees/${projectId}/${environmentId}`,
-    { data: { project_id: projectId, environment_id: environmentId } }
+    { data: { project_id: projectId, environment_id: environmentId } },
   );
   return response.data;
 };
@@ -217,23 +229,23 @@ export const reorderProviders = async (
   providers: {
     public_id: string;
     sort_order: number;
-  }[]
+  }[],
 ) => {
-
-  const res = await api.patch(
-    "/project/reorder-providers",
-    {
-      providers,
-    }
-  );
+  const res = await api.patch("/project/reorder-providers", {
+    providers,
+  });
 
   return res.data;
 };
 
-
 // Get provider health status
-export const getProviderHealth = async (environmentId: string, providerId: string) => {
-  const response = await api.get(`/environments/${environmentId}/providers/${providerId}/health`);
+export const getProviderHealth = async (
+  environmentId: string,
+  providerId: string,
+) => {
+  const response = await api.get(
+    `/environments/${environmentId}/providers/${providerId}/health`,
+  );
   return response.data;
 };
 
@@ -241,11 +253,11 @@ export const getProviderHealth = async (environmentId: string, providerId: strin
 export const toggleProviderHealth = async (
   environmentId: string,
   providerId: string,
-  isActive: boolean
+  isActive: boolean,
 ) => {
   const response = await api.patch(
     `/environments/${environmentId}/providers/${providerId}/health`,
-    { is_active: isActive }
+    { is_active: isActive },
   );
   return response.data;
 };
@@ -253,10 +265,12 @@ export const toggleProviderHealth = async (
 // Connect to provider health WebSocket
 export const connectProviderHealthSocket = (
   environmentId: string,
-  onMessage: (data: any) => void
+  onMessage: (data: any) => void,
 ) => {
-  const wsUrl = 'ws://localhost:8000'; // or your production URL
-  const ws = new WebSocket(`${wsUrl}/ws/environments/${environmentId}/providers/health`);
+  const wsUrl = "ws://localhost:8000"; // or your production URL
+  const ws = new WebSocket(
+    `${wsUrl}/ws/environments/${environmentId}/providers/health`,
+  );
   ws.onmessage = (event) => {
     const data = JSON.parse(event.data);
     onMessage(data);
@@ -279,5 +293,13 @@ export const unlockService = async (
     data
   );
 
+  return response.data;
+};
+
+export const revealProviderCredentials = async (providerId: string, passkey: string) => {
+  console.log("providerId", providerId, "passkey", passkey);
+  const response = await api.get(
+    `/services/reveal-provider-credentials/${providerId}`,
+  );
   return response.data;
 };

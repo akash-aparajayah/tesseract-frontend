@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import {
   FaUserAlt,
-  FaSearch,
   FaBell,
   FaKey,
   FaTimes,

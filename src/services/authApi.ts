@@ -1,10 +1,7 @@
 import api from "./api";
 
 // LOGIN
-export const loginUser = (data: {
-  email: string;
-  password: string;
-}) => {
+export const loginUser = (data: { email: string; password: string }) => {
   return api.post("/auth/login", data);
 };
 
@@ -19,10 +16,7 @@ export const forgotPasswordApi = (data: { email: string }) => {
 };
 
 // RESET PASSWORD
-export const resetPasswordApi = (data: {
-  token: string;
-  password: string;
-}) => {
+export const resetPasswordApi = (data: { token: string; password: string }) => {
   return api.post("/auth/resetPassword", data);
 };
 
@@ -61,4 +55,8 @@ export const completeSetupApi = (
     "/auth/setup-account",
     data
   );
+};
+
+export const verifyUser = (data: { passKey: string }) => {
+  return api.post("/auth/verify-sensitive-user-access", data);
 };

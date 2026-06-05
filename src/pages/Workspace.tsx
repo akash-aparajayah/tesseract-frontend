@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback, memo } from "react";
 import { useParams } from "react-router-dom";
 import {
   ChevronDown,
@@ -8,7 +8,6 @@ import {
   Layers,
   Search,
   Wrench,
-  ChevronUp,
   RotateCcwKeyIcon,
   Server,
   Copy,
@@ -19,7 +18,6 @@ import {
   Check,
   CircleCheckBigIcon,
   Mail,
-  MessageSquare,
   ArrowRightFromLine,
   GaugeIcon,
   Star,
@@ -31,12 +29,18 @@ import {
   LockKeyholeIcon,
   LockKeyholeOpen,
   CreditCard,
+  ChevronUp,
 } from "lucide-react";
 import styles from "../styles/Workspace.module.css";
 import workspaceIllustration from "../assets/illustration/Empty (1).gif";
 import sidebarIllustration from "../assets/illustration/error.svg";
 import { Skeleton } from "@/components/common/SkeletonLoader";
-import { userAssignProjectEnv } from "@/services/projectApi";
+import {
+  userAssignProjectEnv,
+  revealProviderCredentials,
+} from "@/services/projectApi";
+import { useToast } from "../hooks/useToast";
+import { verifyUser } from "@/services/authApi";
 
 // ---------- Types ----------
 interface Credentials {
@@ -46,6 +50,7 @@ interface Credentials {
   provider_name?: string;
   service_type?: string;
   service_description?: string;
+  credential_id?: string;
 }
 
 interface Service {
@@ -115,6 +120,13 @@ interface ApiService {
   live: Credentials[];
 }
 
+interface UnlockEntry {
+  plainCredential: Credentials;
+  unlockedAt: number;
+}
+
+const UNLOCK_DURATION_SECONDS = 60;
+
 // ---------- Helper ----------
 const formatExpiry = (expiresAt: string | null) => {
   if (!expiresAt) return null;
@@ -125,8 +137,13 @@ const formatExpiry = (expiresAt: string | null) => {
   return `${daysLeft} day${daysLeft !== 1 ? "s" : ""}`;
 };
 
-const getServiceIcon = (serviceType?: string, size: number = 20) => {
-  switch (serviceType?.toLowerCase()) {
+const getServiceIcon = (
+  serviceType?: string,
+  fallbackName?: string,
+  size: number = 20,
+) => {
+  const type = (serviceType || fallbackName || "").toLowerCase();
+  switch (type) {
     case "sms":
       return <MessageSquareMore size={size} />;
     case "email":
@@ -146,20 +163,80 @@ const getServiceIcon = (serviceType?: string, size: number = 20) => {
   }
 };
 
+// ---------- Countdown Timer Hook ----------
+const useCountdown = (
+  unlockedAt: number | null,
+  durationSec: number,
+  onExpire: () => void,
+): number => {
+  const [remaining, setRemaining] = useState<number>(0);
+  const onExpireRef = useRef(onExpire);
+  onExpireRef.current = onExpire;
+
+  useEffect(() => {
+    if (unlockedAt === null) {
+      setRemaining(0);
+      return;
+    }
+
+    const tick = () => {
+      const elapsed = Math.floor((Date.now() - unlockedAt) / 1000);
+      const left = durationSec - elapsed;
+      if (left <= 0) {
+        setRemaining(0);
+        onExpireRef.current();
+      } else {
+        setRemaining(left);
+      }
+    };
+
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [unlockedAt, durationSec]);
+
+  return remaining;
+};
+
 // ---------- Lock Popup ----------
 interface LockPopupProps {
   onClose: () => void;
+  onVerify: (passkey: string) => Promise<void>;
 }
 
-const LockPopup = ({ onClose }: LockPopupProps) => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+const LockPopup = ({ onClose, onVerify }: LockPopupProps) => {
+  const [passkey, setPasskey] = useState("");
+  const [showPasskey, setShowPasskey] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = () => {
-    // handle your auth logic here
-    console.log({ email, password });
-    onClose();
+  const handlePasskeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, ""); // remove non-digits
+    if (value.length <= 6) {
+      setPasskey(value);
+      setError(""); // clear error when user types
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (passkey.length !== 6) {
+      setError("Please enter a valid 6-digit passkey");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      await onVerify(passkey);
+      onClose();
+    } catch (err: any) {
+      setError(err.message || "Verification failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") handleSubmit();
   };
 
   return (
@@ -167,35 +244,32 @@ const LockPopup = ({ onClose }: LockPopupProps) => {
       <div className={styles.popupCard} onClick={(e) => e.stopPropagation()}>
         <div className={styles.popupHeader}>
           <LockKeyholeIcon size={18} />
-          <span>Authenticate to Unlock</span>
+          <span>Enter Your 6‑Digit Passkey</span>
           <button className={styles.popupClose} onClick={onClose}>
             ✕
           </button>
         </div>
         <div className={styles.popupBody}>
+          {error && <div className={styles.popupError}>{error}</div>}
           <div className={styles.popupField}>
-            <label>Email</label>
-            <input
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-          <div className={styles.popupField}>
-            <label>Password</label>
+            <label>6‑Digit Passkey</label>
             <div className={styles.passwordWrapper}>
               <input
-                type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                type={showPasskey ? "text" : "password"}
+                placeholder="••••••"
+                value={passkey}
+                onChange={handlePasskeyChange}
+                onKeyDown={handleKeyDown}
+                maxLength={6}
+                inputMode="numeric"
+                pattern="\d*"
+                autoFocus
               />
               <button
                 className={styles.eyeBtn}
-                onClick={() => setShowPassword((p) => !p)}
+                onClick={() => setShowPasskey((p) => !p)}
               >
-                {showPassword ? (
+                {showPasskey ? (
                   <LockKeyholeOpen size={15} />
                 ) : (
                   <LockKeyholeIcon size={15} />
@@ -203,8 +277,12 @@ const LockPopup = ({ onClose }: LockPopupProps) => {
               </button>
             </div>
           </div>
-          <button className={styles.popupSubmit} onClick={handleSubmit}>
-            Unlock Credential
+          <button
+            className={styles.popupSubmit}
+            onClick={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? "Verifying..." : "Unlock Credential"}
           </button>
         </div>
       </div>
@@ -218,115 +296,210 @@ interface CredentialAccordionProps {
   index: number;
   isOpen: boolean;
   onToggle: () => void;
-  onLockClick: () => void;
+  credentialId: string;
+  plainCredential: Credentials | null;
+  unlockedAt: number | null;
+  onUnlock: (credentialId: string) => void;
+  onExpire: (credentialId: string) => void;
+  serviceName?: string;
 }
 
-const CredentialAccordion = ({
-  credential,
-  index,
-  isOpen,
-  onToggle,
-  onLockClick,
-}: CredentialAccordionProps) => {
-  const displayFields = Object.entries(credential).filter(
-    ([key]) =>
-      !["mode", "service_type", "provider_name", "endpoint"].includes(key),
-  );
+const CredentialAccordion = memo(
+  ({
+    credential,
+    index,
+    isOpen,
+    onToggle,
+    credentialId,
+    plainCredential,
+    unlockedAt,
+    onUnlock,
+    onExpire,
+    serviceName,
+  }: CredentialAccordionProps) => {
+    const isUnlocked = plainCredential !== null && unlockedAt !== null;
+    const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  const provider = credential.provider_name || "";
-  const description = credential.service_description || "";
-  const icon = getServiceIcon(credential.service_type, 20);
-  const showArrow = provider && description;
+    const remaining = useCountdown(
+      unlockedAt,
+      UNLOCK_DURATION_SECONDS,
+      useCallback(() => onExpire(credentialId), [credentialId, onExpire]),
+    );
 
-  return (
-    <div className={styles.credentialAccordion}>
-      {/* Use div instead of button so we can nest buttons inside */}
-      <div className={styles.credentialAccordionHeader}>
+    const displayCred = isUnlocked ? plainCredential! : credential;
 
-        {/* Left click zone for toggling */}
-        <div className={styles.accordionClickZone} onClick={onToggle}>
-          <div className={styles.accordionHeaderLeft}>
-            {icon}
-            {provider && <span>{provider}</span>}
-            {showArrow && <ArrowRightFromLine size={14} />}
-            {!provider && !description && <span>Credential #{index + 1}</span>}
+    const displayFields = Object.entries(displayCred).filter(
+      ([key]) =>
+        ![
+          "mode",
+          "service_type",
+          "provider_name",
+          "endpoint",
+          "credential_id",
+          "service_description",
+        ].includes(key),
+    );
+
+    const provider = displayCred.provider_name || "";
+    const description = displayCred.service_description || "";
+    const icon = getServiceIcon(displayCred.service_type, serviceName, 20);
+    const showArrow = provider && description;
+
+    const handleUnlockClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onUnlock(credentialId);
+    };
+
+    const formatTimer = (secs: number) => {
+      const m = Math.floor(secs / 60);
+      const s = secs % 60;
+      return `${m}:${String(s).padStart(2, "0")}`;
+    };
+
+    const handleManualLock = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onExpire(credentialId);
+    };
+
+    const handleCopy = async (value: string, fieldKey: string) => {
+      await navigator.clipboard.writeText(value);
+      setCopiedField(fieldKey);
+      setTimeout(() => setCopiedField(null), 1500);
+    };
+
+    const timerColorClass =
+      remaining > 30
+        ? styles.timerGreen
+        : remaining > 10
+          ? styles.timerAmber
+          : styles.timerRed;
+
+    return (
+      <div className={styles.credentialAccordion}>
+        <div className={styles.credentialAccordionHeader}>
+          <div className={styles.accordionClickZone} onClick={onToggle}>
+            <div className={styles.accordionHeaderLeft}>
+              {icon}
+              {provider && <span>{provider}</span>}
+              {showArrow && <ArrowRightFromLine size={14} />}
+              {!provider && !description && (
+                <span>Credential #{index + 1}</span>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Right side: badges + lock button + chevron */}
-        <div className={styles.accordionHeaderRight}>
-          {index === 0 &&
-            credential.service_type &&
-            ["SMS", "Email", "WhatsApp"].includes(credential.service_type) && (
-              <div className={styles.primaryBadge}>
-                <Star size={14} className={styles.primaryIcon} />
-                <span>Primary</span>
+          <div className={styles.accordionHeaderRight}>
+            {index === 0 &&
+              displayCred.service_type &&
+              ["SMS", "Email", "WhatsApp"].includes(
+                displayCred.service_type,
+              ) && (
+                <div className={styles.primaryBadge}>
+                  <Star size={14} className={styles.primaryIcon} />
+                  <span>Primary</span>
+                </div>
+              )}
+
+            {provider && (
+              <div className={styles.configured}>
+                <CircleCheckBigIcon size={14} /> Configured
               </div>
             )}
-          {provider && (
-            <div className={styles.configured}>
-              <CircleCheckBigIcon size={14} /> Configured
+
+            <div className={styles.lockArea}>
+              {!isUnlocked ? (
+                <button
+                  className={styles.lockButton}
+                  onClick={handleUnlockClick}
+                  title="Unlock with passkey"
+                >
+                  <LockKeyholeIcon size={18} />
+                </button>
+              ) : (
+                <>
+                  <button
+                    className={styles.lockButton}
+                    onClick={handleManualLock}
+                    title="Lock immediately"
+                  >
+                    <LockKeyholeOpen size={18} />
+                  </button>
+                  {remaining > 0 && (
+                    <span className={`${styles.timerBadge} ${timerColorClass}`}>
+                      {formatTimer(remaining)}
+                    </span>
+                  )}
+                </>
+              )}
+            </div>
+
+            <button
+              type="button"
+              className={styles.accordionChevron}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggle();
+              }}
+            >
+              {isOpen ? <ChevronUp size={15} /> : <ChevronRight size={15} />}
+            </button>
+          </div>
+        </div>
+
+        <div
+          className={`${styles.credentialAccordionContent} ${isOpen ? styles.open : ""}`}
+        >
+          {isOpen && displayFields.length > 0 && (
+            <div className={styles.credentialFields}>
+              {displayFields.map(([key, value]) => (
+                <div key={key} className={styles.credentialRow}>
+                  <span className={styles.credLabel}>
+                    {key.replace(/_/g, " ").toUpperCase()}
+                  </span>
+                  <div className={styles.credValueBlock}>
+                    <div className={styles.iconContainer}>
+                      <FileLock size={18} />
+                    </div>
+                    <div className={styles.verticalDivider} />
+                    <code className={styles.credValue}>
+                      {String(value) || "-"}
+                    </code>
+                    {value && isUnlocked && (
+                      <button
+                        className={`${styles.copyFieldBtn} ${copiedField === key ? styles.copied : ""}`}
+                        onClick={() => handleCopy(String(value), key)}
+                        title="Copy to clipboard"
+                      >
+                        {copiedField === key ? (
+                          <Check size={14} />
+                        ) : (
+                          <Copy size={14} />
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
-
-          {/* Lock button — valid standalone button, not nested in another button */}
-          <button
-            className={styles.lockButton}
-            onClick={(e) => {
-              e.stopPropagation();
-              onLockClick();
-            }}
-          >
-            <LockKeyholeIcon size={16} className={styles.lockIcon} />
-          </button>
-
-          {/* Chevron button */}
-          <button className={styles.accordionChevron} onClick={onToggle}>
-            {isOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-          </button>
+          {isOpen && displayFields.length === 0 && (
+            <div className={styles.noExtraFields}>No additional fields</div>
+          )}
         </div>
       </div>
+    );
+  },
+);
 
-      <div
-        className={`${styles.credentialAccordionContent} ${
-          isOpen ? styles.open : ""
-        }`}
-      >
-        {isOpen && displayFields.length > 0 && (
-          <div className={styles.credentialFields}>
-            {displayFields.map(([key, value]) => (
-              <div key={key} className={styles.credentialRow}>
-                <span className={styles.credLabel}>
-                  {key.replace(/_/g, " ").toUpperCase()}
-                </span>
-                <div className={styles.credValueBlock}>
-                  <div className={styles.iconContainer}>
-                    <FileLock size={18} />
-                  </div>
-                  <div className={styles.verticalDivider} />
-                  <code className={styles.credValue}>
-                    {String(value) || "-"}
-                  </code>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        {isOpen && displayFields.length === 0 && (
-          <div className={styles.noExtraFields}>No additional fields</div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// ---------- Main Workspace ----------
+// ---------- Main Workspace Component ----------
 interface WorkspaceProps {
   userId?: string;
 }
 
 const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
   const { userId: paramUserId } = useParams<{ userId: string }>();
+  const { showToast, ToastContainer } = useToast(); // 👈 toast hook for notifications
+
   const [projects, setProjects] = useState<Project[]>([]);
   const [expandedProjectId, setExpandedId] = useState<string | null>(null);
   const [selectedEnv, setSelectedEnv] = useState<{
@@ -340,17 +513,49 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
   const [instanceType, setInstanceType] = useState<"sandbox" | "live">(
     "sandbox",
   );
+  const [openAccordionIndex, setOpenAccordionIndex] = useState<number | null>(
+    0,
+  );
 
-  // Single-open accordion: stores the index of the open accordion (null = all closed)
-  const [openAccordionIndex, setOpenAccordionIndex] = useState<number | null>(0);
-
-  // Lock popup state
   const [lockPopupOpen, setLockPopupOpen] = useState(false);
+  const [pendingUnlockCredId, setPendingUnlockCredId] = useState<string | null>(
+    null,
+  );
+
+  const [unlockedMap, setUnlockedMap] = useState<Record<string, UnlockEntry>>(
+    {},
+  );
 
   const [tokensMap, setTokensMap] = useState<Record<string, EnvToken>>({});
   const [showEndpointInline, setShowEndpointInline] = useState(false);
   const [rotateIcon, setRotateIcon] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const filteredProjects = projects.filter((p) =>
+    p.project_name.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  const getCredentialCompositeKey = (
+    service: Service,
+    type: "sandbox" | "live",
+    idx: number,
+  ): string => {
+    const cred = type === "sandbox" ? service.sandbox[idx] : service.live[idx];
+    if (cred?.credential_id) return cred.credential_id;
+    return `${service.id}_${type}_${idx}`;
+  };
+
+  const handleExpire = useCallback((compositeKey: string) => {
+    setUnlockedMap((prev) => {
+      const next = { ...prev };
+      delete next[compositeKey];
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    setUnlockedMap({});
+  }, [selectedService]);
 
   const getUserId = (): string => {
     if (propUserId) return propUserId;
@@ -442,7 +647,7 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
               setSelectedEnv({ project: firstProject, environment: firstEnv });
               const firstService = firstEnv.services[0] || null;
               setSelectedSvc(firstService);
-              setOpenAccordionIndex(0); // first accordion open by default
+              setOpenAccordionIndex(0);
             }
           }
         } else {
@@ -473,6 +678,7 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
     setOpenAccordionIndex(0);
     setShowEndpointInline(false);
     setCopied(false);
+    setUnlockedMap({});
   };
 
   const selectService = (svc: Service) => {
@@ -481,6 +687,7 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
     setOpenAccordionIndex(0);
     setShowEndpointInline(false);
     setCopied(false);
+    setUnlockedMap({});
   };
 
   const handleInstanceChange = (type: "sandbox" | "live") => {
@@ -490,7 +697,6 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
     setCopied(false);
   };
 
-  // Single-open: clicking the same index closes it, clicking another opens it
   const toggleAccordion = (i: number) =>
     setOpenAccordionIndex((prev) => (prev === i ? null : i));
 
@@ -512,9 +718,79 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
     }
   };
 
-  const filteredProjects = projects.filter((p) =>
-    p.project_name.toLowerCase().includes(search.toLowerCase()),
-  );
+  const handleUnlockRequest = (compositeKey: string) => {
+    setPendingUnlockCredId(compositeKey);
+    setLockPopupOpen(true);
+  };
+
+  // ✅ Corrected: two-step verification with toast
+  const handleVerifyAndUnlock = async (passkey: string) => {
+    if (!pendingUnlockCredId) {
+      showToast("No credential selected", "error");
+      throw new Error("No credential selected");
+    }
+    if (!selectedService) {
+      showToast("No service selected", "error");
+      throw new Error("No service selected");
+    }
+
+    const credList =
+      instanceType === "sandbox"
+        ? selectedService.sandbox
+        : selectedService.live;
+
+    const matchedIndex = credList.findIndex(
+      (_, idx) =>
+        getCredentialCompositeKey(selectedService, instanceType, idx) ===
+        pendingUnlockCredId,
+    );
+
+    if (matchedIndex === -1) {
+      showToast("Credential not found", "error");
+      throw new Error("Credential not found");
+    }
+
+    const publicCredentialId = credList[matchedIndex]?.credential_id;
+    if (!publicCredentialId) {
+      showToast("Credential public ID is missing", "error");
+      throw new Error("Credential public ID is missing");
+    }
+
+    try {
+      // Step 1: Verify user passkey
+      const verifyResponse = await verifyUser({ passKey: passkey });
+
+      if (!verifyResponse?.data?.success) {
+        showToast("Invalid passkey", "error");
+        throw new Error("Verification failed");
+      }
+      showToast("Passkey verified successfully", "success");
+
+      // Step 2: Reveal provider credentials
+      const revealResponse = await revealProviderCredentials(
+        publicCredentialId,
+        passkey,
+      );
+
+      const originalCred = credList[matchedIndex];
+      const plainCredential = { ...originalCred, ...revealResponse.data };
+
+      setUnlockedMap((prev) => ({
+        ...prev,
+        [pendingUnlockCredId]: {
+          plainCredential,
+          unlockedAt: Date.now(),
+        },
+      }));
+
+      showToast("Credential unlocked successfully", "success");
+      setPendingUnlockCredId(null);
+    } catch (err: any) {
+      console.error("Unlock error:", err);
+      showToast(err.message || "Failed to unlock credential", "error");
+      throw err;
+    }
+  };
 
   if (loading) {
     return (
@@ -586,7 +862,6 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
       ? selectedService.sandbox
       : selectedService.live
     : [];
-
   const currentToken = instanceType === "sandbox" ? sandboxToken : liveToken;
 
   return (
@@ -613,9 +888,7 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
               return (
                 <div key={project.public_id} className={styles.projectItem}>
                   <button
-                    className={`${styles.projectTitle} ${
-                      isExpanded ? styles.expanded : ""
-                    }`}
+                    className={`${styles.projectTitle} ${isExpanded ? styles.expanded : ""}`}
                     onClick={() => toggleProject(project.public_id)}
                   >
                     {isExpanded ? (
@@ -636,9 +909,7 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
                     )}
                   </button>
                   <div
-                    className={`${styles.environments} ${
-                      isExpanded ? styles.open : ""
-                    }`}
+                    className={`${styles.environments} ${isExpanded ? styles.open : ""}`}
                   >
                     <div className={styles.environmentsInner}>
                       {project.environments.length === 0 ? (
@@ -680,11 +951,8 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
       <div className={styles.mainArea}>
         <div className={styles.topbar}>
           <div className={styles.breadcrumb}>
-            <span>
-              <FolderOpen
-                size={15}
-                style={{ marginRight: "7px", marginTop: "2px" }}
-              />
+            <span className={styles.activeBreadcrumb}>
+              <FolderOpen size={15} style={{ marginRight: "7px" }} />
               {selectedEnv?.project?.project_name
                 ? selectedEnv.project.project_name.charAt(0).toUpperCase() +
                   selectedEnv.project.project_name.slice(1)
@@ -693,10 +961,7 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
             <ChevronRight size={13} />
             <span className={styles.activeBreadcrumb}>
               <span>
-                <Layers
-                  size={12}
-                  style={{ marginRight: "7px", marginTop: "2px" }}
-                />
+                <Layers size={12} style={{ marginRight: "7px" }} />
                 {selectedEnv?.environment?.environment_name
                   ? selectedEnv.environment.environment_name
                       .charAt(0)
@@ -707,10 +972,7 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
             </span>
             <ChevronRight size={13} />
             <span className={styles.activeBreadcrumb}>
-              <Wrench
-                size={12}
-                style={{ marginRight: "7px", marginTop: "2px" }}
-              />
+              <Wrench size={12} style={{ marginRight: "7px" }} />
               {selectedService?.name || "No service"}
             </span>
           </div>
@@ -729,7 +991,7 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
                   }`}
                   onClick={() => selectService(svc)}
                 >
-                  <span>{getServiceIcon(svc.name, 15)}</span>
+                  <span>{getServiceIcon(svc.name, undefined, 15)}</span>
                   <span>{svc.name}</span>
                 </button>
               ))
@@ -751,9 +1013,7 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
                     <button
                       data-env="sandbox"
                       className={`${styles.segmentedButton} ${
-                        instanceType === "sandbox"
-                          ? styles.segmentedActive
-                          : ""
+                        instanceType === "sandbox" ? styles.segmentedActive : ""
                       }`}
                       onClick={() => handleInstanceChange("sandbox")}
                     >
@@ -807,9 +1067,9 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
 
                 <div className={styles.envRightGroup}>
                   <div
-                    className={`${styles.cableIcon} ${
-                      rotateIcon ? styles.rotateIcon : ""
-                    } ${!showEndpointInline ? styles.blinkingIcon : ""}`}
+                    className={`${styles.cableIcon} ${rotateIcon ? styles.rotateIcon : ""} ${
+                      !showEndpointInline ? styles.blinkingIcon : ""
+                    }`}
                     onClick={handleCableClick}
                     title="Endpoint"
                   >
@@ -824,9 +1084,7 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
                     {selectedService.serviceEndpoint}
                   </div>
                   <button
-                    className={`${styles.inlineCopyBtn} ${
-                      copied ? styles.copied : ""
-                    }`}
+                    className={`${styles.inlineCopyBtn} ${copied ? styles.copied : ""}`}
                     onClick={handleCopyEndpoint}
                   >
                     {copied ? <Check size={14} /> : <Copy size={14} />}
@@ -840,24 +1098,45 @@ const Workspace = ({ userId: propUserId }: WorkspaceProps) => {
                   No credentials found for this instance
                 </div>
               ) : (
-                credentials.map((cred, idx) => (
-                  <CredentialAccordion
-                    key={idx}
-                    credential={cred}
-                    index={idx}
-                    isOpen={openAccordionIndex === idx}
-                    onToggle={() => toggleAccordion(idx)}
-                    onLockClick={() => setLockPopupOpen(true)}
-                  />
-                ))
+                credentials.map((cred, idx) => {
+                  const compositeKey = getCredentialCompositeKey(
+                    selectedService,
+                    instanceType,
+                    idx,
+                  );
+                  const entry = unlockedMap[compositeKey] ?? null;
+                  return (
+                    <CredentialAccordion
+                      key={compositeKey}
+                      credential={cred}
+                      index={idx}
+                      isOpen={openAccordionIndex === idx}
+                      onToggle={() => toggleAccordion(idx)}
+                      credentialId={compositeKey}
+                      plainCredential={entry?.plainCredential ?? null}
+                      unlockedAt={entry?.unlockedAt ?? null}
+                      onUnlock={handleUnlockRequest}
+                      onExpire={handleExpire}
+                      serviceName={selectedService.name}
+                    />
+                  );
+                })
               )}
             </>
           )}
         </div>
       </div>
 
-      {/* Lock popup rendered at top level to avoid nesting issues */}
-      {lockPopupOpen && <LockPopup onClose={() => setLockPopupOpen(false)} />}
+      {lockPopupOpen && (
+        <LockPopup
+          onClose={() => {
+            setLockPopupOpen(false);
+            setPendingUnlockCredId(null);
+          }}
+          onVerify={handleVerifyAndUnlock}
+        />
+      )}
+      <ToastContainer />
     </div>
   );
 };

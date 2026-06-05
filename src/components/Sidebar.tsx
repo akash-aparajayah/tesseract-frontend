@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import styles from "../componentStyles/Sidebar.module.css";
 import logo from "../assets/unnamed.png";
@@ -13,7 +13,6 @@ export default function Sidebar() {
   const [isProjectHubOpen, setIsProjectHubOpen] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
-  const navigate = useNavigate();
   const location = useLocation();
 
   // Track window width and auto-collapse on mobile
