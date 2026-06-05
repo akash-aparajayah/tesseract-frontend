@@ -264,3 +264,20 @@ export const connectProviderHealthSocket = (
 
   return ws;
 };
+
+/* -------- UNLOCK SERVICE -------- */
+export const unlockService = async (
+  data: {
+    environment_id: string;
+    service_type_id: string;
+    credentialPasskey: string;
+  }
+) => {
+
+  const response = await api.post(
+    "/services/unlock-service",
+    data
+  );
+
+  return response.data;
+};

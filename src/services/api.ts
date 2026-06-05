@@ -29,14 +29,40 @@ api.interceptors.response.use(
   (error) => {
     if (error?.response?.status === 401) {
       // 🚨 AUTO LOGOUT
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
+      console.error(
+        "401 API FAILED =>",
+        error.config?.url
+      );
 
-      window.location.href = "/"; // go to login
+      console.error(
+        "401 RESPONSE =>",
+        error.response?.data
+      );
     }
 
     return Promise.reject(error);
   },
 );
+
+export const validateSetupTokenApi = (
+  token: string
+) => {
+  return api.get(
+    `/auth/setup-account/${token}`
+  );
+};
+
+export const completeSetupApi = (
+  data: {
+    token: string;
+    password: string;
+    credentialPasskey: string;
+  }
+) => {
+  return api.post(
+    "/auth/setup-account",
+    data
+  );
+};
 
 export default api;

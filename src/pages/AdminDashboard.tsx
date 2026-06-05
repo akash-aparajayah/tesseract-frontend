@@ -83,12 +83,11 @@ const api = {
   },
 
   async createAdmin(
-    admin: Omit<Admin, "id"> & { password: string }
+    admin: Omit<Admin, "id">
   ): Promise<Admin> {
     const response = await createUserApi(
       admin.user_name,
       admin.email,
-      admin.password,
       admin.role,
       admin.is_active
     );
@@ -180,7 +179,6 @@ const AdminPanel: React.FC = () => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    password: "",
     role: "USER" as "ADMIN" | "SUPER_ADMIN" | "USER",
     active: true,
   });
@@ -266,7 +264,6 @@ const AdminPanel: React.FC = () => {
     setFormData({
       name: admin.user_name,
       email: admin.email,
-      password: "",
       role: admin.role,
       active: admin.is_active,
     });
@@ -313,7 +310,6 @@ const AdminPanel: React.FC = () => {
     setFormData({
       name: "",
       email: "",
-      password: "",
       role: "USER",
       active: true,
     });
@@ -333,8 +329,6 @@ const AdminPanel: React.FC = () => {
     }, 400);
   };
 
-  const passwordRegex =
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
   const validateForm = () => {
     if (!formData.name.trim()) {
       return "Name is required";
@@ -342,18 +336,6 @@ const AdminPanel: React.FC = () => {
 
     if (!formData.email.trim()) {
       return "Email is required";
-    }
-
-    if (!formData.password) {
-      return "Password is required";
-    }
-
-    if (formData.password.length < 8) {
-      return "Password must be at least 8 characters";
-    }
-
-    if (!passwordRegex.test(formData.password)) {
-      return "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character";
     }
 
     return null;
@@ -372,14 +354,17 @@ const AdminPanel: React.FC = () => {
       const newUser = await api.createAdmin({
         user_name: formData.name.trim(),
         email: formData.email.trim(),
-        password: formData.password,
         role: formData.role,
         is_active: formData.active,
       });
       if (newUser && newUser.id) {
-        showToast("User created successfully", "success");
+        showToast("User created successfully. A setup email has been sent.", "success");
         closeDrawerWithAnimation();
-        navigate(`/dashboard/user/${newUser.id}/assign-projects`);
+        setTimeout(() => {
+          navigate(
+            `/dashboard/user/${newUser.id}/assign-projects`
+          );
+        }, 3000);
       } else {
         throw new Error("User ID missing from API response");
       }
@@ -816,35 +801,6 @@ const AdminPanel: React.FC = () => {
                   />
                 </div>
 
-                {!isEditMode && (
-                  <div className={styles.formGroup}>
-                    <label>
-                      Password{" "}
-                      <span className={styles.requiredStar}>*</span>{" "}
-                      <span className={styles.passwordHint}>
-                        (min 8 characters)
-                      </span>
-                    </label>
-
-                    <div className={styles.passwordWrapper}>
-                      <Lock
-                        size={16}
-                        className={styles.passwordIcon}
-                      />
-
-                      <input
-                        type="password"
-                        placeholder="Enter password"
-                        value={formData.password}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            password: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                  </div>)}
 
                 <div className={styles.formGroup}>
                   <label>

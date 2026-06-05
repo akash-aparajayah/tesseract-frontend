@@ -39,3 +39,26 @@ export const healthCheckApi = () => {
 export const updatePasswordApi = (data: { password: string }) => {
   return api.patch("/auth/update-password", data);
 };
+
+// VALIDATE SETUP TOKEN
+export const validateSetupTokenApi = (
+  token: string
+) => {
+  return api.get(
+    `/auth/setup-account/${token}`
+  );
+};
+
+// COMPLETE ACCOUNT SETUP
+export const completeSetupApi = (
+  data: {
+    token: string;
+    password: string;
+    credentialPasskey: string;
+  }
+) => {
+  return api.post(
+    "/auth/setup-account",
+    data
+  );
+};

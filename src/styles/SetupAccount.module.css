@@ -1,0 +1,585 @@
+.wrapper {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    position: relative;
+    overflow-y: auto;
+    /* Changed from hidden to auto */
+    overflow-x: hidden;
+    padding: 20px;
+}
+
+/* Add this to ensure content can scroll */
+.wrapper::-webkit-scrollbar {
+    width: 8px;
+}
+
+.wrapper::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.wrapper::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+}
+
+.wrapper::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.backgroundDecoration {
+    position: fixed;
+    /* Changed from absolute to fixed */
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 0;
+    pointer-events: none;
+    /* Prevents interference with scrolling */
+}
+
+.blob1 {
+    position: absolute;
+    top: -50%;
+    right: -10%;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 70%);
+    border-radius: 50%;
+    animation: float 20s ease-in-out infinite;
+}
+
+.blob2 {
+    position: absolute;
+    bottom: -30%;
+    left: -10%;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 70%);
+    border-radius: 50%;
+    animation: float 15s ease-in-out infinite reverse;
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+
+    33% {
+        transform: translate(30px, -30px) rotate(120deg);
+    }
+
+    66% {
+        transform: translate(-20px, 20px) rotate(240deg);
+    }
+}
+
+/* Card Styles - Updated padding */
+.card {
+    width: 520px;
+    background: white;
+    border-radius: 24px;
+    padding: 10px 40px;
+    /* Changed from 48px 40px to 10px 40px */
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    position: relative;
+    z-index: 1;
+    animation: slideUp 0.5s ease-out;
+    margin: 20px 0;
+    /* Added margin for better spacing when scrolling */
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.cardHeader {
+    text-align: center;
+    margin-bottom: 24px;
+    /* Reduced from 32px */
+    margin-top: 20px;
+    /* Added top margin */
+}
+
+.logo {
+    font-size: 48px;
+    margin-bottom: 12px;
+    /* Reduced from 16px */
+}
+
+.cardHeader h2 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1a202c;
+    margin: 0 0 6px 0;
+    /* Reduced bottom margin */
+}
+
+.cardHeader p {
+    font-size: 14px;
+    color: #718096;
+    margin: 0;
+}
+
+/* Form Sections - Reduced margins */
+.formSection {
+    margin-bottom: 24px;
+    /* Reduced from 32px */
+}
+
+.sectionHeader {
+    margin-bottom: 12px;
+    /* Reduced from 16px */
+}
+
+.sectionHeader h4 {
+    margin: 0 0 3px 0;
+    /* Reduced from 4px */
+    font-size: 16px;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.sectionNote {
+    margin: 0;
+    font-size: 12px;
+    /* Slightly smaller */
+    color: #a0aec0;
+    line-height: 1.3;
+    /* Reduced from 1.4 */
+}
+
+/* Input Groups */
+.inputGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    /* Reduced from 12px */
+}
+
+.passwordWrapper {
+    position: relative;
+    width: 100%;
+}
+
+.input {
+    width: 100%;
+    padding: 12px 48px 12px 16px;
+    /* Reduced padding from 14px to 12px */
+    font-size: 14px;
+    /* Slightly smaller */
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    background: white;
+    font-family: inherit;
+}
+
+.input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.input:hover {
+    border-color: #cbd5e0;
+}
+
+.eyeButton {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #a0aec0;
+    transition: color 0.2s ease;
+}
+
+.eyeButton:hover {
+    color: #667eea;
+}
+
+/* Validation Styles - Reduced spacing */
+.validationGrid {
+    margin-top: 12px;
+    /* Reduced from 16px */
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    /* Reduced from 8px */
+}
+
+.rule {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    /* Reduced from 8px */
+    font-size: 11px;
+    /* Slightly smaller */
+    padding: 5px 8px;
+    /* Reduced from 6px 8px */
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.rule.valid {
+    color: #38a169;
+    background: #f0fff4;
+}
+
+.rule.invalid {
+    color: #e53e3e;
+    background: #fff5f5;
+}
+
+.checkIcon,
+.xIcon {
+    flex-shrink: 0;
+}
+
+.passkeyHint {
+    margin-top: 12px;
+    /* Reduced from 16px */
+}
+
+.passkeyRule {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    /* Slightly smaller */
+    padding: 8px 12px;
+    /* Reduced from 10px 12px */
+    border-radius: 10px;
+    transition: all 0.2s ease;
+}
+
+.passkeyRule.valid {
+    color: #38a169;
+    background: #f0fff4;
+    border: 1px solid #c6f6d5;
+}
+
+.passkeyRule.invalid {
+    color: #e53e3e;
+    background: #fff5f5;
+    border: 1px solid #fed7d7;
+}
+
+/* Submit Button - Reduced margins */
+.submitButton {
+    width: 100%;
+    padding: 12px;
+    /* Reduced from 14px */
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    /* Slightly smaller */
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 20px;
+    /* Reduced from 24px */
+    margin-bottom: 10px;
+    /* Added bottom margin */
+}
+
+.submitButton:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px -5px rgba(102, 126, 234, 0.4);
+}
+
+.submitButton:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.submitButton:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.spinningIcon {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Error Alert - Reduced margins */
+.errorAlert {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    /* Reduced from 12px */
+    padding: 10px 14px;
+    /* Reduced from 12px 16px */
+    background: #fed7d7;
+    border: 1px solid #fc8181;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    /* Reduced from 24px */
+    margin-top: 10px;
+    /* Added top margin */
+    color: #c53030;
+}
+
+.errorAlert p {
+    margin: 0;
+    font-size: 13px;
+    /* Slightly smaller */
+    font-weight: 500;
+}
+
+/* Status Cards */
+.loaderCard,
+.statusCard {
+    background: white;
+    border-radius: 24px;
+    padding: 40px 40px;
+    /* Adjusted padding */
+    text-align: center;
+    max-width: 450px;
+    width: 100%;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    animation: slideUp 0.5s ease-out;
+    margin: 20px;
+}
+
+.loaderCard p {
+    margin-top: 20px;
+    /* Reduced from 24px */
+    color: #718096;
+}
+
+.spinner {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto;
+    border: 3px solid #e2e8f0;
+    border-top-color: #667eea;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+.statusIcon,
+.successIcon {
+    font-size: 64px;
+    margin-bottom: 20px;
+    /* Reduced from 24px */
+}
+
+.successIcon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 20px;
+    /* Adjusted margin */
+    background: #48bb78;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    font-weight: bold;
+}
+
+.statusCard h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a202c;
+    margin: 0 0 10px 0;
+    /* Reduced from 12px */
+}
+
+.statusCard p {
+    color: #718096;
+    margin-bottom: 20px;
+    /* Reduced from 24px */
+    line-height: 1.5;
+    /* Reduced from 1.6 */
+}
+
+.primaryButton {
+    padding: 10px 22px;
+    /* Slightly smaller */
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.primaryButton:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+}
+
+.progressBar {
+    width: 100%;
+    height: 4px;
+    background: #e2e8f0;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 20px;
+    /* Reduced from 24px */
+}
+
+.progressFill {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    animation: progress 2.5s linear;
+}
+
+@keyframes progress {
+    from {
+        width: 0%;
+    }
+
+    to {
+        width: 100%;
+    }
+}
+
+/* Footer Note */
+.footerNote {
+    text-align: center;
+    font-size: 11px;
+    /* Slightly smaller */
+    color: #a0aec0;
+    margin-top: 20px;
+    /* Reduced from 24px */
+    padding-top: 20px;
+    /* Reduced from 24px */
+    padding-bottom: 10px;
+    /* Added bottom padding */
+    border-top: 1px solid #e2e8f0;
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+    .card {
+        width: 100%;
+        padding: 10px 20px !important;
+        /* Adjusted for mobile */
+    }
+
+    .validationGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .cardHeader h2 {
+        font-size: 24px;
+    }
+
+    .wrapper {
+        padding: 10px;
+        /* Reduced padding on mobile */
+    }
+}
+
+/* Add these new styles to your existing CSS */
+
+/* Input wrapper for error messages */
+.inputWrapper {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* Input error state */
+.inputError {
+    border-color: #e53e3e !important;
+}
+
+.inputError:focus {
+    border-color: #e53e3e !important;
+    box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1) !important;
+}
+
+/* Field error message */
+.fieldError {
+    color: #e53e3e;
+    font-size: 12px;
+    margin-top: 2px;
+    margin-left: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.fieldError::before {
+    content: "⚠️";
+    font-size: 10px;
+}
+
+/* Adjust existing styles for better spacing */
+.input {
+    width: 100%;
+    padding: 12px 48px 12px 16px;
+    font-size: 14px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    background: white;
+    font-family: inherit;
+}
+
+/* Remove the old error alert if you want to use field-level errors only */
+.errorAlert {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: #fed7d7;
+    border: 1px solid #fc8181;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    margin-top: 10px;
+    color: #c53030;
+}
+
+/* Make validation grid more compact */
+.validationGrid {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    margin-bottom: 8px;
+}

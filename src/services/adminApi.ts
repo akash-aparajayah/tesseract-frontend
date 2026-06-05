@@ -20,11 +20,10 @@ export const changePasswordApi = (id: number, password: string) => {
 };
 
 //create user API
-export const createUserApi = (user_name: string, email: string, password: string, role: string, is_active: boolean) => {
+export const createUserApi = (user_name: string, email: string, role: string, is_active: boolean) => {
   return api.post("/users/create-user", {
     user_name,
     email,
-    password,
     role,
     is_active,
   });

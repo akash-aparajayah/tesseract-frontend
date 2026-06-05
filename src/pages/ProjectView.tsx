@@ -6,9 +6,9 @@ import styles from "../styles/ProjectView.module.css";
 import {
   Pencil, FolderOpen, Plus, MessageSquare, Mail, MessageCircle, Plug, Check,
   Save, X, ChevronDown, Server, Copy, Trash2, Globe, Rocket, Wrench,
-  Search, AlertTriangle, Home, Monitor, Key,
+  Search, AlertTriangle, Home, Monitor, Key, Lock,
   User, UserMinus, UserPlus, AlertCircle, Calendar, Clock, RefreshCw, Filter, Settings,
-  GaugeIcon, LandmarkIcon, Plug2, Layers, FlaskConical, LockKeyhole, LockKeyholeOpen, CreditCard,ShieldCheck,ArrowLeftRight,Send,
+  GaugeIcon, LandmarkIcon, Plug2, Layers, FlaskConical, LockKeyhole, LockKeyholeOpen, CreditCard, ShieldCheck, ArrowLeftRight, Send,
 } from 'lucide-react';
 import { useToast } from "../hooks/useToast";
 import "../styles/Toast.css"
@@ -16,7 +16,7 @@ import noDataIllustration from '../assets/illustration/No data.gif';
 import {
   getAllServices, getProvidersByServiceId, createProvider, getProviderById, deleteProvider, getProjectById,
   createEnvironment, getEnvironmentsByProjectId, updateEnvironment, cloneEnvironment, deleteEnvironment, getProvidersByEnvironmentId, updateProvider, getAssignedUnassignedEmployees, assignUnassignEmployee,
-  getApiKeys, regenerateApiKey, createApiKey, deleteApiKey, updateProject, reorderProviders,
+  getApiKeys, regenerateApiKey, createApiKey, deleteApiKey, updateProject, reorderProviders, unlockService,
 } from "../services/projectApi";
 import SkeletonLoader from "@/components/common/SkeletonLoader";
 import FormValidation, { hasErrors } from "@/components/common/FormValidation";
@@ -146,7 +146,7 @@ export default function ProjectView() {
     useState("");
   const [serviceProviderCounts, setServiceProviderCounts] =
     useState<Record<string, number>>({});
-  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
+  // const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
   const [expandedProviders, setExpandedProviders] = useState<Record<string, boolean>>({});
   const [openEnvMenu, setOpenEnvMenu] = useState<string | null>(null);
   const [selectedMenuEnv, setSelectedMenuEnv] = useState<any | null>(null);
@@ -165,7 +165,7 @@ export default function ProjectView() {
   const [showAddProviderModal, setShowAddProviderModal] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState("");
   const [providerFields, setProviderFields] = useState<Record<string, string>>({});
-  const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
+  // const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
   const [editingProvider, setEditingProvider] = useState<Provider | null>(null);
   const [saving, setSaving] = useState(false);
   const [showDeleteProviderModal, setShowDeleteProviderModal] = useState<{ id: string; name: string } | null>(null);
@@ -274,6 +274,34 @@ export default function ProjectView() {
   const [credentialsMasked, setCredentialsMasked] =
     useState(true);
 
+  const [unlockCountdown, setUnlockCountdown] =
+    useState(60);
+
+  const [lockPopupOpen, setLockPopupOpen] =
+    useState(false);
+
+  const [unlockPasskey, setUnlockPasskey] =
+    useState("");
+
+  const [showUnlockPasskey, setShowUnlockPasskey] =
+    useState(false);
+
+  const [copiedField, setCopiedField] =
+    useState<string | null>(null);
+
+  // Only one service can be unlocked at a time
+  const [
+    unlockedServiceId,
+    setUnlockedServiceId,
+  ] = useState<string | null>(
+    null
+  );
+
+  const unlockTimerRef =
+    useRef<ReturnType<typeof setTimeout> | null>(
+      null
+    );
+
   // Provider health status
   const [providerHealth, setProviderHealth] = useState<Record<string, {
     isActive: boolean;
@@ -284,6 +312,162 @@ export default function ProjectView() {
   const [showErrorTooltip, setShowErrorTooltip] = useState<string | null>(null);
   const [errorTooltipPosition, setErrorTooltipPosition] = useState({ top: 0, left: 0 });
   const [isTogglingProvider, setIsTogglingProvider] = useState<string | null>(null);
+
+  // Hide credentials and reload masked data
+  const lockCurrentService =
+    async () => {
+
+      if (
+        unlockTimerRef.current
+      ) {
+
+        clearTimeout(
+          unlockTimerRef.current
+        );
+
+        unlockTimerRef.current =
+          null;
+      }
+
+      setUnlockedServiceId(
+        null
+      );
+
+      setCredentialsMasked(
+        true
+      );
+
+      const env =
+        environments.find(
+          (e: any) =>
+            e.public_id ===
+            selectedEnv
+        );
+
+      if (env) {
+
+        await loadProvidersForEnv(
+          env
+        );
+
+      }
+    };
+
+  // Validate credentials and reveal service data
+  const handleUnlockService =
+    async () => {
+
+      console.log(
+        "UNLOCK CLICKED"
+      );
+
+      try {
+
+        const service =
+          serviceData?.find(
+            (s: any) =>
+              s.name ===
+              activeService
+          );
+
+        if (
+          !service?.public_id
+        ) {
+          return;
+        }
+
+
+        const response =
+          await unlockService({
+            environment_id:
+              selectedEnv,
+
+            service_type_id:
+              service.public_id,
+
+            credentialPasskey:
+              unlockPasskey,
+          });
+
+        const data =
+          response.data;
+
+        const allProviders = [
+          ...(data.sandbox || []),
+          ...(data.live || []),
+        ];
+
+        setProviders(
+          allProviders.map(
+            (p: any) => ({
+              id:
+                p.public_id,
+              name:
+                p.provider_name,
+              fields: {
+                ...(p.credentials ||
+                  {}),
+                mode:
+                  p.mode,
+                endpoint:
+                  p.endpoint,
+              },
+            })
+          )
+        );
+
+        setCredentialsMasked(
+          false
+        );
+
+        setUnlockCountdown(60);
+
+        setUnlockedServiceId(
+          service.public_id
+        );
+
+        setLockPopupOpen(
+          false
+        );
+
+        setUnlockPasskey("");
+
+        if (
+          unlockTimerRef.current
+        ) {
+
+          clearTimeout(
+            unlockTimerRef.current
+          );
+        }
+
+        // Automatically relock after 2 minutes
+        unlockTimerRef.current =
+          setTimeout(
+            () => {
+              lockCurrentService();
+            },
+            60000
+          );
+
+        showToast(
+          "Credentials unlocked",
+          "success"
+        );
+
+      } catch (
+      error: any
+      ) {
+
+        showToast(
+          error?.response?.data
+            ?.message ||
+          "Invalid credentials",
+          "error"
+        );
+
+      }
+    };
 
   const fetchUsersForEnvironment = async (env?: any) => {
     if (!projectId) return;
@@ -430,6 +614,55 @@ export default function ProjectView() {
       setProvidersList([]);
     }
   };
+
+  useEffect(() => {
+
+    if (credentialsMasked) {
+      return;
+    }
+
+    const interval =
+      setInterval(() => {
+
+        setUnlockCountdown(
+          (prev) => {
+
+            if (prev <= 1) {
+
+              clearInterval(interval);
+
+              lockCurrentService();
+
+              return 0;
+            }
+
+            return prev - 1;
+          }
+        );
+
+      }, 1000);
+
+    return () =>
+      clearInterval(interval);
+
+  }, [credentialsMasked]);
+
+  useEffect(() => {
+
+    return () => {
+
+      if (
+        unlockTimerRef.current
+      ) {
+
+        clearTimeout(
+          unlockTimerRef.current
+        );
+      }
+
+    };
+
+  }, []);
 
   useEffect(() => {
     if (serviceData && activeService) {
@@ -582,29 +815,37 @@ export default function ProjectView() {
 
       setExpandedProviders(prev => {
 
-        // KEEP CURRENT OPEN IF EXISTS
-        const currentOpen =
-          Object.keys(prev).find(
-            key => prev[key]
+        // keep user's current state
+        const hasCurrentProvidersExpanded =
+          mappedProviders.some(
+            provider =>
+              prev[provider.id]
           );
 
-        if (
-          currentOpen &&
-          mappedProviders.some(
-            p => p.id === currentOpen
-          )
-        ) {
-          return {
-            [currentOpen]: true,
-          };
+        if (hasCurrentProvidersExpanded) {
+          return prev;
         }
 
-        // OTHERWISE OPEN FIRST
-        return mappedProviders.length > 0
-          ? {
-            [mappedProviders[0].id]: true,
-          }
-          : {};
+        const expanded: Record<string, boolean> = {};
+
+        const sandboxProviders = mappedProviders.filter(
+          p => p.fields.mode?.toUpperCase() === "SANDBOX"
+        );
+
+        const liveProviders = mappedProviders.filter(
+          p => p.fields.mode?.toUpperCase() === "LIVE"
+        );
+
+        if (sandboxProviders.length > 0) {
+          expanded[sandboxProviders[0].id] = true;
+        }
+
+        if (liveProviders.length > 0) {
+          expanded[liveProviders[0].id] = true;
+        }
+
+        return expanded;
+
       });
 
       // Update provider health from API response
@@ -1472,6 +1713,9 @@ export default function ProjectView() {
       allTokens[`${envName}_LIVE`]?.name?.toLowerCase().includes(q);
   });
 
+  const totalProviderCount =
+    providers.length;
+
   // ---- DRAG & DROP ----
   const filteredProviders = providers.filter(
     p =>
@@ -2106,10 +2350,21 @@ export default function ProjectView() {
         : ""
         }`}
       onClick={() => {
+        // Switching services immediately locks current service
+        if (
+          unlockedServiceId
+        ) {
+
+          lockCurrentService();
+        }
         setActiveService(service.name);
         setmodeFilter("Sandbox");
         setProviders([]);
-        setServiceEndpoint("");
+
+
+        setServiceEndpoint(
+          service.service_base_endpoint || ""
+        );
 
         const env = environments.find(
           (e: any) =>
@@ -2244,6 +2499,11 @@ export default function ProjectView() {
       </div>
     </div>
   );
+
+
+  // Check whether current service is unlocked
+  const isUnlocked =
+    !credentialsMasked;
 
 
   return (
@@ -2801,38 +3061,28 @@ export default function ProjectView() {
                             borderTop: `3px solid ${SERVICE_COLORS[activeService]}`,
                           }}
                         >
+                          <div className={styles["pc-sidebar-content"]}></div>
                           {!serviceData ? (
-                            <SkeletonLoader
-                              variant="list"
-                              count={3}
-                            />
+                            <SkeletonLoader variant="list" count={3} />
                           ) : (
                             <>
-                              <div
-                                className={
-                                  styles["serviceGroupHeader"]
-                                }
-                              >
-                              <div> <Send size={15}/> </div>
+                              <div className={styles.serviceGroupHeader}>
+                                <div><Send size={15} /></div>
                                 Messaging
                               </div>
 
-                              {messagingServices.map(
-                                renderServiceItem
-                              )}
+                              <div className={styles.serviceGroupBody}>
+                                {messagingServices.map(renderServiceItem)}
+                              </div>
 
-                              <div
-                                className={
-                                  styles["serviceGroupHeader"]
-                                }
-                              >
-                             <div> <LandmarkIcon  size={15}/> </div>
-                               Banking
-                              </div> 
+                              <div className={styles.serviceGroupHeader}>
+                                <div><LandmarkIcon size={15} /></div>
+                                Banking
+                              </div>
 
-                              {bankingServices.map(
-                                renderServiceItem
-                              )}
+                              <div className={styles.serviceGroupBody}>
+                                {bankingServices.map(renderServiceItem)}
+                              </div>
                             </>
                           )}
                         </div>
@@ -2849,40 +3099,59 @@ export default function ProjectView() {
 
                             <div className={styles["pc-panel-actions"]}>
 
-                              <button
-                                className={styles["pc-credential-visibility-btn"]}
+                              {/* Credential Visibility */}
+                              <div
+                                className={styles.lockContainer}
                                 onClick={() => {
-                                  setCredentialsMasked(prev => !prev);
+                                  if (isUnlocked) {
+                                    lockCurrentService();
+                                  } else {
+                                    setUnlockPasskey("");
+                                    setShowUnlockPasskey(false);
+                                    setLockPopupOpen(true);
+                                  }
                                 }}
-                                title={
-                                  credentialsMasked
-                                    ? "Show credentials"
-                                    : "Hide credentials"
-                                }
                               >
-                                {credentialsMasked ? (
-                                  <LockKeyhole size={16} />
-                                ) : (
-                                  <LockKeyholeOpen size={16} />
-                                )}
-                              </button>
+                                <button
+                                  className={styles["pc-unlock-btn"]}
+                                  type="button"
+                                >
+                                  {isUnlocked ? (
+                                    <LockKeyholeOpen size={14} />
+                                  ) : (
+                                    <LockKeyhole size={14} />
+                                  )}
+                                </button>
 
-                              <button
-                                className={styles["pc-add-btn"]}
-                                style={{
-                                  backgroundColor:
-                                    SERVICE_COLORS[activeService]
-                                }}
-                                onClick={async () => {
-                                  setEditingProvider(null);
-                                  setSelectedProvider("");
-                                  setProviderFields({});
-                                  setShowAddProviderModal(true);
-                                }}
-                              >
-                                <Plus size={14} />
-                                Add Provider
-                              </button>
+                                {isUnlocked && (
+                                  <span className={styles.unlockTimer}>
+                                    {String(Math.floor(unlockCountdown / 60)).padStart(2, "0")}
+                                    :
+                                    {String(unlockCountdown % 60).padStart(2, "0")}
+                                  </span>
+                                )}
+                              </div>
+
+                              {!(isBankingService && totalProviderCount > 0) && (
+                                <button
+                                  className={styles["pc-add-btn"]}
+                                  style={{
+                                    backgroundColor:
+                                      SERVICE_COLORS[
+                                      activeService
+                                      ],
+                                  }}
+                                  onClick={async () => {
+                                    setEditingProvider(null);
+                                    setSelectedProvider("");
+                                    setProviderFields({});
+                                    setShowAddProviderModal(true);
+                                  }}
+                                >
+                                  <Plus size={14} />
+                                  Add Provider
+                                </button>
+                              )}
 
                             </div>
 
@@ -2894,56 +3163,59 @@ export default function ProjectView() {
                             <button className={`${styles["pc-mode-tab"]} ${modeFilter === 'Live' ? `${styles["active"]} ${styles["live"]}` : ''}`} onClick={() => setmodeFilter('Live')}>
                               <Rocket size={16} /> Live <span className={styles["pc-mode-tab-count"]}>{providers.filter(p => p.fields.mode?.toLowerCase() === 'live').length}</span>
                             </button>
-                            {serviceEndpoint && (
-                              <div className={styles["pc-endpoint-inline"]}>
 
-                                <span className={styles["pc-endpoint-label"]}>
-                                  Endpoint URL :
-                                </span>
 
-                                <span className={styles["pc-endpoint-text"]}>
-                                  {serviceEndpoint}
-                                </span>
+                            {serviceEndpoint &&
+                              providers.length > 0 && (
+                                <div className={styles["pc-endpoint-inline"]}>
 
-                                <button
-                                  type="button"
-                                  className={styles["endpoint-copy-btn"]}
-                                  onClick={async () => {
+                                  <span className={styles["pc-endpoint-label"]}>
+                                    Endpoint URL :
+                                  </span>
 
-                                    try {
+                                  <span className={styles["pc-endpoint-text"]}>
+                                    {serviceEndpoint}
+                                  </span>
 
-                                      await navigator.clipboard.writeText(
-                                        serviceEndpoint
-                                      );
+                                  <button
+                                    type="button"
+                                    className={styles["endpoint-copy-btn"]}
+                                    onClick={async () => {
 
-                                      setCopiedEndpoint(serviceEndpoint);
+                                      try {
 
-                                      setTimeout(() => {
+                                        await navigator.clipboard.writeText(
+                                          serviceEndpoint
+                                        );
 
-                                        setCopiedEndpoint(null);
+                                        setCopiedEndpoint(serviceEndpoint);
 
-                                      }, 1500);
+                                        setTimeout(() => {
 
-                                    } catch (error) {
+                                          setCopiedEndpoint(null);
 
-                                      console.error(
-                                        "Failed to copy endpoint",
-                                        error
-                                      );
+                                        }, 1500);
 
+                                      } catch (error) {
+
+                                        console.error(
+                                          "Failed to copy endpoint",
+                                          error
+                                        );
+
+                                      }
+                                    }}
+                                  >
+                                    {
+                                      copiedEndpoint === serviceEndpoint ? (
+                                        <Check size={16} />
+                                      ) : (
+                                        <Copy size={16} />
+                                      )
                                     }
-                                  }}
-                                >
-                                  {
-                                    copiedEndpoint === serviceEndpoint ? (
-                                      <Check size={16} />
-                                    ) : (
-                                      <Copy size={16} />
-                                    )
-                                  }
-                                </button>
-                              </div>
-                            )}
+                                  </button>
+                                </div>
+                              )}
                           </div>
                           <div className={styles["pc-providers-list"]}>
                             {providersLoading && (
@@ -3120,18 +3392,34 @@ export default function ProjectView() {
                                           >
                                             <Trash2 size={14} />
                                           </button>
+
+
+
                                           <button
                                             className={`${styles["pc-accordion-toggle"]} ${expandedProviders[provider.id]
                                               ? styles["expanded"]
                                               : ""
                                               }`}
                                             onClick={(e) => {
+
                                               e.stopPropagation();
 
-                                              setExpandedProviders(prev => ({
-                                                ...prev,
-                                                [provider.id]: !prev[provider.id]
-                                              }));
+                                              setExpandedProviders(prev => {
+
+                                                if (prev[provider.id]) {
+                                                  return {
+                                                    ...prev,
+                                                    [provider.id]: false,
+                                                  };
+                                                }
+
+                                                return {
+                                                  ...prev,
+                                                  [provider.id]: true,
+                                                };
+
+                                              });
+
                                             }}
                                           >
                                             <ChevronDown size={16} />
@@ -3253,22 +3541,46 @@ export default function ProjectView() {
                                                     {value || "—"}
                                                   </span>
                                                 ) : (
-                                                  <>
+                                                  <div className={styles["pc-credential-copy-wrap"]}>
+
                                                     <span className={styles["pc-credential-value"]}>
-                                                      {isPwd ? (visiblePasswords[pk] ? value : "••••••••••") : value || "—"}
+                                                      {value || "—"}
                                                     </span>
-                                                    {isPwd && value && (
+
+                                                    {isUnlocked && value && (
                                                       <button
-                                                        className={styles["pc-eye-btn-inline"]}
-                                                        onClick={() => setVisiblePasswords(prev => ({
-                                                          ...prev,
-                                                          [pk]: !prev[pk]
-                                                        }))}
+                                                        type="button"
+                                                        className={styles["pc-copy-btn"]}
+                                                        onClick={() => {
+
+                                                          navigator.clipboard.writeText(
+                                                            value
+                                                          );
+
+                                                          setCopiedField(pk);
+
+                                                          setTimeout(() => {
+                                                            setCopiedField(null);
+                                                          }, 1500);
+
+                                                        }}
                                                       >
-                                                        {visiblePasswords[pk] ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
+
+                                                        {copiedField === pk ? (
+                                                          <Check
+                                                            size={14}
+                                                            color="#22c55e"
+                                                          />
+                                                        ) : (
+                                                          <Copy
+                                                            size={14}
+                                                          />
+                                                        )}
+
                                                       </button>
                                                     )}
-                                                  </>
+
+                                                  </div>
                                                 )}
                                               </div>
                                             );
@@ -4401,6 +4713,97 @@ export default function ProjectView() {
                 ) : (
                   <><AlertTriangle size={16} /> Yes, Deactivate</>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {lockPopupOpen && (
+        <div
+          className={styles.popupOverlay}
+          onClick={() => {
+            setUnlockPasskey("");
+            setShowUnlockPasskey(false);
+
+          }}
+        >
+          <div
+            className={styles.popupCard}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.popupHeader}>
+              <LockKeyhole size={18} />
+
+              <span>
+                Authenticate to Unlock
+              </span>
+
+              <button
+                className={styles.popupClose}
+                onClick={() =>
+                  setLockPopupOpen(false)
+                }
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className={styles.popupBody}>
+              <div className={styles.popupField}>
+                <label>Credential Passkey</label>
+
+                <div className={styles.passwordWrapper}>
+                  <input
+                    type={
+                      showUnlockPasskey
+                        ? "text"
+                        : "password"
+                    }
+                    autoComplete="new-password"
+                    name="credential_passkey_unlock"
+                    placeholder="Enter Credential Passkey"
+                    value={unlockPasskey}
+                    onChange={(e) =>
+                      setUnlockPasskey(
+                        e.target.value
+                      )
+                    } onKeyDown={(e) => {
+
+                      if (e.key === "Enter") {
+
+                        e.preventDefault();
+
+                        handleUnlockService();
+
+                      }
+
+                    }}
+                  />
+
+                  <button
+                    className={styles.eyeBtn}
+                    type="button"
+                    onClick={() =>
+                      setShowUnlockPasskey(
+                        (prev) => !prev
+                      )
+                    }
+                  >
+                    {showUnlockPasskey ? (
+                      <LockKeyholeOpen size={15} />
+                    ) : (
+                      <LockKeyhole size={15} />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                className={styles.popupSubmit}
+                onClick={handleUnlockService}
+              >
+                Unlock Credential
               </button>
             </div>
           </div>

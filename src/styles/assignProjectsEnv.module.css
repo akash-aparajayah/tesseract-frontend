@@ -1,5 +1,5 @@
 .container {
-  /* padding: 1.5rem; */
+  padding: 1.5rem;
   background: #f8fafc;
   min-height: 100vh;
 }
@@ -25,14 +25,12 @@
   font-size: 1.3rem;
   font-weight: 800;
 
-  background: linear-gradient(
-    90deg,
-    #0f172a 0%,
-    #1e3a8a 25%,
-    #2563eb 55%,
-    #3b82f6 80%,
-    #0f172a 100%
-  );
+  background: linear-gradient(90deg,
+      #0f172a 0%,
+      #1e3a8a 25%,
+      #2563eb 55%,
+      #3b82f6 80%,
+      #0f172a 100%);
 
   background-size: 250% auto;
 
@@ -277,11 +275,9 @@
   right: -60px;
   width: 160px;
   height: 160px;
-  background: radial-gradient(
-    circle,
-    rgba(37, 99, 235, 0.08) 0%,
-    transparent 70%
-  );
+  background: radial-gradient(circle,
+      rgba(37, 99, 235, 0.08) 0%,
+      transparent 70%);
   border-radius: 50%;
   pointer-events: none;
 }
@@ -318,11 +314,9 @@
   width: 58px;
   height: 58px;
   border-radius: 18px;
-  background: linear-gradient(
-    135deg,
-    #eff6ff,
-    #dbeafe
-  );
+  background: linear-gradient(135deg,
+      #eff6ff,
+      #dbeafe);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -364,11 +358,9 @@
 
 .selectAllBtn {
   border: 1px solid #dbeafe;
-  background: linear-gradient(
-    135deg,
-    #f8fbff,
-    #eff6ff
-  );
+  background: linear-gradient(135deg,
+      #f8fbff,
+      #eff6ff);
   color: #2563eb;
   padding: 0.68rem 0.95rem;
   border-radius: 12px;
@@ -388,11 +380,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(
-    135deg,
-    #f8fafc,
-    #f1f5f9
-  );
+  background: linear-gradient(135deg,
+      #f8fafc,
+      #f1f5f9);
   color: #0f172a;
   padding: 0 0.85rem;
   border-radius: 999px;
@@ -437,7 +427,7 @@
   transition:
     max-height 0.35s ease,
     opacity 0.25s ease;
-    padding-top: 5px;
+  padding-top: 5px;
 }
 
 .expanded {
@@ -448,10 +438,8 @@
 .environmentList {
   padding: 0 1rem 1rem;
   display: grid;
-  grid-template-columns: repeat(
-    auto-fit,
-    minmax(280px, 1fr)
-  );
+  grid-template-columns: repeat(auto-fit,
+      minmax(280px, 1fr));
   gap: 0.85rem;
 }
 
@@ -732,6 +720,13 @@
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.8; }
+
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 0.8;
+  }
 }

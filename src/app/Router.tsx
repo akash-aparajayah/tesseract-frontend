@@ -11,6 +11,7 @@ import UserDetailView from "@/pages/UserDetailView";
 import Workspace from "@/pages/Workspace";
 import AssignProjectsEnv from "@/pages/AssignProjectsEnv";
 import NotFound from "@/components/NotFound/NotFound"; // Import your 404 component
+import SetupAccount from "../pages/SetupAccount";
 
 const router = createBrowserRouter([
   {
@@ -20,6 +21,10 @@ const router = createBrowserRouter([
   {
     path: "/forgot-password/:token",
     element: <ForgotPassword />,
+  },
+  {
+    path: "/setup-account/:token",
+    element: <SetupAccount />,
   },
   {
     path: "/dashboard",
@@ -61,7 +66,7 @@ const router = createBrowserRouter([
       },
     ],
   },
-  // ✅ Add 404 catch-all route at the end
+  // 404 Page
   {
     path: "*",
     element: <NotFound />,
