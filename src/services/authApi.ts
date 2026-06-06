@@ -60,3 +60,17 @@ export const completeSetupApi = (
 export const verifyUser = (data: { passKey: string }) => {
   return api.post("/auth/verify-sensitive-user-access", data);
 };
+
+// UPDATE PASSKEY
+
+export const updatePasskeyApi = (
+  data: {
+    currentPasskey: string;
+    newPasskey: string;
+  }
+) => {
+  return api.patch(
+    "/auth/update-passkey",
+    data
+  );
+};

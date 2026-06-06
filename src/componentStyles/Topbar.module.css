@@ -398,13 +398,9 @@
   position: fixed;
   inset: 0;
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: rgba(15, 23, 42, 0.45);
 
-  background: rgba(0, 0, 0, 0.35);
-
-  backdrop-filter: blur(3px);
+  backdrop-filter: blur(4px);
 
   z-index: 3000;
 
@@ -421,21 +417,118 @@
   }
 }
 
+.securityTabs {
+  display: flex;
+
+  gap: 0;
+
+  margin-bottom: 30px;
+
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.securityTab {
+  border: none;
+
+  background: transparent;
+
+  padding: 14px 22px;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  color: #64748b;
+
+  cursor: pointer;
+
+  position: relative;
+
+  transition: all 0.2s ease;
+}
+
+.securityTab:hover {
+  color: var(--primary-blue);
+}
+
+.securityTabActive {
+  color: var(--primary-blue);
+}
+
+.securityTabActive::after {
+  content: "";
+
+  position: absolute;
+
+  left: 0;
+  bottom: -1px;
+
+  width: 100%;
+  height: 3px;
+
+  background: var(--primary-blue);
+
+  border-radius: 10px 10px 0 0;
+}
+
+.securitySectionTitle {
+  font-size: 22px;
+
+  font-weight: 700;
+
+  color: var(--deep-navy);
+
+  margin-bottom: 24px;
+}
+
+@media (max-width: 992px) {
+  .modalBox {
+    width: 90vw;
+  }
+}
+
+@media (max-width: 768px) {
+  .modalBox {
+    width: 100vw;
+    padding: 24px;
+  }
+}
+
 /* =========================================================
    MODAL BOX
 ========================================================= */
 .modalBox {
-  width: 400px;
+  position: fixed;
 
-  background: white;
+  top: 0;
+  right: 0;
 
-  border-radius: 24px;
+  width: 75vw;
+  max-width: 1100px;
+  width: 500px;
+  height: 100vh;
 
-  padding: 28px;
+  background: #ffffff;
 
-  box-shadow: var(--shadow-medium);
+  padding: 32px;
 
-  animation: modalPop 0.3s ease;
+  overflow-y: auto;
+
+  border-radius: 0;
+
+  box-shadow:
+    -10px 0 30px rgba(0, 0, 0, 0.08);
+
+  animation: slideDrawerIn 0.3s ease forwards;
+}
+
+@keyframes slideDrawerIn {
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
 }
 
 @keyframes modalPop {

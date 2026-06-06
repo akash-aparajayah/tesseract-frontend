@@ -15,7 +15,7 @@ import { useNavigate } from "react-router-dom";
 
 import styles from "../componentStyles/Topbar.module.css";
 import Toast from "./common/Toast";
-import { updatePasswordApi } from "@/services/authApi";
+import { updatePasswordApi, updatePasskeyApi, } from "@/services/authApi";
 import GlobalSearch from "./common/GlobalSearch";
 
 interface ToastState {
@@ -79,6 +79,18 @@ export default function TopBar({
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [toasts, setToasts] = useState<ToastState[]>([]);
+
+  // fOR PASSKEY
+  const [currentPasskey, setCurrentPasskey] = useState("");
+  const [newPasskey, setNewPasskey] = useState("");
+  const [confirmPasskey, setConfirmPasskey] = useState("");
+
+  const [showCurrentPasskey, setShowCurrentPasskey] = useState(false);
+  const [showNewPasskey, setShowNewPasskey] = useState(false);
+  const [showConfirmPasskey, setShowConfirmPasskey] = useState(false);
+
+  const [activeSecurityTab, setActiveSecurityTab] =
+    useState<"password" | "passkey">("password");
 
   // Logout states
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -156,6 +168,78 @@ export default function TopBar({
       showToast(errorMessage, "error");
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handlePasskeyChange = async (
+    e: React.FormEvent
+  ) => {
+
+    e.preventDefault();
+
+    if (
+      !/^\d{6}$/.test(currentPasskey)
+    ) {
+      showToast(
+        "Current passkey must be 6 digits",
+        "error"
+      );
+      return;
+    }
+
+    if (
+      !/^\d{6}$/.test(newPasskey)
+    ) {
+      showToast(
+        "New passkey must be 6 digits",
+        "error"
+      );
+      return;
+    }
+
+    if (
+      newPasskey !== confirmPasskey
+    ) {
+      showToast(
+        "Passkeys do not match",
+        "error"
+      );
+      return;
+    }
+
+    try {
+
+      const response =
+        await updatePasskeyApi({
+          currentPasskey,
+          newPasskey,
+        });
+
+      if (
+        response.status !== 200
+      ) {
+        throw new Error(
+          response.data?.message
+        );
+      }
+
+      showToast(
+        "Credential passkey updated successfully",
+        "success"
+      );
+
+      setCurrentPasskey("");
+      setNewPasskey("");
+      setConfirmPasskey("");
+
+    } catch (err: any) {
+
+      showToast(
+        err?.response?.data?.message ||
+        "Failed to update passkey",
+        "error"
+      );
+
     }
   };
 
@@ -252,7 +336,9 @@ export default function TopBar({
         <div className={styles.modalOverlay}>
           <div className={styles.modalBox}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-              <h2 style={{ margin: 0 }}>Change Password</h2>
+              <h2 className={styles.securitySectionTitle}>
+                Security Settings
+              </h2>
               <button
                 className={styles.closeButton}
                 onClick={() => setShowPasswordModal(false)}
@@ -262,54 +348,192 @@ export default function TopBar({
                 <FaTimes />
               </button>
             </div>
-            <form onSubmit={handlePasswordChange}>
-              <div className={styles.passwordWrapper}>
-                <input
-                  type={showNewPassword ? "text" : "password"}
-                  placeholder="New Password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  required
-                />
-                <button
-                  type="button"
-                  className={styles.eyeButton}
-                  onClick={() => setShowNewPassword(!showNewPassword)}
-                  title={showNewPassword ? "Hide Password" : "Show Password"}
-                >
-                  {showNewPassword ? <FaEyeSlash /> : <FaEye />}
-                </button>
-              </div>
-              <div className={styles.passwordWrapper}>
-                <input
-                  type={showConfirmPassword ? "text" : "password"}
-                  placeholder="Confirm Password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                />
-                <button
-                  type="button"
-                  className={styles.eyeButton}
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  title={showConfirmPassword ? "Hide Password" : "Show Password"}
-                >
-                  {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
-                </button>
-              </div>
-              <div className={styles.modalActions}>
-                <button
-                  type="button"
-                  className={styles.cancelButton}
-                  onClick={() => setShowPasswordModal(false)}
-                >
-                  Cancel
-                </button>
-                <button type="submit" className={styles.saveButton} disabled={isUpdating}>
-                  {isUpdating ? "Updating..." : "Update Password"}
-                </button>
-              </div>
-            </form>
+            <div className={styles.securityTabs}>
+              <button
+                type="button"
+                className={
+                  activeSecurityTab === "password"
+                    ? `${styles.securityTab} ${styles.securityTabActive}`
+                    : styles.securityTab
+                }
+                onClick={() =>
+                  setActiveSecurityTab("password")
+                }
+              >
+                Password
+              </button>
+
+              <button
+                type="button"
+                className={
+                  activeSecurityTab === "passkey"
+                    ? `${styles.securityTab} ${styles.securityTabActive}`
+                    : styles.securityTab
+                }
+                onClick={() =>
+                  setActiveSecurityTab("passkey")
+                }
+              >
+                Credential Passkey
+              </button>
+            </div>
+            {activeSecurityTab === "password" && (
+              <form onSubmit={handlePasswordChange}>
+                <div className={styles.passwordWrapper}>
+                  <input
+                    type={showNewPassword ? "text" : "password"}
+                    placeholder="New Password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className={styles.eyeButton}
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    title={showNewPassword ? "Hide Password" : "Show Password"}
+                  >
+                    {showNewPassword ? <FaEyeSlash /> : <FaEye />}
+                  </button>
+                </div>
+                <div className={styles.passwordWrapper}>
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Confirm Password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className={styles.eyeButton}
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    title={showConfirmPassword ? "Hide Password" : "Show Password"}
+                  >
+                    {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                  </button>
+                </div>
+                <div className={styles.modalActions}>
+                  <button
+                    type="button"
+                    className={styles.cancelButton}
+                    onClick={() => setShowPasswordModal(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className={styles.saveButton} disabled={isUpdating}>
+                    {isUpdating ? "Updating..." : "Update Password"}
+                  </button>
+                </div>
+              </form>
+            )}
+            {activeSecurityTab === "passkey" && (
+              <form onSubmit={handlePasskeyChange}>
+
+                <div className={styles.passwordWrapper}>
+                  <input
+                    type={showCurrentPasskey ? "text" : "password"}
+                    placeholder="Current Passkey"
+                    value={currentPasskey}
+                    onChange={(e) =>
+                      setCurrentPasskey(e.target.value)
+                    }
+                    maxLength={6}
+                    required
+                  />
+
+                  <button
+                    type="button"
+                    className={styles.eyeButton}
+                    onClick={() =>
+                      setShowCurrentPasskey(!showCurrentPasskey)
+                    }
+                  >
+                    {showCurrentPasskey ? (
+                      <FaEyeSlash />
+                    ) : (
+                      <FaEye />
+                    )}
+                  </button>
+                </div>
+
+                <div className={styles.passwordWrapper}>
+                  <input
+                    type={showNewPasskey ? "text" : "password"}
+                    placeholder="New Passkey"
+                    value={newPasskey}
+                    onChange={(e) =>
+                      setNewPasskey(e.target.value)
+                    }
+                    maxLength={6}
+                    required
+                  />
+
+                  <button
+                    type="button"
+                    className={styles.eyeButton}
+                    onClick={() =>
+                      setShowNewPasskey(!showNewPasskey)
+                    }
+                  >
+                    {showNewPasskey ? (
+                      <FaEyeSlash />
+                    ) : (
+                      <FaEye />
+                    )}
+                  </button>
+                </div>
+
+                <div className={styles.passwordWrapper}>
+                  <input
+                    type={showConfirmPasskey ? "text" : "password"}
+                    placeholder="Confirm Passkey"
+                    value={confirmPasskey}
+                    onChange={(e) =>
+                      setConfirmPasskey(e.target.value)
+                    }
+                    maxLength={6}
+                    required
+                  />
+
+                  <button
+                    type="button"
+                    className={styles.eyeButton}
+                    onClick={() =>
+                      setShowConfirmPasskey(
+                        !showConfirmPasskey
+                      )
+                    }
+                  >
+                    {showConfirmPasskey ? (
+                      <FaEyeSlash />
+                    ) : (
+                      <FaEye />
+                    )}
+                  </button>
+                </div>
+
+                <div className={styles.modalActions}>
+                  <button
+                    type="button"
+                    className={styles.cancelButton}
+                    onClick={() =>
+                      setShowPasswordModal(false)
+                    }
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    className={styles.saveButton}
+                  >
+                    Update Passkey
+                  </button>
+                </div>
+
+              </form>
+            )}
           </div>
         </div>
       )}
