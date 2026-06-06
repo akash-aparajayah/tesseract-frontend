@@ -19,7 +19,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(145deg, #0a1929 0%, #001e3c 100%);
   overflow: auto;
   z-index: 1;
 }
@@ -63,6 +62,7 @@
   animation: floatParticle 15s infinite alternate;
   pointer-events: none;
 }
+
 .particle-1 {
   width: 300px;
   height: 300px;
@@ -71,6 +71,7 @@
   background: radial-gradient(circle, var(--vibrant-cyan), transparent);
   animation-duration: 20s;
 }
+
 .particle-2 {
   width: 250px;
   height: 250px;
@@ -79,6 +80,7 @@
   background: radial-gradient(circle, var(--safety-green), transparent);
   animation-duration: 25s;
 }
+
 .particle-3 {
   width: 180px;
   height: 180px;
@@ -87,9 +89,15 @@
   background: radial-gradient(circle, var(--zoho-blue), transparent);
   animation-duration: 18s;
 }
+
 @keyframes floatParticle {
-  0% { transform: translate(0, 0) scale(1); }
-  100% { transform: translate(30px, -30px) scale(1.2); }
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  100% {
+    transform: translate(30px, -30px) scale(1.2);
+  }
 }
 
 .logo-area {
@@ -98,15 +106,18 @@
   position: relative;
   z-index: 2;
 }
+
 .premium-logo {
   max-width: 160px;
   height: auto;
   filter: none;
   transition: transform 0.2s;
 }
+
 .premium-logo:hover {
   transform: scale(1.02);
 }
+
 .logo-fallback {
   font-size: 24px;
   font-weight: 800;
@@ -122,6 +133,7 @@
   position: relative;
   z-index: 2;
 }
+
 .value-text h2 {
   font-size: 1.8rem;
   font-weight: 700;
@@ -131,6 +143,7 @@
   color: transparent;
   margin-bottom: 12px;
 }
+
 .value-text p {
   color: rgba(255, 255, 255, 0.85);
   font-size: 0.95rem;
@@ -148,6 +161,7 @@
   z-index: 2;
   margin-top: 10px;
 }
+
 .grid-card {
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(8px);
@@ -161,22 +175,26 @@
   justify-content: space-between;
   height: 100%;
 }
+
 .grid-card:hover {
   background: rgba(255, 255, 255, 0.15);
   transform: translateY(-4px);
 }
+
 .grid-card i {
   font-size: 2rem;
   color: var(--vibrant-cyan);
   margin-bottom: 12px;
   display: inline-block;
 }
+
 .grid-card h3 {
   font-size: 1.1rem;
   font-weight: 600;
   color: white;
   margin-bottom: 6px;
 }
+
 .grid-card p {
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.7);
@@ -191,12 +209,14 @@
   display: flex;
   flex-direction: column;
 }
+
 .form-container {
   width: 100%;
   max-width: 380px;
   margin: auto 0;
   align-self: center;
 }
+
 .form-panel h2 {
   font-size: 2rem;
   font-weight: 700;
@@ -204,16 +224,19 @@
   margin-bottom: 8px;
   text-align: center;
 }
+
 .form-panel p {
   color: var(--slate-gray);
   margin-bottom: 32px;
   font-size: 0.9rem;
   text-align: center;
 }
+
 .input-group-premium {
   margin-bottom: 28px;
   width: 100%;
 }
+
 .input-group-premium label {
   display: block;
   font-size: 0.75rem;
@@ -223,6 +246,7 @@
   color: var(--deep-navy);
   margin-bottom: 6px;
 }
+
 .input-group-premium input {
   width: 100%;
   padding: 14px 18px;
@@ -233,24 +257,29 @@
   color: #1e293b;
   transition: all 0.2s;
 }
+
 .input-group-premium input:focus {
   outline: none;
   border-color: var(--zoho-blue);
   background: white;
   box-shadow: 0 0 0 4px rgba(27, 114, 232, 0.15);
 }
+
 .error-text {
   display: block;
   font-size: 12px;
   color: #f75f5f;
   margin-top: 6px;
 }
+
 .password-wrapper {
   position: relative;
 }
+
 .password-wrapper input {
   padding-right: 50px;
 }
+
 .eye-btn-premium {
   position: absolute;
   right: 18px;
@@ -264,9 +293,11 @@
   display: flex;
   align-items: center;
 }
+
 .eye-btn-premium:hover {
   color: var(--zoho-blue);
 }
+
 .login-btn-premium {
   width: 100%;
   padding: 14px;
@@ -281,24 +312,29 @@
   margin-top: 8px;
   box-shadow: 0 8px 20px rgba(27, 114, 232, 0.3);
 }
+
 .login-btn-premium:hover:not(:disabled) {
   transform: translateY(-3px);
   box-shadow: 0 15px 30px rgba(27, 114, 232, 0.4);
 }
+
 .login-btn-premium:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
 .btn-content {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
 }
+
 .forgot-premium {
   text-align: center;
   margin-top: 24px;
 }
+
 .forgot-premium button {
   background: none;
   border: none;
@@ -306,6 +342,7 @@
   font-size: 0.8rem;
   cursor: pointer;
 }
+
 .forgot-premium button:hover {
   text-decoration: underline;
 }
@@ -324,6 +361,7 @@
   justify-content: center;
   z-index: 1000;
 }
+
 .forgot-modal {
   background: white;
   width: 90%;
@@ -332,17 +370,20 @@
   padding: 32px;
   box-shadow: 0 30px 50px rgba(0, 0, 0, 0.3);
 }
+
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
 }
+
 .modal-header h3 {
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--deep-navy);
 }
+
 .close-btn {
   background: none;
   border: none;
@@ -350,15 +391,18 @@
   cursor: pointer;
   color: var(--slate-gray);
 }
+
 .close-btn:hover {
   color: var(--zoho-blue);
 }
+
 .modal-actions {
   display: flex;
   gap: 12px;
   justify-content: flex-end;
   margin-top: 24px;
 }
+
 .btn-cancel {
   background: #f1f5f9;
   border: none;
@@ -367,9 +411,11 @@
   font-weight: 500;
   cursor: pointer;
 }
+
 .btn-cancel:hover {
   background: #e2e8f0;
 }
+
 .btn-submit {
   background: var(--zoho-blue);
   border: none;
@@ -379,9 +425,11 @@
   font-weight: 500;
   cursor: pointer;
 }
+
 .btn-submit:hover:not(:disabled) {
   background: #0f5bc9;
 }
+
 .btn-submit:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -392,17 +440,21 @@
   .split-layout {
     flex-direction: column;
   }
+
   .brand-panel {
     padding: 40px 24px;
     text-align: center;
   }
+
   .feature-grid {
     grid-template-columns: 1fr;
     gap: 12px;
   }
+
   .form-panel {
     padding: 48px 28px;
   }
+
   .form-container {
     max-width: 100%;
   }

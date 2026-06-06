@@ -1,14 +1,20 @@
 import { useEffect, useState } from "react";
-import {
-    useNavigate,
-    useParams,
-} from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
     Eye,
     EyeOff,
     CheckCircle,
     XCircle,
     Loader2,
+    Brain,
+    Network,
+    Database,
+    Shield,
+    Zap,
+    Cpu,
+    Globe,
+    Lock,
+    Sparkles
 } from "lucide-react";
 
 import styles from "../styles/SetupAccount.module.css";
@@ -89,7 +95,7 @@ export default function SetupAccount() {
         }
     }, [confirmPassword, password, confirmPasswordTouched]);
 
-    // Real-time passkey validation (only format, not match)
+    // Real-time passkey validation
     useEffect(() => {
         if (passkeyTouched) {
             if (!credentialPasskey) {
@@ -101,9 +107,6 @@ export default function SetupAccount() {
             }
         }
     }, [credentialPasskey, isPasskeyValid, passkeyTouched]);
-
-    // Real-time confirm passkey validation (only match, shown on submit)
-    // We'll handle match validation on submit only
 
     const validateToken = async () => {
         try {
@@ -117,15 +120,12 @@ export default function SetupAccount() {
     };
 
     const handleSubmit = async () => {
-        // Mark all fields as touched
         setPasswordTouched(true);
         setConfirmPasswordTouched(true);
         setPasskeyTouched(true);
         setConfirmPasskeyTouched(true);
-
         setSubmitError("");
 
-        // Validate password
         if (!password) {
             setPasswordError("Password is required");
             return;
@@ -136,7 +136,6 @@ export default function SetupAccount() {
             return;
         }
 
-        // Validate confirm password
         if (!confirmPassword) {
             setConfirmPasswordError("Please confirm your password");
             return;
@@ -147,7 +146,6 @@ export default function SetupAccount() {
             return;
         }
 
-        // Validate passkey format
         if (!credentialPasskey) {
             setPasskeyError("Credential passkey is required");
             return;
@@ -158,7 +156,6 @@ export default function SetupAccount() {
             return;
         }
 
-        // Validate passkey match (only checked on submit)
         if (!confirmCredentialPasskey) {
             setConfirmPasskeyError("Please confirm your credential passkey");
             return;
@@ -169,7 +166,6 @@ export default function SetupAccount() {
             return;
         }
 
-        // Clear all errors and submit
         setIsSubmitting(true);
 
         try {
@@ -206,7 +202,9 @@ export default function SetupAccount() {
         return (
             <div className={styles.wrapper}>
                 <div className={styles.statusCard}>
-                    <div className={styles.statusIcon}>⚠️</div>
+                    <div className={styles.statusIcon}>
+                        <Lock size={48} />
+                    </div>
                     <h2>Account Already Configured</h2>
                     <p>This account has already been set up. Please log in instead.</p>
                     <button onClick={() => navigate("/")} className={styles.primaryButton}>
@@ -221,7 +219,9 @@ export default function SetupAccount() {
         return (
             <div className={styles.wrapper}>
                 <div className={styles.statusCard}>
-                    <div className={styles.statusIcon}>🔒</div>
+                    <div className={styles.statusIcon}>
+                        <Globe size={48} />
+                    </div>
                     <h2>Setup Link Expired</h2>
                     <p>This invitation link has expired. Please contact your administrator for a new one.</p>
                 </div>
@@ -233,7 +233,9 @@ export default function SetupAccount() {
         return (
             <div className={styles.wrapper}>
                 <div className={styles.statusCard}>
-                    <div className={styles.successIcon}>✓</div>
+                    <div className={styles.successIcon}>
+                        <Sparkles size={40} />
+                    </div>
                     <h2>Account Created Successfully!</h2>
                     <p>Redirecting you to login...</p>
                     <div className={styles.progressBar}>
@@ -246,196 +248,239 @@ export default function SetupAccount() {
 
     return (
         <div className={styles.wrapper}>
-            <div className={styles.backgroundDecoration}>
-                <div className={styles.blob1}></div>
-                <div className={styles.blob2}></div>
-            </div>
+            <div className={styles["setup-premium"]}>
+                <div className={styles["split-layout"]}>
+                    {/* Left Panel - Neural Network Illustration */}
+                    <div className={styles["brand-panel"]}>
+                        <div className={`${styles.particle} ${styles["particle-1"]}`}></div>
+                        <div className={`${styles.particle} ${styles["particle-2"]}`}></div>
+                        <div className={`${styles.particle} ${styles["particle-3"]}`}></div>
+                        <div className={`${styles.particle} ${styles["particle-4"]}`}></div>
 
-            <div className={styles.card}>
-                <div className={styles.cardHeader}>
-                    <div className={styles.logo}>🔐</div>
-                    <h2>Set up your account</h2>
-                    <p>Create your credentials to get started</p>
+                        <div className={styles["logo-area"]}>
+                            <div className={styles["neural-icon"]}>
+                                <Brain size={56} strokeWidth={1.5} />
+                            </div>
+                            <h2>Credential Management Platform</h2>
+                        </div>
+
+
+
+                        <div className={styles["feature-grid"]}>
+                            <div className={styles["grid-card"]}>
+                                <Database size={28} />
+                                <h3>Secure Storage</h3>
+                                <p>Enterprise-grade encryption for all credentials</p>
+                            </div>
+                            <div className={styles["grid-card"]}>
+                                <Shield size={28} />
+                                <h3>Zero Trust</h3>
+                                <p>Multi-layer security with audit logging</p>
+                            </div>
+                            <div className={styles["grid-card"]}>
+                                <Zap size={28} />
+                                <h3>Fast Access</h3>
+                                <p>Instant credential rotation and retrieval</p>
+                            </div>
+                            <div className={styles["grid-card"]}>
+                                <Cpu size={28} />
+                                <h3>AI-Powered</h3>
+                                <p>Intelligent threat detection and alerts</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right Panel - Form */}
+                    <div className={styles["form-panel"]}>
+                        <div className={styles["form-container"]}>
+                            <div className={styles["form-header"]}>
+
+                                <h2>Set up your account</h2>
+                                <p>Create your credentials to get started</p>
+                            </div>
+
+                            {submitError && (
+                                <div className={styles.errorAlert}>
+                                    <span>⚠️</span>
+                                    <p>{submitError}</p>
+                                </div>
+                            )}
+
+                            <div className={styles.formSection}>
+                                <div className={styles.sectionHeader}>
+                                    <h4>Login Password</h4>
+                                    <p className={styles.sectionNote}>
+                                        Used to sign in to the Credential Management Platform
+                                    </p>
+                                </div>
+
+                                <div className={styles.inputGroup}>
+                                    <div className={styles.inputWrapper}>
+                                        <div className={styles.passwordWrapper}>
+                                            <input
+                                                type={showPassword ? "text" : "password"}
+                                                placeholder="Create password"
+                                                value={password}
+                                                onChange={(e) => setPassword(e.target.value)}
+                                                onBlur={() => setPasswordTouched(true)}
+                                                className={`${styles.input} ${passwordError && passwordTouched ? styles.inputError : ""}`}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className={styles.eyeButton}
+                                            >
+                                                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                            </button>
+                                        </div>
+                                        {passwordError && passwordTouched && (
+                                            <div className={styles.fieldError}>{passwordError}</div>
+                                        )}
+                                    </div>
+
+                                    <div className={styles.inputWrapper}>
+                                        <div className={styles.passwordWrapper}>
+                                            <input
+                                                type={showConfirmPassword ? "text" : "password"}
+                                                placeholder="Confirm password"
+                                                value={confirmPassword}
+                                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                                onBlur={() => setConfirmPasswordTouched(true)}
+                                                className={`${styles.input} ${confirmPasswordError && confirmPasswordTouched ? styles.inputError : ""}`}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                className={styles.eyeButton}
+                                            >
+                                                {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                            </button>
+                                        </div>
+                                        {confirmPasswordError && confirmPasswordTouched && (
+                                            <div className={styles.fieldError}>{confirmPasswordError}</div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className={styles.validationGrid}>
+                                    <div className={`${styles.rule} ${passwordRules.minLength ? styles.valid : styles.invalid}`}>
+                                        {passwordRules.minLength ? <CheckCircle size={14} /> : <XCircle size={14} />}
+                                        <span>At least 8 characters</span>
+                                    </div>
+                                    <div className={`${styles.rule} ${passwordRules.uppercase ? styles.valid : styles.invalid}`}>
+                                        {passwordRules.uppercase ? <CheckCircle size={14} /> : <XCircle size={14} />}
+                                        <span>One uppercase letter</span>
+                                    </div>
+                                    <div className={`${styles.rule} ${passwordRules.lowercase ? styles.valid : styles.invalid}`}>
+                                        {passwordRules.lowercase ? <CheckCircle size={14} /> : <XCircle size={14} />}
+                                        <span>One lowercase letter</span>
+                                    </div>
+                                    <div className={`${styles.rule} ${passwordRules.number ? styles.valid : styles.invalid}`}>
+                                        {passwordRules.number ? <CheckCircle size={14} /> : <XCircle size={14} />}
+                                        <span>One number</span>
+                                    </div>
+                                    <div className={`${styles.rule} ${passwordRules.special ? styles.valid : styles.invalid}`}>
+                                        {passwordRules.special ? <CheckCircle size={14} /> : <XCircle size={14} />}
+                                        <span>One special character</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className={styles.formSection}>
+                                <div className={styles.sectionHeader}>
+                                    <h4>Credential Passkey</h4>
+                                    <p className={styles.sectionNote}>
+                                        Used only to unlock provider credentials. It is NOT used for login.
+                                    </p>
+                                </div>
+
+                                <div className={styles.inputGroup}>
+                                    <div className={styles.inputWrapper}>
+                                        <div className={styles.passwordWrapper}>
+                                            <input
+                                                type={showPasskey ? "text" : "password"}
+                                                placeholder="6-digit passkey"
+                                                maxLength={6}
+                                                inputMode="numeric"
+                                                value={credentialPasskey}
+                                                onKeyDown={(e) => {
+                                                    const allowedKeys = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"];
+                                                    if (!/^\d$/.test(e.key) && !allowedKeys.includes(e.key)) {
+                                                        e.preventDefault();
+                                                    }
+                                                }}
+                                                onChange={(e) => setCredentialPasskey(e.target.value)}
+                                                onBlur={() => setPasskeyTouched(true)}
+                                                className={`${styles.input} ${passkeyError && passkeyTouched ? styles.inputError : ""}`}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPasskey(!showPasskey)}
+                                                className={styles.eyeButton}
+                                            >
+                                                {showPasskey ? <EyeOff size={20} /> : <Eye size={20} />}
+                                            </button>
+                                        </div>
+                                        {passkeyError && passkeyTouched && (
+                                            <div className={styles.fieldError}>{passkeyError}</div>
+                                        )}
+                                    </div>
+
+                                    <div className={styles.inputWrapper}>
+                                        <div className={styles.passwordWrapper}>
+                                            <input
+                                                type={showConfirmPasskey ? "text" : "password"}
+                                                placeholder="Confirm passkey"
+                                                maxLength={6}
+                                                inputMode="numeric"
+                                                value={confirmCredentialPasskey}
+                                                onKeyDown={(e) => {
+                                                    const allowedKeys = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"];
+                                                    if (!/^\d$/.test(e.key) && !allowedKeys.includes(e.key)) {
+                                                        e.preventDefault();
+                                                    }
+                                                }}
+                                                onChange={(e) => setConfirmCredentialPasskey(e.target.value)}
+                                                onBlur={() => setConfirmPasskeyTouched(true)}
+                                                className={`${styles.input} ${confirmPasskeyError && confirmPasskeyTouched ? styles.inputError : ""}`}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowConfirmPasskey(!showConfirmPasskey)}
+                                                className={styles.eyeButton}
+                                            >
+                                                {showConfirmPasskey ? <EyeOff size={20} /> : <Eye size={20} />}
+                                            </button>
+                                        </div>
+                                        {confirmPasskeyError && confirmPasskeyTouched && (
+                                            <div className={styles.fieldError}>{confirmPasskeyError}</div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={handleSubmit}
+                                disabled={isSubmitting}
+                                className={styles.submitButton}
+                            >
+                                {isSubmitting ? (
+                                    <>
+                                        <Loader2 size={18} className={styles.spinningIcon} />
+                                        Creating Account...
+                                    </>
+                                ) : (
+                                    "Create Account"
+                                )}
+                            </button>
+
+                            <p className={styles.footerNote}>
+                                By creating an account, you agree to our Terms of Service and Privacy Policy
+                            </p>
+
+                        </div>
+                    </div>
                 </div>
-
-                {submitError && (
-                    <div className={styles.errorAlert}>
-                        <span>⚠️</span>
-                        <p>{submitError}</p>
-                    </div>
-                )}
-
-                <div className={styles.formSection}>
-                    <div className={styles.sectionHeader}>
-                        <h4>Login Password</h4>
-                        <p className={styles.sectionNote}>
-                            Used to sign in to the Credential Management Platform
-                        </p>
-                    </div>
-
-                    <div className={styles.inputGroup}>
-                        <div className={styles.inputWrapper}>
-                            <div className={styles.passwordWrapper}>
-                                <input
-                                    type={showPassword ? "text" : "password"}
-                                    placeholder="Create password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    onBlur={() => setPasswordTouched(true)}
-                                    className={`${styles.input} ${passwordError && passwordTouched ? styles.inputError : ""}`}
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className={styles.eyeButton}
-                                >
-                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                                </button>
-                            </div>
-                            {passwordError && passwordTouched && (
-                                <div className={styles.fieldError}>{passwordError}</div>
-                            )}
-                        </div>
-
-                        <div className={styles.inputWrapper}>
-                            <div className={styles.passwordWrapper}>
-                                <input
-                                    type={showConfirmPassword ? "text" : "password"}
-                                    placeholder="Confirm password"
-                                    value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                    onBlur={() => setConfirmPasswordTouched(true)}
-                                    className={`${styles.input} ${confirmPasswordError && confirmPasswordTouched ? styles.inputError : ""}`}
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                    className={styles.eyeButton}
-                                >
-                                    {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                                </button>
-                            </div>
-                            {confirmPasswordError && confirmPasswordTouched && (
-                                <div className={styles.fieldError}>{confirmPasswordError}</div>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className={styles.validationGrid}>
-                        <div className={`${styles.rule} ${passwordRules.minLength ? styles.valid : styles.invalid}`}>
-                            {passwordRules.minLength ? <CheckCircle size={14} className={styles.checkIcon} /> : <XCircle size={14} className={styles.xIcon} />}
-                            <span>At least 8 characters</span>
-                        </div>
-                        <div className={`${styles.rule} ${passwordRules.uppercase ? styles.valid : styles.invalid}`}>
-                            {passwordRules.uppercase ? <CheckCircle size={14} className={styles.checkIcon} /> : <XCircle size={14} className={styles.xIcon} />}
-                            <span>One uppercase letter</span>
-                        </div>
-                        <div className={`${styles.rule} ${passwordRules.lowercase ? styles.valid : styles.invalid}`}>
-                            {passwordRules.lowercase ? <CheckCircle size={14} className={styles.checkIcon} /> : <XCircle size={14} className={styles.xIcon} />}
-                            <span>One lowercase letter</span>
-                        </div>
-                        <div className={`${styles.rule} ${passwordRules.number ? styles.valid : styles.invalid}`}>
-                            {passwordRules.number ? <CheckCircle size={14} className={styles.checkIcon} /> : <XCircle size={14} className={styles.xIcon} />}
-                            <span>One number</span>
-                        </div>
-                        <div className={`${styles.rule} ${passwordRules.special ? styles.valid : styles.invalid}`}>
-                            {passwordRules.special ? <CheckCircle size={14} className={styles.checkIcon} /> : <XCircle size={14} className={styles.xIcon} />}
-                            <span>One special character</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div className={styles.formSection}>
-                    <div className={styles.sectionHeader}>
-                        <h4>Credential Passkey</h4>
-                        <p className={styles.sectionNote}>
-                            Used only to unlock provider credentials. It is NOT used for login.
-                        </p>
-                    </div>
-
-                    <div className={styles.inputGroup}>
-                        <div className={styles.inputWrapper}>
-                            <div className={styles.passwordWrapper}>
-                                <input
-                                    type={showPasskey ? "text" : "password"}
-                                    placeholder="6-digit passkey"
-                                    maxLength={6}
-                                    inputMode="numeric"
-                                    value={credentialPasskey}
-                                    onKeyDown={(e) => {
-                                        const allowedKeys = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"];
-                                        if (!/^\d$/.test(e.key) && !allowedKeys.includes(e.key)) {
-                                            e.preventDefault();
-                                        }
-                                    }}
-                                    onChange={(e) => setCredentialPasskey(e.target.value)}
-                                    onBlur={() => setPasskeyTouched(true)}
-                                    className={`${styles.input} ${passkeyError && passkeyTouched ? styles.inputError : ""}`}
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPasskey(!showPasskey)}
-                                    className={styles.eyeButton}
-                                >
-                                    {showPasskey ? <EyeOff size={20} /> : <Eye size={20} />}
-                                </button>
-                            </div>
-                            {passkeyError && passkeyTouched && (
-                                <div className={styles.fieldError}>{passkeyError}</div>
-                            )}
-                        </div>
-
-                        <div className={styles.inputWrapper}>
-                            <div className={styles.passwordWrapper}>
-                                <input
-                                    type={showConfirmPasskey ? "text" : "password"}
-                                    placeholder="Confirm passkey"
-                                    maxLength={6}
-                                    inputMode="numeric"
-                                    value={confirmCredentialPasskey}
-                                    onKeyDown={(e) => {
-                                        const allowedKeys = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"];
-                                        if (!/^\d$/.test(e.key) && !allowedKeys.includes(e.key)) {
-                                            e.preventDefault();
-                                        }
-                                    }}
-                                    onChange={(e) => setConfirmCredentialPasskey(e.target.value)}
-                                    onBlur={() => setConfirmPasskeyTouched(true)}
-                                    className={`${styles.input} ${confirmPasskeyError && confirmPasskeyTouched ? styles.inputError : ""}`}
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowConfirmPasskey(!showConfirmPasskey)}
-                                    className={styles.eyeButton}
-                                >
-                                    {showConfirmPasskey ? <EyeOff size={20} /> : <Eye size={20} />}
-                                </button>
-                            </div>
-                            {confirmPasskeyError && confirmPasskeyTouched && (
-                                <div className={styles.fieldError}>{confirmPasskeyError}</div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                <button
-                    onClick={handleSubmit}
-                    disabled={isSubmitting}
-                    className={styles.submitButton}
-                >
-                    {isSubmitting ? (
-                        <>
-                            <Loader2 size={18} className={styles.spinningIcon} />
-                            Creating Account...
-                        </>
-                    ) : (
-                        "Create Account"
-                    )}
-                </button>
-
-                <p className={styles.footerNote}>
-                    By creating an account, you agree to our Terms of Service and Privacy Policy
-                </p>
             </div>
         </div>
     );

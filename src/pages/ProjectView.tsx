@@ -144,8 +144,6 @@ export default function ProjectView() {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [serviceEndpoint, setServiceEndpoint] =
     useState("");
-  const [serviceProviderCounts, setServiceProviderCounts] =
-    useState<Record<string, number>>({});
   // const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
   const [expandedProviders, setExpandedProviders] = useState<Record<string, boolean>>({});
   const [openEnvMenu, setOpenEnvMenu] = useState<string | null>(null);
@@ -761,6 +759,10 @@ export default function ProjectView() {
   };
 
   const loadProvidersForEnv = async (env: any) => {
+    console.log(
+      "LOAD PROVIDERS FOR ENV CALLED",
+      activeService
+    )
     if (!projectId || !serviceData) return;
 
     const service = serviceData.find(
@@ -777,12 +779,17 @@ export default function ProjectView() {
       return;
     }
 
+    setProvidersLoading(true);
+
     try {
       const res = await getProvidersByEnvironmentId(
         env.public_id,
         service.public_id
       );
-
+      console.log(
+        "ENV PROVIDERS RESPONSE",
+        res
+      );
       const data = res.data || {};
 
       const allProviders = [
@@ -869,11 +876,6 @@ export default function ProjectView() {
         ...healthUpdates
       }));
 
-      setServiceProviderCounts((prev) => ({
-        ...prev,
-        [activeService]: allProviders.length,
-      }));
-
       return allProviders;
 
     } catch (error) {
@@ -881,6 +883,8 @@ export default function ProjectView() {
       setProviders([]);
       setServiceEndpoint("");
       return [];
+    } finally {
+      setProvidersLoading(false);
     }
   };
 
@@ -1101,28 +1105,7 @@ export default function ProjectView() {
           setSelectedEnv(firstEnv.public_id);
         }
 
-        // Wait for service counts to load
-        await loadAllServiceCounts(firstEnv.public_id);
 
-        // Wait for providers to load for the first environment
-        if (serviceData) {
-          const service = serviceData.find(
-            (s: any) => s.name?.toLowerCase() === activeService?.toLowerCase()
-          );
-          if (service?.public_id) {
-            await getProvidersByEnvironmentId(firstEnv.public_id, service.public_id)
-              .then(res => {
-                const data = res.data || {};
-                const allProviders = [...(data.sandbox || []), ...(data.live || [])];
-                setProviders(allProviders.map((p: any) => ({
-                  id: p.public_id || p.id,
-                  name: p.provider_name || p.name,
-                  fields: { ...(p.credentials || {}), mode: p.mode, endpoint: p.endpoint },
-                })));
-              })
-              .catch(() => { });
-          }
-        }
       }
       // If envs.length === 0, the finally block will still run and set loading to false
     } catch (error) {
@@ -2026,16 +2009,25 @@ export default function ProjectView() {
   }, [projectId]);
 
   useEffect(() => {
+
     const fetchServices = async () => {
+      if (!selectedEnv) {
+        return;
+      }
       try {
-        const res = await getAllServices();
+        const res = await getAllServices(selectedEnv);
         setServiceData(res.data);  //extracts data array
+        console.log(
+          "SERVICES API RESPONSE",
+          res.data
+        );
       } catch (error) {
         console.error("Failed to fetch services:", error);
+
       }
     };
     fetchServices();
-  }, []);
+  }, [selectedEnv]);
 
   // Dropdown click outside - FIXED with ref
   useEffect(() => {
@@ -2072,31 +2064,6 @@ export default function ProjectView() {
   // On load, check localStorage first:
 
 
-  const loadAllServiceCounts = async (envPublicId: string) => {
-    if (!serviceData?.length) return;
-    if (!serviceData || !envPublicId) return;
-
-    const counts: Record<string, number> = {};
-
-    for (const service of [
-      ...messagingServices,
-      ...bankingServices,
-    ]) {
-      try {
-        const res = await getProvidersByEnvironmentId(envPublicId, service.public_id);
-        const data = res.data || {};
-        const total = (data.sandbox?.length || 0) + (data.live?.length || 0);
-        counts[service.name] = total;
-
-      } catch (error) {
-        counts[service.name] = 0;
-      }
-    }
-
-    setServiceProviderCounts(counts);
-  };
-
-
   useEffect(() => {
 
     if (
@@ -2110,56 +2077,51 @@ export default function ProjectView() {
     // AUTO SELECT FIRST SERVICE
     // THAT HAS PROVIDERS
 
-    const autoSelectService = async () => {
+    const autoSelectService = () => {
 
-      for (const service of serviceData) {
+      console.log(
+        "AUTO SELECT SERVICES",
+        serviceData
+      );
 
-        try {
+      const firstServiceWithProviders =
+        serviceData.find(
+          (service: any) =>
+            (service.provider_count || 0) > 0
+        );
 
-          const res =
-            await getProvidersByEnvironmentId(
-              selectedEnv,
-              service.public_id
-            );
+      console.log(
+        "SELECTED SERVICE",
+        firstServiceWithProviders
+      );
 
-          const data = res.data || {};
+      if (firstServiceWithProviders) {
 
-          const total =
-            (data.sandbox?.length || 0) +
-            (data.live?.length || 0);
-
-          // FIRST SERVICE HAVING PROVIDERS
-          if (total > 0) {
-
-            // AVOID EXTRA RE-RENDER
-            if (activeService !== service.name) {
-              setActiveService(service.name);
-            }
-
-            return;
-          }
-
-        } catch (error) {
-
-          console.error(error);
-
+        if (
+          activeService !==
+          firstServiceWithProviders.name
+        ) {
+          setActiveService(
+            firstServiceWithProviders.name
+          );
         }
+
+        return;
       }
 
-      // FALLBACK
       if (
         serviceData[0] &&
         activeService !== serviceData[0].name
       ) {
-
         setActiveService(
           serviceData[0].name
         );
-
       }
     };
 
-    autoSelectService();
+    if (serviceData?.length > 0) {
+      autoSelectService();
+    }
 
     const env = environments.find(
       (e: any) => e.public_id === selectedEnv
@@ -2174,8 +2136,6 @@ export default function ProjectView() {
       try {
 
         await Promise.all([
-          loadProvidersForEnv(env),
-          loadAllServiceCounts(env.public_id),
           fetchUsersForEnvironment(env),
         ]);
 
@@ -2188,10 +2148,15 @@ export default function ProjectView() {
 
   }, [
     selectedEnv,
+    serviceData,
     activeMainTab,
   ]);
 
   useEffect(() => {
+    console.log(
+      "ACTIVE SERVICE",
+      activeService
+    );
 
     const env = environments.find(
       (e: any) => e.public_id === selectedEnv
@@ -2200,27 +2165,20 @@ export default function ProjectView() {
     if (
       !env ||
       env.is_deleted ||
-      !activeService
+      !activeService ||
+      !serviceData
     ) {
       return;
     }
 
     const loadData = async () => {
-
       try {
-
-        await Promise.all([
-          loadProvidersForEnv(env),
-          loadAllServiceCounts(env.public_id),
-        ]);
-
+        await loadProvidersForEnv(env);
       } catch (error) {
-
         console.error(
           "Failed loading provider data",
           error
         );
-
       }
     };
 
@@ -2229,7 +2187,10 @@ export default function ProjectView() {
   }, [
     selectedEnv,
     activeService,
+    serviceData,
   ]);
+
+
 
   const getEnvIcon = (name: string): React.ReactNode => {
     const icons: Record<string, React.ReactNode> = { 'Local': <Home size={16} />, 'Dev': <Monitor size={16} />, 'Staging': <Rocket size={16} />, 'Live': <Globe size={16} /> };
@@ -2366,83 +2327,10 @@ export default function ProjectView() {
           service.service_base_endpoint || ""
         );
 
-        const env = environments.find(
-          (e: any) =>
-            e.public_id === selectedEnv
-        );
-
-        if (
-          env?.public_id &&
-          service?.public_id
-        ) {
-          loadAllServiceCounts(
-            env.public_id
-          );
-
-          setProvidersLoading(true);
-
-          getProvidersByEnvironmentId(
-            env.public_id,
-            service.public_id
-          )
-            .then((res) => {
-              const data =
-                res.data || {};
-
-              const allProviders = [
-                ...(data.sandbox || []),
-                ...(data.live || []),
-              ];
-
-              const providerList =
-                allProviders.map(
-                  (p: any) => ({
-                    id:
-                      p.public_id ||
-                      p.id,
-
-                    name:
-                      p.provider_name ||
-                      p.name,
-
-                    fields: {
-                      ...(p.credentials ||
-                        {}),
-                      mode: p.mode,
-                      endpoint:
-                        p.endpoint,
-                    },
-                  })
-                );
-
-              setProviders(
-                providerList
-              );
-
-              setServiceProviderCounts(
-                (prev) => ({
-                  ...prev,
-                  [service.name]:
-                    providerList.length,
-                })
-              );
-            })
-            .catch(() => {
-              setProviders([]);
-
-              setServiceProviderCounts(
-                (prev) => ({
-                  ...prev,
-                  [service.name]: 0,
-                })
-              );
-            })
-            .finally(() => {
-              setProvidersLoading(
-                false
-              );
-            });
-        }
+        setActiveService(service.name);
+        setmodeFilter("Sandbox");
+        setProviders([]);
+        setProvidersLoading(true);
       }}
       style={{
         borderLeftColor:
@@ -2488,12 +2376,10 @@ export default function ProjectView() {
             styles["pc-sidebar-count"]
           }
         >
-          {activeService ===
-            service.name
+          {activeService === service.name
             ? providers.length
-            : serviceProviderCounts[
-            service.name
-            ] || 0}
+            : service.provider_count || 0
+          }
           {" "}providers
         </div>
       </div>

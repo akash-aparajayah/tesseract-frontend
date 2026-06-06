@@ -121,8 +121,21 @@ export const deleteEnvironment = async (id: string) => {
 ======================================================== */
 
 /* -------- GET ALL SERVICES -------- */
-export const getAllServices = async () => {
-  const response = await api.get("/services/get-all-services");
+export const getAllServices = async (
+  environmentId?: string
+) => {
+
+  const params: any = {};
+
+  if (environmentId) {
+    params.environment_id = environmentId;
+  }
+
+  const response = await api.get(
+    "/services/get-all-services",
+    { params }
+  );
+
   return response.data;
 };
 

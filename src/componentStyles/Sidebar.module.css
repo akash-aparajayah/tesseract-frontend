@@ -23,6 +23,7 @@
 /* Collapsed state */
 .sidebar.collapsed {
   width: 60px;
+  overflow: hidden;
 }
 
 /* ========== LOGO ========== */
