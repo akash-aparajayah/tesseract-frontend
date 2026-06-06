@@ -261,31 +261,47 @@ export default function SetupAccount() {
                             <div className={styles["neural-icon"]}>
                                 <Brain size={56} strokeWidth={1.5} />
                             </div>
-                            <h2>Credential Management Platform</h2>
+
                         </div>
 
-
+                        <div className={styles["value-text"]}>
+                            <h2>Centralized Provider Ecosystem</h2>
+                            <p>
+                                Connect projects, manage providers, and control credentials –
+                                all in one intelligent platform.
+                            </p>
+                        </div>
 
                         <div className={styles["feature-grid"]}>
                             <div className={styles["grid-card"]}>
                                 <Database size={28} />
-                                <h3>Secure Storage</h3>
-                                <p>Enterprise-grade encryption for all credentials</p>
+                                <h3>Projects</h3>
+                                <p>Create & manage multiple projects, teams, and access levels</p>
                             </div>
                             <div className={styles["grid-card"]}>
                                 <Shield size={28} />
-                                <h3>Zero Trust</h3>
-                                <p>Multi-layer security with audit logging</p>
+                                <h3>Providers</h3>
+                                <p>Onboard and connect trusted service providers instantly</p>
                             </div>
                             <div className={styles["grid-card"]}>
                                 <Zap size={28} />
-                                <h3>Fast Access</h3>
-                                <p>Instant credential rotation and retrieval</p>
+                                <h3>Credentials</h3>
+                                <p>Centralized, secure storage for API keys & secrets</p>
                             </div>
                             <div className={styles["grid-card"]}>
                                 <Cpu size={28} />
-                                <h3>AI-Powered</h3>
-                                <p>Intelligent threat detection and alerts</p>
+                                <h3>Utilization</h3>
+                                <p>Real-time usage analytics, billing, and performance</p>
+                            </div>
+                            <div className={styles["grid-card"]}>
+                                <Lock size={28} />
+                                <h3>HTTPS Encryption</h3>
+                                <p>Enterprise-grade TLS 1.3 encryption for all data in transit</p>
+                            </div>
+                            <div className={styles["grid-card"]}>
+                                <Shield size={28} />
+                                <h3>Zero Trust Security</h3>
+                                <p>Strict identity verification & least-privilege access controls</p>
                             </div>
                         </div>
                     </div>

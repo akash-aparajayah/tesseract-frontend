@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useParams } from "react-router-dom";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
 import styles from "../styles/ProjectView.module.css";
 import {
   Pencil, FolderOpen, Plus, MessageSquare, Mail, MessageCircle, Plug, Check,
   Save, X, ChevronDown, Server, Copy, Trash2, Globe, Rocket, Wrench,
-  Search, AlertTriangle, Home, Monitor, Key, Lock,
+  Search, AlertTriangle, Home, Monitor, Key,
   User, UserMinus, UserPlus, AlertCircle, Calendar, Clock, RefreshCw, Filter, Settings,
   GaugeIcon, LandmarkIcon, Plug2, Layers, FlaskConical, LockKeyhole, LockKeyholeOpen, CreditCard, ShieldCheck, ArrowLeftRight, Send,
 } from 'lucide-react';
@@ -20,6 +19,7 @@ import {
 } from "../services/projectApi";
 import SkeletonLoader from "@/components/common/SkeletonLoader";
 import FormValidation, { hasErrors } from "@/components/common/FormValidation";
+import { verifyUser } from "../services/authApi";
 
 interface Project {
   id: string;
@@ -374,7 +374,9 @@ export default function ProjectView() {
           return;
         }
 
-
+        await verifyUser({
+          passKey: unlockPasskey,
+        });
         const response =
           await unlockService({
             environment_id:
@@ -2311,26 +2313,21 @@ export default function ProjectView() {
         : ""
         }`}
       onClick={() => {
-        // Switching services immediately locks current service
-        if (
-          unlockedServiceId
-        ) {
 
+        if (activeService === service.name) {
+          return;
+        }
+
+        if (unlockedServiceId) {
           lockCurrentService();
         }
+
         setActiveService(service.name);
         setmodeFilter("Sandbox");
-        setProviders([]);
-
 
         setServiceEndpoint(
           service.service_base_endpoint || ""
         );
-
-        setActiveService(service.name);
-        setmodeFilter("Sandbox");
-        setProviders([]);
-        setProvidersLoading(true);
       }}
       style={{
         borderLeftColor:
@@ -2376,11 +2373,8 @@ export default function ProjectView() {
             styles["pc-sidebar-count"]
           }
         >
-          {activeService === service.name
-            ? providers.length
-            : service.provider_count || 0
-          }
-          {" "}providers
+          {service.provider_count || 0}
+          {' '}providers
         </div>
       </div>
     </div>
@@ -2565,7 +2559,7 @@ export default function ProjectView() {
 
                           setSelectedEnv(env.public_id);
 
-                          setProviders([]);
+
                           setAvailableUsers([]);
                           setAssignedUsers([]);
 
@@ -2612,11 +2606,11 @@ export default function ProjectView() {
                                     left: rect.right - 80,
                                   });
 
-                                  setSelectedEnv(env.public_id);
+                                  // setSelectedEnv(env.public_id);
 
-                                  setProviders([]);
-                                  setAvailableUsers([]);
-                                  setAssignedUsers([]);
+
+                                  // setAvailableUsers([]);
+                                  // setAssignedUsers([]);
 
                                   setTimeout(() => {
                                     setOpenEnvMenu((prev) =>

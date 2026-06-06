@@ -54,7 +54,7 @@
     overflow: visible;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: start;
 }
 
 /* Animated particles */
@@ -115,8 +115,7 @@
 /* Logo area */
 .logo-area {
     text-align: center;
-    margin-bottom: 32px;
-    margin-top: 0;
+    margin-bottom: 20px;
     position: relative;
     z-index: 2;
 }
@@ -149,7 +148,7 @@
 }
 
 .logo-area h2 {
-    font-size: 1.4rem;
+    font-size: 1.2rem;
     font-weight: 700;
     background: linear-gradient(135deg, #fff, var(--vibrant-cyan));
     background-clip: text;
@@ -710,4 +709,29 @@
     .form-header h2 {
         font-size: 1.5rem;
     }
+}
+
+.value-text {
+    text-align: center;
+    margin-bottom: 32px;
+    position: relative;
+    z-index: 2;
+}
+
+.value-text h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #fff, var(--vibrant-cyan));
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    margin-bottom: 12px;
+}
+
+.value-text p {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.9rem;
+    max-width: 90%;
+    margin: 0 auto;
+    line-height: 1.5;
 }
