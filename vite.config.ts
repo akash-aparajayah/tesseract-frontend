@@ -4,6 +4,8 @@ import path from 'path'
 
 export default defineConfig({
 
+  base: '/myapp/',
+
   // Plugins used by Vite
   plugins: [
     react() // Enables React JSX transform and Fast Refresh

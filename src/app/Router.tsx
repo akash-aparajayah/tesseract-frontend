@@ -1,5 +1,5 @@
 // Router.tsx
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createHashRouter, RouterProvider } from "react-router-dom";
 import Layout from "../components/Layout";
 import Login from "../pages/login";
 import Dashboard from "../pages/selfDashboard";
@@ -15,7 +15,7 @@ import SetupAccount from "../pages/SetupAccount";
 import ProfilePage from "@/pages/ProfilePage";
 import ResetPasskey from "@/pages/ResetPasskey";
 
-const router = createBrowserRouter([
+const router = createHashRouter([
   {
     path: "/",
     element: <Login />,
