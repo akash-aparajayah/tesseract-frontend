@@ -13,6 +13,7 @@ import AssignProjectsEnv from "@/pages/AssignProjectsEnv";
 import NotFound from "@/components/NotFound/NotFound"; // Import your 404 component
 import SetupAccount from "../pages/SetupAccount";
 import ProfilePage from "@/pages/ProfilePage";
+import ResetPasskey from "@/pages/ResetPasskey";
 
 const router = createBrowserRouter([
   {
@@ -22,6 +23,11 @@ const router = createBrowserRouter([
   {
     path: "/forgot-password/:token",
     element: <ForgotPassword />,
+  },
+
+  {
+    path: "/reset-passkey/:token",
+    element: <ResetPasskey />,
   },
   {
     path: "/setup-account/:token",

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import {
     FaEye,
     FaEyeSlash
@@ -11,7 +11,6 @@ import {
     updatePasswordApi, updatePasskeyApi, validateUserSecretApi, forgotPasswordSelfApi,
     forgotPasskeyApi,
 } from "@/services/authApi";
-import Breadcrumb from "../components/Breadcrumb";
 
 /**
  * Toast notification interface
@@ -26,7 +25,6 @@ interface ToastState {
 export default function ProfilePage() {
     // Hooks for navigation and URL parameter extraction
     const [searchParams] = useSearchParams();
-    const navigate = useNavigate();
 
     /**
      * Active tab state   
@@ -90,7 +88,12 @@ export default function ProfilePage() {
     const [passwordTouched, setPasswordTouched] = useState(false);
     const [confirmPasswordTouched, setConfirmPasswordTouched] = useState(false);
     const [passwordError, setPasswordError] = useState("");
-    const [confirmPasswordError, setConfirmPasswordError] = useState("");
+    const [confirmPasswordError,] = useState("");
+
+    const [sendingPasswordReset, setSendingPasswordReset] =
+        useState(false);
+    const [sendingPasskeyReset, setSendingPasskeyReset] =
+        useState(false);
 
     /**
      * Password validation rules for real-time feedback
@@ -103,6 +106,63 @@ export default function ProfilePage() {
         number: /\d/.test(newPassword),
         special: /[!@#$%^&*(),.?":{}|<>]/.test(newPassword),
     };
+
+    // ==========  HANDLING FORGOT PASSWORD LINK ==========
+    const handleForgotPassword = async () => {
+
+        try {
+
+            setSendingPasswordReset(true);
+
+            await forgotPasswordSelfApi();
+
+            showToast(
+                "Password reset link sent successfully",
+                "success"
+            );
+
+        } catch (err) {
+
+            showToast(
+                "Failed to send password reset email",
+                "error"
+            );
+
+        } finally {
+
+            setSendingPasswordReset(false);
+
+        }
+    };
+
+    // =================  HANDLE FORGOT PASSKEY LINK =================
+    const handleForgotPasskey = async () => {
+
+        try {
+
+            setSendingPasskeyReset(true);
+
+            await forgotPasskeyApi();
+
+            showToast(
+                "Credential passkey reset link sent successfully",
+                "success"
+            );
+
+        } catch {
+
+            showToast(
+                "Unable to send reset email",
+                "error"
+            );
+
+        } finally {
+
+            setSendingPasskeyReset(false);
+
+        }
+    };
+
 
     useEffect(() => {
         if (passwordTouched) {
@@ -387,14 +447,6 @@ export default function ProfilePage() {
         }
     };
 
-    /**
-     * Navigates back to previous page
-     * Uses React Router's navigate function with -1 to go back
-     */
-    const handleGoBack = () => {
-        navigate(-1);
-    };
-
     // ============================================================
     // COMPONENT RENDER
     // ============================================================
@@ -534,29 +586,23 @@ export default function ProfilePage() {
                                             )}
                                             <div
                                                 className={styles.forgotLink}
-                                                onClick={async () => {
-
-                                                    try {
-
-                                                        await forgotPasswordSelfApi();
-
-                                                        showToast(
-                                                            "Password reset link sent to your registered email.",
-                                                            "success"
-                                                        );
-
-                                                    } catch {
-
-                                                        showToast(
-                                                            "Unable to send reset email",
-                                                            "error"
-                                                        );
-
-                                                    }
-
+                                                onClick={
+                                                    sendingPasswordReset
+                                                        ? undefined
+                                                        : handleForgotPassword
+                                                }
+                                                style={{
+                                                    cursor: sendingPasswordReset
+                                                        ? "not-allowed"
+                                                        : "pointer",
+                                                    opacity: sendingPasswordReset
+                                                        ? 0.7
+                                                        : 1,
                                                 }}
                                             >
-                                                Forgot Password?
+                                                {sendingPasswordReset
+                                                    ? "Sending reset link..."
+                                                    : "Forgot Password?"}
                                             </div>
                                         </div>
                                         <div className={styles.formGroup}>
@@ -708,29 +754,23 @@ export default function ProfilePage() {
 
                                             <div
                                                 className={styles.forgotLink}
-                                                onClick={async () => {
-
-                                                    try {
-
-                                                        await forgotPasskeyApi();
-
-                                                        showToast(
-                                                            "Credential passkey reset link sent to your registered email.",
-                                                            "success"
-                                                        );
-
-                                                    } catch {
-
-                                                        showToast(
-                                                            "Unable to send reset email",
-                                                            "error"
-                                                        );
-
-                                                    }
-
+                                                onClick={
+                                                    sendingPasskeyReset
+                                                        ? undefined
+                                                        : handleForgotPasskey
+                                                }
+                                                style={{
+                                                    cursor: sendingPasskeyReset
+                                                        ? "not-allowed"
+                                                        : "pointer",
+                                                    opacity: sendingPasskeyReset
+                                                        ? 0.7
+                                                        : 1,
                                                 }}
                                             >
-                                                Forgot Credential Passkey?
+                                                {sendingPasskeyReset
+                                                    ? "Sending reset link..."
+                                                    : "Forgot Credential Passkey?"}
                                             </div>
                                         </div>
 

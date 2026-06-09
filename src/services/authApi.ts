@@ -113,3 +113,17 @@ export const forgotPasswordSelfApi =
       "/auth/forgot-password-self"
     );
   };
+
+export const validatePasswordResetTokenApi =
+  (token: string) => {
+    return api.get(
+      `/auth/validate-password-reset/${token}`
+    );
+  };
+
+export const validatePasskeyResetTokenApi =
+  (token: string) => {
+    return api.get(
+      `/auth/validate-passkey-reset/${token}`
+    );
+  };

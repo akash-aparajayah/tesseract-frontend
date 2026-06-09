@@ -104,7 +104,10 @@ export default function Login() {
         email: forgotEmail,
       });
 
-      showToast("Password reset link sent to your email!", "success");
+      showToast(
+        "Password reset link has been sent to your registered email",
+        "success"
+      );
 
       setShowForgotModal(false);
       setForgotEmail("");
@@ -340,11 +343,9 @@ export default function Login() {
                 disabled={forgotLoading}
               >
                 <span className={styles["btn-content"]}>
-                  {forgotLoading ? (
-                    <div className={styles["inline-loader"]}></div>
-                  ) : (
-                    "Send Reset Link"
-                  )}
+                  {forgotLoading
+                    ? "Sending reset link..."
+                    : "Send Reset Link"}
                 </span>
               </button>
             </div>

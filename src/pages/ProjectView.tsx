@@ -7,7 +7,7 @@ import {
   Save, X, ChevronDown, Server, Copy, Trash2, Globe, Rocket, Wrench,
   Search, AlertTriangle, Home, Monitor, Key,
   User, UserMinus, UserPlus, AlertCircle, Calendar, Clock, RefreshCw, Filter, Settings,
-  GaugeIcon, LandmarkIcon, Plug2, Layers, FlaskConical, LockKeyhole, LockKeyholeOpen, CreditCard, ShieldCheck, ArrowLeftRight, Send,
+  GaugeIcon, Plug2, Layers, FlaskConical, LockKeyhole, LockKeyholeOpen, CreditCard, ShieldCheck, ArrowLeftRight,
 } from 'lucide-react';
 import { useToast } from "../hooks/useToast";
 import "../styles/Toast.css"
