@@ -12,6 +12,7 @@ import Workspace from "@/pages/Workspace";
 import AssignProjectsEnv from "@/pages/AssignProjectsEnv";
 import NotFound from "@/components/NotFound/NotFound"; // Import your 404 component
 import SetupAccount from "../pages/SetupAccount";
+import ProfilePage from "@/pages/ProfilePage";
 
 const router = createBrowserRouter([
   {
@@ -33,6 +34,10 @@ const router = createBrowserRouter([
       {
         index: true,
         element: <Dashboard />,
+      },
+      {
+        path: "profile",
+        element: <ProfilePage />,
       },
       {
         path: "admin",

@@ -7,7 +7,6 @@ import {
     XCircle,
     Loader2,
     Brain,
-    Network,
     Database,
     Shield,
     Zap,
@@ -312,7 +311,7 @@ export default function SetupAccount() {
                             <div className={styles["form-header"]}>
 
                                 <h2>Set up your account</h2>
-                                <p>Create your credentials to get started</p>
+
                             </div>
 
                             {submitError && (

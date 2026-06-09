@@ -34,6 +34,19 @@ export const updatePasswordApi = (data: { password: string }) => {
   return api.patch("/auth/update-password", data);
 };
 
+// Validate current password
+export const validateUserSecretApi = (
+  data: {
+    value: string;
+    type: "password" | "passkey";
+  }
+) => {
+  return api.post(
+    "/auth/validate-user-secret",
+    data
+  );
+}
+
 // VALIDATE SETUP TOKEN
 export const validateSetupTokenApi = (
   token: string
@@ -74,3 +87,29 @@ export const updatePasskeyApi = (
     data
   );
 };
+
+export const forgotPasskeyApi = () => {
+  return api.post(
+    "/auth/forgot-passkey"
+  );
+};
+
+export const resetPasskeyApi = (
+  data: {
+    token: string;
+    passkey: string;
+  }
+) => {
+  return api.post(
+    "/auth/reset-passkey",
+    data
+  );
+};
+
+// FORGOT PASSWORD SELF
+export const forgotPasswordSelfApi =
+  () => {
+    return api.post(
+      "/auth/forgot-password-self"
+    );
+  };

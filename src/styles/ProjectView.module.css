@@ -2882,12 +2882,20 @@ body:has(.pc-modal-overlay.slide-panel) {
 
     .pc-main-content {
         flex-direction: column;
+        height: auto;
+        min-height: auto;
+        overflow: visible;
     }
 
     .pc-sidebar {
         width: 100%;
-        flex-direction: row;
-        overflow-x: auto;
+        max-height: 220px;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .pc-providers-panel {
+        min-height: 500px;
     }
 
     .pc-sidebar-item {
@@ -4010,31 +4018,6 @@ body:has(.pc-drawer-backdrop) {
 
     box-shadow:
         0 2px 6px rgba(15, 23, 42, 0.06);
-}
-
-.serviceGroupHeader {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-
-    padding: 12px 16px;
-
-    font-size: 13px;
-    font-weight: 700;
-
-    background: #e9ecef;
-
-    border-top: 1px solid #e2e8f0;
-    border-bottom: 1px solid #e2e8f0;
-    /* soft, natural layered shadow */
-}
-
-.serviceGroupBody {
-    padding: 12px;
-}
-
-.serviceGroupHeader:first-child {
-    border-top: none;
 }
 
 .pc-banking-locked-btn {

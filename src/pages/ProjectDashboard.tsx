@@ -55,7 +55,7 @@ export default function ProjectDashboard() {
     project_description: "",
   });
   const [createImagePreview, setCreateImagePreview] = useState("");
-  const [createImageFile, setCreateImageFile] =
+  const [, setCreateImageFile] =
     useState<File | null>(null);
   const [createTouched, setCreateTouched] = useState({ project_name: false });
   const [projectNameExists, setProjectNameExists] = useState(false);
@@ -75,10 +75,10 @@ export default function ProjectDashboard() {
     image_url: "",
   });
   const [editImagePreview, setEditImagePreview] = useState("");
-  const [editImageFile, setEditImageFile] =
+  const [, setEditImageFile] =
     useState<File | null>(null);
 
-  const [removeEditImage, setRemoveEditImage] =
+  const [, setRemoveEditImage] =
     useState(false);
   const [editTouched, setEditTouched] = useState({ project_name: false });
   const editFileRef = useRef<HTMLInputElement>(null);
@@ -599,7 +599,7 @@ export default function ProjectDashboard() {
                         onClick={() => toggleStatus(project.id)}
                       >
                         <div className={styles["knob"]}>
-                         <FolderOpen size={14} />
+                          <FolderOpen size={14} />
                         </div>
                         <span className={`${styles["statusText"]} ${styles["textInactive"]}`}>Inactive</span>
                         <span className={`${styles["statusText"]} ${styles["textActive"]}`}>Active</span>

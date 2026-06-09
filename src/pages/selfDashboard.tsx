@@ -2,6 +2,17 @@ import React, { useState, useEffect, useMemo } from "react";
 import styles from "../styles/dashboard.module.css";
 import { useToast } from "../hooks/useToast";
 import { getUserApi, healthCheckApi } from "../services/authApi";
+import { userAssignProjectEnv } from "../services/projectApi";
+
+// Used to display roles like "Super Admin", "Admin", "User"
+const formatRole = (role?: string) => {
+  if (!role) return "";
+  return role
+    .toLowerCase()
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
 // import Loader from "@/components/common/Loader"; // removed – replaced with skeleton
 
 type ServiceStatus = {
@@ -80,7 +91,10 @@ const Dashboard: React.FC = () => {
     { label: "Users", value: 0, icon: "👥", color: "#4f8ef7", bg: "#e8f0ff" },
     { label: "Services", value: 0, icon: "⚙️", color: "#00c896", bg: "#e0faf3" },
     { label: "Projects", value: 0, icon: "📁", color: "#f5a623", bg: "#fff4e0" },
+
   ]);
+
+
   const [distribution, setDistribution] = useState([
     { name: "Services", value: 0, color: "#00c896", percent: 0 },
     { name: "Projects", value: 0, color: "#f5a623", percent: 0 },
@@ -100,28 +114,94 @@ const Dashboard: React.FC = () => {
         const profileData = (await getUserApi()).data;
         const healthData = await healthCheckApi();
 
+        // Use public_id because environment assignments are linked to public_id
+        const userId =
+          profileData.data.users.public_id;
+
+        const workspaceData = await userAssignProjectEnv(
+          String(userId)
+        );
+
+        // Count assigned projects from workspace
+        const projectCount =
+          workspaceData?.data?.length || 0;
+
+        // Count assigned services from workspace
+        const serviceCount =
+          workspaceData?.data?.reduce(
+            (projectTotal: number, project: any) =>
+              projectTotal +
+              project.environments.reduce(
+                (envTotal: number, env: any) =>
+                  envTotal +
+                  (env.services?.length || 0),
+                0
+              ),
+            0
+          ) || 0;
+
+        // Logged-in user always counts as 1
+        const userCount = 1;
+
         setProfile({
           id: profileData.data.users.id,
           name: profileData.data.users.user_name,
-          role: profileData.data.users.role === "admin" ? "ADMIN" : "SUPER ADMIN",
+          role: formatRole(profileData.data.users.role),
           email: profileData.data.users.email,
           lastLogin: profileData?.data?.lastLogin || "",
           status: profileData.data.users.is_deleted === false ? "Active" : "Inactive",
         });
 
+        // Dashboard counts based on assigned workspace data
         setStats([
-          { label: "Users", value: profileData.data.statsData.totalAdmins, icon: "👥", color: "#4f8ef7", bg: "#e8f0ff" },
-          { label: "Services", value: profileData.data.statsData.totalServices, icon: "⚙️", color: "#00c896", bg: "#e0faf3" },
-          { label: "Projects", value: profileData.data.statsData.totalActiveProjects, icon: "📁", color: "#f5a623", bg: "#fff4e0" },
+          {
+            label: "Users",
+            value: userCount,
+            icon: "👥",
+            color: "#4f8ef7",
+            bg: "#e8f0ff",
+          },
+          {
+            label: "Services",
+            value: serviceCount,
+            icon: "⚙️",
+            color: "#00c896",
+            bg: "#e0faf3",
+          },
+          {
+            label: "Projects",
+            value: projectCount,
+            icon: "📁",
+            color: "#f5a623",
+            bg: "#fff4e0",
+          },
         ]);
 
-        const total = profileData.data.statsData.totalServices +
-                      profileData.data.statsData.totalActiveProjects +
-                      profileData.data.statsData.totalAdmins;
+        // Update donut chart using workspace counts
+        const total =
+          userCount +
+          serviceCount +
+          projectCount;
+
         setDistribution([
-          { name: "Services", value: profileData.data.statsData.totalServices, color: "#00c896", percent: (profileData.data.statsData.totalServices / total) * 100 },
-          { name: "Projects", value: profileData.data.statsData.totalActiveProjects, color: "#f5a623", percent: (profileData.data.statsData.totalActiveProjects / total) * 100 },
-          { name: "Users", value: profileData.data.statsData.totalAdmins, color: "#4f8ef7", percent: (profileData.data.statsData.totalAdmins / total) * 100 },
+          {
+            name: "Services",
+            value: serviceCount,
+            color: "#00c896",
+            percent: total > 0 ? (serviceCount / total) * 100 : 0,
+          },
+          {
+            name: "Projects",
+            value: projectCount,
+            color: "#f5a623",
+            percent: total > 0 ? (projectCount / total) * 100 : 0,
+          },
+          {
+            name: "Users",
+            value: userCount,
+            color: "#4f8ef7",
+            percent: total > 0 ? (userCount / total) * 100 : 0,
+          },
         ]);
 
         setUptime(healthData?.data?.uptimeFormatted ?? "0");

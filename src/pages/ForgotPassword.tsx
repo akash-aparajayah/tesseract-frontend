@@ -26,9 +26,14 @@ export default function ResetPassword() {
       return;
     }
 
-    if (password.length < 6) {
+    const isPasswordValid =
+      Object.values(passwordRules).every(Boolean);
+
+    if (!isPasswordValid) {
       setMessageType("error");
-      setMessage("⚠️ Password must be at least 6 characters");
+      setMessage(
+        "⚠️ Password must contain at least 8 characters, one uppercase letter, one lowercase letter, one number, and one special character"
+      );
       return;
     }
 
@@ -62,6 +67,14 @@ export default function ResetPassword() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const passwordRules = {
+    minLength: password.length >= 8,
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number: /\d/.test(password),
+    special: /[!@#$%^&*(),.?":{}|<>]/.test(password),
   };
 
   return (
@@ -105,6 +118,48 @@ export default function ResetPassword() {
                 >
                   {showPassword ? "🙈" : "👁️"}
                 </button>
+              </div>
+            </div>
+
+            <div className="password-rules">
+              <div
+                className={`rule ${passwordRules.minLength ? "valid" : "invalid"
+                  }`}
+              >
+                {passwordRules.minLength ? "✅" : "❌"}
+                <span>At least 8 characters</span>
+              </div>
+
+              <div
+                className={`rule ${passwordRules.uppercase ? "valid" : "invalid"
+                  }`}
+              >
+                {passwordRules.uppercase ? "✅" : "❌"}
+                <span>One uppercase letter</span>
+              </div>
+
+              <div
+                className={`rule ${passwordRules.lowercase ? "valid" : "invalid"
+                  }`}
+              >
+                {passwordRules.lowercase ? "✅" : "❌"}
+                <span>One lowercase letter</span>
+              </div>
+
+              <div
+                className={`rule ${passwordRules.number ? "valid" : "invalid"
+                  }`}
+              >
+                {passwordRules.number ? "✅" : "❌"}
+                <span>One number</span>
+              </div>
+
+              <div
+                className={`rule ${passwordRules.special ? "valid" : "invalid"
+                  }`}
+              >
+                {passwordRules.special ? "✅" : "❌"}
+                <span>One special character</span>
               </div>
             </div>
 

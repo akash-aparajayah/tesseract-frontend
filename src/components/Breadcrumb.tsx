@@ -44,7 +44,9 @@ const getIconForTitle = (label: string): React.ReactNode => {
   if (labelLower === "edit project") return <Edit {...iconProps} />;
   if (labelLower === "user details") return <User {...iconProps} />;
   if (labelLower === "environment") return <Server {...iconProps} />;
+  if (labelLower === "profile settings") return <User {...iconProps} />;
   return null;
+
 };
 
 export default function Breadcrumb() {
@@ -60,6 +62,10 @@ export default function Breadcrumb() {
       { label: "Dashboard", path: "/dashboard" },
       { label: "Project Dashboard", path: "/dashboard/project" },
       { label: "Create Project" },
+    ],
+    "/profile": [
+      { label: "Dashboard", path: "/dashboard" },
+      { label: "Profile Settings" },
     ],
     "/dashboard/workspace": [
       { label: "Dashboard", path: "/dashboard" },
@@ -93,6 +99,14 @@ export default function Breadcrumb() {
   };
 
   const getBreadcrumbs = (): BreadcrumbItem[] => {
+    // Handle profile page with query parameters
+    if (location.pathname.startsWith("/dashboard/profile")) {
+      return [
+        { label: "Dashboard", path: "/dashboard" },
+        { label: "Profile Settings" },
+      ];
+    }
+
     if (breadcrumbMap[location.pathname]) {
       return breadcrumbMap[location.pathname];
     }

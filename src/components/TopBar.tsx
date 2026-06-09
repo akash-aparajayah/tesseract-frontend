@@ -8,6 +8,8 @@ import {
   FaEyeSlash,
   FaCog,
   FaSignOutAlt,
+  FaChevronDown,
+  FaLock,
 } from "react-icons/fa";
 
 import { jwtDecode } from "jwt-decode";
@@ -92,9 +94,68 @@ export default function TopBar({
   const [activeSecurityTab, setActiveSecurityTab] =
     useState<"password" | "passkey">("password");
 
+  // Profile dropdown state management
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [dropdownTimeout, setDropdownTimeout] = useState<number | null>(null);
+
   // Logout states
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  /**
+ * Handles mouse enter event on profile section
+ * Clears any existing timeout to prevent dropdown from closing
+ * Shows the dropdown menu
+ */
+  const handleProfileMouseEnter = () => {
+    if (dropdownTimeout !== null) {
+      clearTimeout(dropdownTimeout);
+      setDropdownTimeout(null);
+    }
+    setShowDropdown(true);
+  };
+
+  /**
+ * Navigates to profile page with password tab active
+ * This is a placeholder for future profile editing features
+ * Currently redirects to the same page as change password
+ */
+  const handleChangeProfile = () => {
+    setShowDropdown(false);
+    navigate("/profile?tab=password"); // For now, goes to password tab as placeholder
+  };
+
+  const handleProfileMouseLeave = () => {
+    const timeout = window.setTimeout(() => {
+      setShowDropdown(false);
+    }, 200); // 200ms delay for better UX
+    setDropdownTimeout(timeout);
+  };
+
+  const handleDropdownMouseEnter = () => {
+    if (dropdownTimeout !== null) {
+      clearTimeout(dropdownTimeout);
+      setDropdownTimeout(null);
+    }
+    setShowDropdown(true);
+  };
+
+  const handleDropdownMouseLeave = () => {
+    const timeout = setTimeout(() => {
+      setShowDropdown(false);
+    }, 200);
+    setDropdownTimeout(timeout);
+  };
+
+  const handleChangePassword = () => {
+    setShowDropdown(false);
+    navigate("/dashboard/profile?tab=password");
+  };
+
+  const handleChangePasskey = () => {
+    setShowDropdown(false);
+    navigate("/dashboard/profile?tab=passkey");
+  };
 
   const { name: userName, role: userRole } = getUserFromToken();
 
@@ -285,16 +346,7 @@ export default function TopBar({
         </div>
 
         <div className={styles.topBarRight}>
-          {/* Change Password Button */}
-          <button
-            className={styles.passwordButton}
-            onClick={() => setShowPasswordModal(true)}
-            title="Change Password"
-          >
-            <FaKey />
-          </button>
-
-          {/* Notification Bell */}
+          {/* Notification Bell - Triggers shake animation on click */}
           <div
             className={`${styles.bell} ${bellActive ? styles.animate : ""}`}
             onClick={handleBell}
@@ -304,12 +356,12 @@ export default function TopBar({
             <span className={styles.badge}></span>
           </div>
 
-          {/* Settings */}
+          {/* Settings Icon - Navigates to settings page */}
           <div className={styles.settingsIcon} title="Settings">
             <FaCog />
           </div>
 
-          {/* Logout Button */}
+          {/* Logout Button - Direct logout trigger with confirmation */}
           <button
             className={styles.logoutButton}
             onClick={handleLogoutClick}
@@ -318,15 +370,76 @@ export default function TopBar({
             <FaSignOutAlt />
           </button>
 
-          {/* Profile */}
-          <div className={styles.profile}>
-            <div className={styles.avatar}>
-              <FaUserAlt />
+          {/* Profile Section with Hover Dropdown Menu */}
+          <div
+            className={styles.profileWrapper}
+            onMouseEnter={handleProfileMouseEnter}
+            onMouseLeave={handleProfileMouseLeave}
+          >
+            {/* Profile Display - Shows avatar, name, role and dropdown chevron */}
+            <div className={styles.profile}>
+              <div className={styles.avatar}>
+                <FaUserAlt />
+              </div>
+              <div className={styles.info}>
+                <span className={styles.name}>{userName}</span>
+                <span className={styles.role}>{userRole || "Member"}</span>
+              </div>
+              <FaChevronDown className={styles.chevronIcon} />
             </div>
-            <div className={styles.info}>
-              <span className={styles.name}>{userName}</span>
-              <span className={styles.role}>{userRole || "Member"}</span>
-            </div>
+
+            {/* 
+      Profile Dropdown Menu
+      Appears on hover with user-related actions
+      Includes: Change Password, Change Passkey, Logout
+    */}
+            {showDropdown && (
+              <div
+                className={styles.profileDropdown}
+                onMouseEnter={handleDropdownMouseEnter}
+                onMouseLeave={handleDropdownMouseLeave}
+              >
+
+                {/* Change Profile Option - First item with user icon */}
+                <button
+                  className={styles.dropdownItem}
+                  onClick={handleChangeProfile}
+                >
+                  <FaUserAlt className={styles.dropdownIcon} />
+                  <span>Change Profile</span>
+                </button>
+
+                {/* Change Password Option */}
+                <button
+                  className={styles.dropdownItem}
+                  onClick={handleChangePassword}
+                >
+                  <FaLock className={styles.dropdownIcon} />
+                  <span>Change Password</span>
+                </button>
+
+                {/* Change Credential Passkey Option */}
+                <button
+                  className={styles.dropdownItem}
+                  onClick={handleChangePasskey}
+                >
+                  <FaKey className={styles.dropdownIcon} />
+                  <span>Change Passkey</span>
+                </button>
+
+                {/* Divider between profile actions and logout */}
+                <div className={styles.dropdownDivider}></div>
+
+                {/* Logout Option - Styled differently with red hover */}
+                <button
+                  className={`${styles.dropdownItem} ${styles.logoutDropdownItem}`}
+                  onClick={handleLogoutClick}
+                >
+                  <FaSignOutAlt className={styles.dropdownIcon} />
+                  <span>Logout</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -542,13 +655,14 @@ export default function TopBar({
       {showLogoutModal && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalBox} style={{ maxWidth: "400px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-              <h2 style={{ margin: 0 }}>Confirm Logout</h2>
+            <div className={styles.logoutModalHeader}>
+              <h2 className={styles.logoutModalTitle}>
+                Confirm Logout
+              </h2>
               <button
-                className={styles.closeButton}
+                className={styles.logoutCloseButton}
                 onClick={handleCancelLogout}
                 title="Close"
-                style={{ marginLeft: 0 }}
               >
                 <FaTimes />
               </button>

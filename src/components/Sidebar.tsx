@@ -158,20 +158,22 @@ export default function Sidebar() {
                 className={`${styles.dropdownContent} ${isProjectHubOpen ? styles.dropdownContentOpen : ""
                   }`}
               >
-                <NavLink
-                  to="/dashboard/project"
-                  end
-                  className={({ isActive }) =>
-                    `${styles.dropdownItem} ${isActive ? styles.active : ""}`
-                  }
-                  onClick={handleMenuClick}
-                  title={isCollapsed ? "Project Dashboard" : ""}
-                >
-                  <div className={styles.linkContent}>
-                    <i className={`fa-solid fa-border-all ${styles.sideBarIcon}`}></i>
-                    <span className={styles.menuText}>Dashboard</span>
-                  </div>
-                </NavLink>
+                {role?.role === "SUPER_ADMIN" && (
+                  <NavLink
+                    to="/dashboard/project"
+                    end
+                    className={({ isActive }) =>
+                      `${styles.dropdownItem} ${isActive ? styles.active : ""}`
+                    }
+                    onClick={handleMenuClick}
+                    title={isCollapsed ? "Project Dashboard" : ""}
+                  >
+                    <div className={styles.linkContent}>
+                      <i className={`fa-solid fa-border-all ${styles.sideBarIcon}`}></i>
+                      <span className={styles.menuText}>Dashboard</span>
+                    </div>
+                  </NavLink>
+                )}
 
                 <NavLink
                   to="/dashboard/workspace"

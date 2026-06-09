@@ -87,10 +87,7 @@ const getExpiryDate = (days: string, customDays?: string): string => {
   if (daysNum === 0) return "Never";
   return new Date(now.getTime() + daysNum * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 };
-const getExpiryDays = (days: string, customDays?: string): number | null => {
-  switch (days) { case "7": return 7; case "30": return 30; case "60": return 60; case "90": return 90; case "custom": return parseInt(customDays || "0") || null; case "never": return null; }
-  return null;
-};
+
 const formatDate = (dateString: string): string => {
   if (dateString === "Never") return "Never";
   return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -147,7 +144,7 @@ export default function ProjectView() {
   // const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
   const [expandedProviders, setExpandedProviders] = useState<Record<string, boolean>>({});
   const [openEnvMenu, setOpenEnvMenu] = useState<string | null>(null);
-  const [selectedMenuEnv, setSelectedMenuEnv] = useState<any | null>(null);
+  const [selectedMenuEnv,] = useState<any | null>(null);
   const [menuPosition, setMenuPosition] = useState({
     top: 0,
     left: 0,
@@ -158,7 +155,6 @@ export default function ProjectView() {
   const [newEnvName, setNewEnvName] = useState("");
   const [isCustomEnv, setIsCustomEnv] = useState(false);
   const [customEnvInput, setCustomEnvInput] = useState("");
-  const [isAddEnvModalOpen, setIsAddEnvModalOpen] = useState(false);
 
   const [showAddProviderModal, setShowAddProviderModal] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState("");
@@ -170,7 +166,6 @@ export default function ProjectView() {
 
   const [showAddEnvModal, setShowAddEnvModal] = useState(false);
   const [showEditEnvModal, setShowEditEnvModal] = useState(false);
-  const [editingEnvName] = useState("");
   const [editEnvName, setEditEnvName] = useState("");
   const [showDeleteEnvModal, setShowDeleteEnvModal] = useState(false);
   const [deleteEnvId, setDeleteEnvId] = useState<string | null>(null);
@@ -261,9 +256,8 @@ export default function ProjectView() {
   // statuschanging
   const [statusChanging, setStatusChanging] = useState(false);
 
-  const initialLoadDone = useRef(false);
   const tokensInitialized = useRef(false);
-  const [providerFormKey, setProviderFormKey] = useState(0);
+  const [, setProviderFormKey] = useState(0);
   const [providerSchema, setProviderSchema] = useState<any[]>([]);
 
   const [copiedEndpoint, setCopiedEndpoint] =
@@ -500,21 +494,6 @@ export default function ProjectView() {
     }
   };
 
-  const fetchProviderHealth = async (envPublicId: string, providerPublicId: string) => {
-    try {
-      // The health data is already included in getProvidersByEnvironmentId response
-      // No separate API call needed since we get is_active, last_error_message, last_failed_at
-      // from the main providers endpoint
-
-      // If you have a separate health endpoint in future, you can use:
-      // const response = await getProviderHealth(envPublicId, providerPublicId);
-
-      return null;
-    } catch (error) {
-      console.error("Failed to fetch provider health:", error);
-      return null;
-    }
-  };
 
   const handleProviderHealthToggle = async (
     providerId: string,
@@ -685,41 +664,6 @@ export default function ProjectView() {
     setEditingTabName(env.environment_name);
   };
 
-  const handleEnvironmentStatusToggle = async (
-    env: any
-  ) => {
-
-    try {
-
-      await updateEnvironment(
-        env.public_id,
-        {
-          is_active: !env.is_active,
-        }
-      );
-
-      // REFRESH FROM BACKEND
-      await loadEnvironments();
-
-      showToast(
-        `Environment ${!env.is_active
-          ? "activated"
-          : "deactivated"
-        } successfully`,
-        "success"
-      );
-
-    } catch (error: any) {
-
-      console.error(error);
-
-      showToast(
-        error?.response?.data?.message ||
-        "Failed to update environment status",
-        "error"
-      );
-    }
-  };
 
   const saveTabEdit = async () => {
     if (!editingTabEnv || !editingTabName.trim()) {
@@ -799,7 +743,7 @@ export default function ProjectView() {
         ...(data.live || []),
       ];
 
-      const firstProvider = allProviders[0];
+      // Set service endpoint
       setServiceEndpoint(
         service?.service_base_endpoint || ""
       );
@@ -998,7 +942,7 @@ export default function ProjectView() {
   // Mock user data
   const [availableUsers, setAvailableUsers] = useState<any[]>([]);
   const [assignedUsers, setAssignedUsers] = useState<any[]>([]);
-  const [usersLoading, setUsersLoading] = useState(false);
+  const [, setUsersLoading] = useState(false);
 
 
 
@@ -2946,23 +2890,13 @@ export default function ProjectView() {
                             <SkeletonLoader variant="list" count={3} />
                           ) : (
                             <>
-                              <div className={styles.serviceGroupHeader}>
-                                <div><Send size={15} /></div>
-                                Messaging
-                              </div>
+                              {messagingServices.map(
+                                renderServiceItem
+                              )}
 
-                              <div className={styles.serviceGroupBody}>
-                                {messagingServices.map(renderServiceItem)}
-                              </div>
-
-                              <div className={styles.serviceGroupHeader}>
-                                <div><LandmarkIcon size={15} /></div>
-                                Banking
-                              </div>
-
-                              <div className={styles.serviceGroupBody}>
-                                {bankingServices.map(renderServiceItem)}
-                              </div>
+                              {bankingServices.map(
+                                renderServiceItem
+                              )}
                             </>
                           )}
                         </div>
@@ -3401,10 +3335,6 @@ export default function ProjectView() {
                                           .filter(([key]) => key !== 'endpoint' && key !== 'id')
                                           .sort(([a], [b]) => a === 'mode' ? -1 : b === 'mode' ? 1 : 0)
                                           .map(([key, value]) => {
-                                            const isPwd = key.toLowerCase().includes("key") ||
-                                              key.toLowerCase().includes("token") ||
-                                              key.toLowerCase().includes("secret") ||
-                                              key.toLowerCase().includes("password");
                                             const ismode = key === 'mode';
                                             const pk = `${provider.id}_${key}`;
                                             return (

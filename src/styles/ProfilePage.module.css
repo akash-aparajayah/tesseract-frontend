@@ -1,0 +1,335 @@
+/* ============================================================
+   PROFILE PAGE - MAIN LAYOUT
+   ============================================================ */
+.profilePage {
+    min-height: 100vh;
+    background: #f8fafc;
+    padding: 0px 20px 40px 20px;
+    box-sizing: border-box;
+}
+
+.profileContainer {
+    max-width: 900px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+}
+
+/* ============================================================
+   PAGE HEADER - Hidden since breadcrumb handles title
+   ============================================================ */
+.pageHeader {
+    display: none;
+}
+
+.backButton {
+    display: none;
+}
+
+.pageTitle {
+    display: none;
+}
+
+/* ============================================================
+   TAB NAVIGATION - Tight to breadcrumb
+   ============================================================ */
+.tabs {
+    display: flex;
+    border-bottom: 2px solid #e2e8f0;
+    padding: 0 32px;
+    margin-top: 0;
+}
+
+.tab {
+    flex: 1;
+    padding: 16px 12px;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    white-space: nowrap;
+}
+
+.tab:hover {
+    color: #1b72e8;
+    background: #f8fafc;
+}
+
+.tabActive {
+    color: #1b72e8;
+}
+
+.tabActive::after {
+    content: "";
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: #1b72e8;
+    border-radius: 2px 2px 0 0;
+    animation: tabIndicator 0.3s ease;
+}
+
+@keyframes tabIndicator {
+    from {
+        transform: scaleX(0);
+    }
+
+    to {
+        transform: scaleX(1);
+    }
+}
+
+/* ============================================================
+   TAB CONTENT - Two column layout (form left, validation right)
+   ============================================================ */
+.tabContent {
+    padding: 32px;
+    display: flex;
+    gap: 40px;
+    align-items: flex-start;
+}
+
+/* ============================================================
+   FORM COLUMN - 35% width
+   ============================================================ */
+.formColumn {
+    flex: 0 0 45%;
+    min-width: 280px;
+}
+
+/* ============================================================
+   VALIDATION COLUMN - Takes remaining space on right
+   ============================================================ */
+.validationColumn {
+    flex: 1;
+    padding-top: 8px;
+}
+
+/* ============================================================
+   FORM ELEMENTS
+   ============================================================ */
+.formGroup {
+    margin-bottom: 24px;
+}
+
+.label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 8px;
+}
+
+.passwordWrapper {
+    position: relative;
+}
+
+.input {
+    width: 100%;
+    height: 48px;
+    padding: 0 45px 0 14px;
+    border-radius: 12px;
+    border: 1.5px solid #d7e2f0;
+    outline: none;
+    font-size: 14px;
+    color: #1e293b;
+    transition: all 0.25s ease;
+    box-sizing: border-box;
+}
+
+.input::placeholder {
+    color: #94a3b8;
+}
+
+.input:focus {
+    border-color: #1b72e8;
+    box-shadow: 0 0 0 4px rgba(27, 114, 232, 0.12);
+}
+
+/* Input error state */
+.inputError {
+    border-color: #ef4444;
+}
+
+.inputError:focus {
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.12);
+}
+
+/* Field error message */
+.fieldError {
+    color: #ef4444;
+    font-size: 12px;
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.eyeButton {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    font-size: 16px;
+    transition: color 0.2s ease;
+    padding: 4px;
+}
+
+.eyeButton:hover {
+    color: #1b72e8;
+}
+
+/* ============================================================
+   SUBMIT BUTTON
+   ============================================================ */
+.submitButton {
+    width: 100%;
+    height: 48px;
+    padding: 0 24px;
+    border: none;
+    border-radius: 12px;
+    background: #1b72e8;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    margin-top: 8px;
+}
+
+.submitButton:hover:not(:disabled) {
+    background: #0f5bc2;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(27, 114, 232, 0.2);
+}
+
+.submitButton:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.submitButton:disabled {
+    background: #94a3b8;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* ============================================================
+   PASSWORD VALIDATION RULES - Right side
+   ============================================================ */
+.validationTitle {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 16px;
+}
+
+.validationGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.rule {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.ruleValid {
+    color: #16a34a;
+    background: #f0fdf4;
+}
+
+.ruleInvalid {
+    color: #dc2626;
+    background: #fef2f2;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 768px) {
+    .profilePage {
+        padding: 0px 12px 20px 12px;
+    }
+
+    .profileContainer {
+        border-radius: 12px;
+    }
+
+    .tabs {
+        padding: 0 24px;
+    }
+
+    .tabContent {
+        padding: 24px;
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    .formColumn {
+        flex: 1;
+        min-width: 100%;
+    }
+
+    .validationColumn {
+        flex: 1;
+    }
+
+    .tab {
+        font-size: 13px;
+        padding: 14px 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .tabs {
+        padding: 0 20px;
+        flex-direction: column;
+    }
+
+    .tab {
+        text-align: center;
+        padding: 12px;
+    }
+
+    .tabContent {
+        padding: 20px;
+    }
+
+    .formGroup {
+        margin-bottom: 20px;
+    }
+}
+
+.forgotLink {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #0d6efd;
+    cursor: pointer;
+    display: inline-block;
+}
+
+.forgotLink:hover {
+    text-decoration: underline;
+}

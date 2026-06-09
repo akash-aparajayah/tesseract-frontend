@@ -36,9 +36,17 @@ body {
 }
 
 @keyframes gradientShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 /* Floating circles */
@@ -67,9 +75,17 @@ body {
 }
 
 @keyframes floatCircle {
-  0% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(40px, 20px) scale(1.1); }
-  100% { transform: translate(0, 0) scale(1); }
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate(40px, 20px) scale(1.1);
+  }
+
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
 }
 
 /* Toast message */
@@ -117,6 +133,7 @@ body {
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -250,7 +267,41 @@ body {
   .reset-card {
     padding: 28px 20px;
   }
+
   .reset-header h2 {
     font-size: 24px;
   }
+}
+
+.password-rules {
+  margin-top: 12px;
+  margin-bottom: 20px;
+
+  padding: 16px;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+
+  background: #fafafa;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rule {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.rule.valid {
+  color: #16a34a;
+}
+
+.rule.invalid {
+  color: #dc2626;
 }

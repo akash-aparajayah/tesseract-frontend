@@ -14,26 +14,35 @@
 /* ========== FULL-PAGE WRAPPER ========== */
 .wrapper {
     min-height: 100vh;
-    height: 100%;
     width: 100%;
     display: block;
-    overflow-y: scroll;
-    overflow-x: hidden;
-    padding: 20px;
+    padding: 0;
+    margin: 0;
     z-index: 1;
 }
 
+/* Keep left panel content centered while panel stretches */
+.brand-panel>* {
+    width: 100%;
+    max-width: 650px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 /* ========== MAIN PREMIUM CONTAINER ========== */
+/* Stretch container across full page */
 .setup-premium {
-    width: 90%;
-    max-width: 1280px;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    min-height: 100vh;
+
     background: rgba(255, 255, 255, 0.04);
     backdrop-filter: blur(20px);
-    border-radius: 48px;
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    border-radius: 0;
     overflow: visible;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    margin: 0 auto;
+    border: none;
+    box-shadow: none;
 }
 
 /* Split layout */
@@ -304,7 +313,8 @@
     flex: 1;
     background: white;
     padding: 40px;
-    display: block;
+    display: flex;
+    justify-content: center;
     overflow: visible;
     height: auto;
 }
@@ -560,9 +570,9 @@
     text-align: center;
     font-size: 0.7rem;
     color: var(--slate-gray);
-    margin-top: 24px;
-    margin-bottom: 50px;
-    padding-top: 16px;
+    margin-top: 0px;
+    margin-bottom: 10px;
+    padding-top: 0px;
     border-top: 1px solid var(--soft-border);
 }
 

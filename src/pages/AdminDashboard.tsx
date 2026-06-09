@@ -16,7 +16,6 @@ import {
   ChevronRight,
   AlertCircle,
   X,
-  Lock,
   Loader2,
 } from "lucide-react";
 
@@ -358,7 +357,7 @@ const AdminPanel: React.FC = () => {
         is_active: formData.active,
       });
       if (newUser && newUser.id) {
-        showToast("User created successfully. A setup email has been sent.", "success");
+        showToast("User created & Email sent successfully.", "success");
         closeDrawerWithAnimation();
         setTimeout(() => {
           navigate(
