@@ -211,6 +211,10 @@ export default function Sidebar() {
           {/* Tools */}
           <div className={styles.navSection}>
             <div className={styles.sectionTitle}>Tools</div>
+
+
+
+            {/* Existing Documentation Link (keep if you want) */}
             <NavLink
               to="/dashboard/documentation"
               className={({ isActive }) =>

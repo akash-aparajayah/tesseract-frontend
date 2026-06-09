@@ -1,4 +1,7 @@
-import { useMemo, useState } from "react";
+import {
+    useMemo, useState, useEffect,
+    useRef,
+} from "react";
 import { FaSearch } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
@@ -33,6 +36,7 @@ export default function GlobalSearch({
 }: Props) {
 
     const navigate = useNavigate();
+    const searchRef = useRef<HTMLDivElement>(null);
 
     const [search, setSearch] =
         useState("");
@@ -120,7 +124,7 @@ export default function GlobalSearch({
     const filteredResults =
         useMemo(() => {
 
-            if (!search.trim()) {
+            if (search.trim().length < 2) {
                 return [];
             }
 
@@ -150,8 +154,36 @@ export default function GlobalSearch({
             searchableItems,
         ]);
 
+    useEffect(() => {
+        const handleClickOutside = (
+            event: MouseEvent
+        ) => {
+            if (
+                searchRef.current &&
+                !searchRef.current.contains(
+                    event.target as Node
+                )
+            ) {
+                setShowDropdown(false);
+            }
+        };
+
+        document.addEventListener(
+            "mousedown",
+            handleClickOutside
+        );
+
+        return () => {
+            document.removeEventListener(
+                "mousedown",
+                handleClickOutside
+            );
+        };
+    }, []);
+
     return (
-        <div className={styles.searchWrapper}>
+        <div className={styles.searchWrapper}
+            ref={searchRef}>
 
             {/* SEARCH INPUT */}
             <div className={styles.searchForm}>
@@ -161,23 +193,27 @@ export default function GlobalSearch({
                 />
 
                 <input
-                    type="text"
+                    type="search"
+                    id="global-search"
+                    name={`search-${Date.now()}`}
+                    autoComplete="new-password"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck={false}
                     placeholder="Search projects, providers, users..."
                     value={search}
                     onChange={(e) => {
                         setSearch(e.target.value);
                         setShowDropdown(true);
                     }}
-                    onFocus={() =>
-                        setShowDropdown(true)
-                    }
+                    onFocus={() => setShowDropdown(true)}
                 />
 
             </div>
 
             {/* DROPDOWN */}
             {showDropdown &&
-                search.trim() && (
+                search.trim().length >= 2 && (
 
                     <div
                         className={

@@ -1,0 +1,301 @@
+/* ApiDocsManagement.module.css */
+
+.container {
+    padding: 1rem;
+}
+
+.headerCard {
+    background: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+}
+
+.headerContent {
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.pageTitle {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+    color: #1f2937;
+}
+
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.breadcrumbItem {
+    font-size: 0.875rem;
+}
+
+.breadcrumbLink {
+    color: #6b7280;
+    text-decoration: none;
+}
+
+.breadcrumbLink:hover {
+    color: #3b82f6;
+}
+
+.breadcrumbActive {
+    background-color: #e0e7ff;
+    color: #3b82f6;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.mainCard {
+    background: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.cardHeader {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.searchWrapper {
+    flex-grow: 1;
+    max-width: 300px;
+}
+
+.searchInput {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.searchInput:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.addButton {
+    background-color: #10b981;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background-color 0.2s;
+}
+
+.addButton:hover {
+    background-color: #059669;
+}
+
+.cardBody {
+    padding: 1.25rem;
+    overflow-x: auto;
+    min-height: 400px;
+}
+
+.dataTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.dataTable th {
+    padding: 0.75rem;
+    text-align: left;
+    background-color: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+    font-weight: 600;
+    color: #374151;
+}
+
+.dataTable td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: middle;
+}
+
+.statusBadge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.statusActive {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.statusInactive {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.typeBadge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+.actionDropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.actionButton {
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+    color: #374151;
+    border-radius: 0.25rem;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    width: 32px;
+    height: 32px;
+}
+
+.actionButton:hover {
+    background-color: #e5e7eb;
+    color: #000;
+}
+
+.dropdownMenu {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 0.25rem;
+    background: white;
+    border-radius: 0.375rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    min-width: 120px;
+    z-index: 1000;
+    overflow: hidden;
+}
+
+.dropdownMenu.show {
+    display: block;
+}
+
+.dropdownItem {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    color: #374151;
+    font-size: 0.875rem;
+    cursor: pointer;
+    background: none;
+    border: none;
+    width: 100%;
+    text-align: left;
+}
+
+.dropdownItem:hover {
+    background-color: #f3f4f6;
+}
+
+.dropdownItemDanger {
+    color: #ef4444;
+}
+
+.dropdownItemDanger:hover {
+    background-color: #fee2e2;
+}
+
+.dataTable th:last-child,
+.dataTable td:last-child {
+    width: 60px;
+    text-align: center;
+}
+
+.loadingState {
+    text-align: center;
+    padding: 3rem;
+    color: #6b7280;
+}
+
+.emptyState {
+    text-align: center;
+    padding: 3rem;
+    color: #6b7280;
+}
+
+.dataTable tbody tr td[colspan] {
+    text-align: center;
+    padding: 3rem;
+}
+
+.spinner {
+    width: 2rem;
+    height: 2rem;
+    border: 2px solid #e5e7eb;
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .headerContent {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .searchWrapper {
+        max-width: 100%;
+    }
+
+    .dataTable {
+        font-size: 0.75rem;
+    }
+
+    .dataTable th,
+    .dataTable td {
+        padding: 0.5rem;
+    }
+}

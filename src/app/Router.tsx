@@ -14,6 +14,10 @@ import NotFound from "@/components/NotFound/NotFound"; // Import your 404 compon
 import SetupAccount from "../pages/SetupAccount";
 import ProfilePage from "@/pages/ProfilePage";
 import ResetPasskey from "@/pages/ResetPasskey";
+import ApiDocsManagement from "../pages/ApiDocsManagement";
+import ApiDocsForm from "../pages/ApiDocsForm";
+import ServiceProviderDocs from "../pages/ServiceProviderDocs";
+import PublicDocs from "../pages/PublicDocs";
 
 const router = createHashRouter([
   {
@@ -32,6 +36,10 @@ const router = createHashRouter([
   {
     path: "/setup-account/:token",
     element: <SetupAccount />,
+  },
+  {
+    path: "/docs",
+    element: <ServiceProviderDocs />,
   },
   {
     path: "/dashboard",
@@ -74,6 +82,22 @@ const router = createHashRouter([
       {
         path: "workspace",
         element: <Workspace />, // Empty placeholder component for now
+      },
+      {
+        path: "api-docs",
+        element: <ApiDocsManagement />,
+      },
+      {
+        path: "api-docs/add",
+        element: <ApiDocsForm />,
+      },
+      {
+        path: "api-docs/edit/:id",
+        element: <ApiDocsForm />,
+      },
+      {
+        path: "documentation",
+        element: <PublicDocs />,
       },
     ],
   },

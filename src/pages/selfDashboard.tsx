@@ -122,33 +122,47 @@ const Dashboard: React.FC = () => {
           String(userId)
         );
 
-        // Count assigned projects from workspace
-        const projectCount =
-          workspaceData?.data?.length || 0;
+        const role = profileData.data.users.role;
 
-        // Count assigned services from workspace
-        const serviceCount =
-          workspaceData?.data?.reduce(
-            (projectTotal: number, project: any) =>
-              projectTotal +
-              project.environments.reduce(
-                (envTotal: number, env: any) =>
-                  envTotal +
-                  (env.services?.length || 0),
-                0
-              ),
-            0
-          ) || 0;
+        let projectCount = 0;
+        let serviceCount = 0;
+        let userCount = 1;
 
-        // Logged-in user always counts as 1
-        const userCount = 1;
+        if (role === "ADMIN" || role === "SUPER_ADMIN") {
+          projectCount =
+            profileData.data.statsData?.totalActiveProjects || 0;
+
+          serviceCount =
+            profileData.data.statsData?.totalServices || 0;
+
+          userCount =
+            profileData.data.statsData?.totalAdmins || 0;
+        } else {
+          projectCount =
+            workspaceData?.data?.length || 0;
+
+          serviceCount =
+            workspaceData?.data?.reduce(
+              (projectTotal: number, project: any) =>
+                projectTotal +
+                project.environments.reduce(
+                  (envTotal: number, env: any) =>
+                    envTotal +
+                    (env.services?.length || 0),
+                  0
+                ),
+              0
+            ) || 0;
+
+          userCount = 1;
+        }
 
         setProfile({
           id: profileData.data.users.id,
           name: profileData.data.users.user_name,
           role: formatRole(profileData.data.users.role),
           email: profileData.data.users.email,
-          lastLogin: profileData?.data?.lastLogin || "",
+          lastLogin: profileData?.data?.users?.last_login_at || "",
           status: profileData.data.users.is_deleted === false ? "Active" : "Inactive",
         });
 

@@ -3204,7 +3204,7 @@ export default function ProjectView() {
                                               name: provider.name
                                             })}
                                           >
-                                            <Trash2 size={14} />
+                                            <Trash2 size={14} color="#dc3545" />
                                           </button>
 
 

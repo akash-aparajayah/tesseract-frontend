@@ -12,24 +12,17 @@ import {
   FaLock,
 } from "react-icons/fa";
 
-import { jwtDecode } from "jwt-decode";
 import { useNavigate } from "react-router-dom";
 
 import styles from "../componentStyles/Topbar.module.css";
 import Toast from "./common/Toast";
-import { updatePasswordApi, updatePasskeyApi, } from "@/services/authApi";
+import { updatePasswordApi, updatePasskeyApi, getUserApi, } from "@/services/authApi";
 import GlobalSearch from "./common/GlobalSearch";
 
 interface ToastState {
   id: number;
   message: string;
   type: "success" | "error";
-}
-
-interface DecodedToken {
-  name?: string;
-  email?: string;
-  role?: string;
 }
 
 interface Props {
@@ -48,23 +41,6 @@ const formatRole = (role?: string) => {
     .join(" ");
 };
 
-const getUserFromToken = () => {
-  const token = localStorage.getItem("accessToken");
-  if (!token) {
-    return { name: "User", role: "" };
-  }
-  try {
-    const decoded: DecodedToken = jwtDecode(token);
-    return {
-      name: decoded.name || decoded.email?.split("@")[0] || "User",
-      role: formatRole(decoded.role),
-    };
-  } catch (e) {
-    console.error("Error decoding token:", e);
-    return { name: "User", role: "" };
-  }
-};
-
 export default function TopBar({
   projects = [],
   environments = [],
@@ -72,6 +48,8 @@ export default function TopBar({
   users = [],
 }: Props) {
   const navigate = useNavigate();
+  const [userName, setUserName] = useState("User");
+  const [userRole, setUserRole] = useState("");
 
   const [bellActive, setBellActive] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -157,8 +135,6 @@ export default function TopBar({
     navigate("/dashboard/profile?tab=passkey");
   };
 
-  const { name: userName, role: userRole } = getUserFromToken();
-
   const removeToast = (id: number) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
   };
@@ -176,6 +152,30 @@ export default function TopBar({
     );
     return () => timers.forEach((timer) => clearTimeout(timer));
   }, [toasts]);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const response = await getUserApi();
+
+        const user = response.data.data.users;
+
+        setUserName(
+          user.user_name ||
+          user.email?.split("@")[0] ||
+          "User"
+        );
+
+        setUserRole(
+          formatRole(user.role)
+        );
+      } catch (error) {
+        console.error("Failed to load user", error);
+      }
+    };
+
+    loadUser();
+  }, []);
 
   const handleBell = () => {
     setBellActive(true);
