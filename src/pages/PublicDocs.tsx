@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { NavLink } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import apiDocs, { ApiDocumentation, ServiceWithProviders } from '../services/apiDocs';
 import { useToast } from '../hooks/useToast';
 import styles from '../styles/PublicDocs.module.css';
