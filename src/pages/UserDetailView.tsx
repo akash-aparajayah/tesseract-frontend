@@ -33,6 +33,7 @@ interface User {
   email: string;
   role: "ADMIN" | "SUPER_ADMIN" | "USER";
   active: boolean;
+  profile_image?: string | null;
 }
 
 interface EnvironmentItem {
@@ -118,6 +119,7 @@ const UserDetailView: React.FC = () => {
           email: res.email,
           role: res.role ?? "USER",
           active: res.is_active,
+          profile_image: res.profile_image ?? null,
         };
 
         const mappedProjects: Project[] = (res.projects || []).map(
@@ -338,7 +340,15 @@ const UserDetailView: React.FC = () => {
               <div className={styles.avatarWrapper}>
                 <div className={styles.avatarRing}>
                   <div className={styles.avatarPhotoRow}>
-                    {user.name.charAt(0).toUpperCase()}
+                    {user.profile_image ? (
+                      <img
+                        src={user.profile_image}
+                        alt={user.name}
+                        className={styles.avatarImage}
+                      />
+                    ) : (
+                      user.name.charAt(0).toUpperCase()
+                    )}
                   </div>
                 </div>
                 <div

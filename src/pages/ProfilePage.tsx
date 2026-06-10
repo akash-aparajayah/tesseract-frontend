@@ -1,15 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
-    FaEye,
-    FaEyeSlash
-    , FaCheckCircle, FaTimesCircle,
-} from "react-icons/fa";
+    Eye,
+    EyeOff,
+    CircleCheck,
+    CircleX,
+    Pencil,
+} from "lucide-react";
 import styles from "../styles/ProfilePage.module.css";
 import Toast from "../components/common/Toast";
 import {
     updatePasswordApi, updatePasskeyApi, validateUserSecretApi, forgotPasswordSelfApi,
-    forgotPasskeyApi,
+    forgotPasskeyApi, getProfileApi,
+    updateProfileApi,
 } from "@/services/authApi";
 
 /**
@@ -33,6 +36,18 @@ export default function ProfilePage() {
         (searchParams.get("tab") as "password" | "passkey") || "password"
     );
 
+    const [isEditingProfile, setIsEditingProfile] =
+        useState(false);
+
+    const [profile, setProfile] =
+        useState({
+            user_name: "",
+            email: "",
+            role: "",
+            phone_number: "",
+            description: "",
+            profile_image: "",
+        });
     // ============================================================
     // PASSWORD FORM STATES
     // ============================================================
@@ -94,6 +109,9 @@ export default function ProfilePage() {
         useState(false);
     const [sendingPasskeyReset, setSendingPasskeyReset] =
         useState(false);
+
+    const profileFileRef =
+        useRef<HTMLInputElement>(null);
 
     /**
      * Password validation rules for real-time feedback
@@ -200,6 +218,34 @@ export default function ProfilePage() {
             setActiveTab(tab);
         }
     }, [searchParams]);
+
+    useEffect(() => {
+
+        const loadProfile = async () => {
+
+            try {
+
+                const response =
+                    await getProfileApi();
+
+                setProfile(
+                    response.data.data
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "Failed to load profile",
+                    error
+                );
+
+            }
+
+        };
+
+        loadProfile();
+
+    }, []);
 
     /**
      * Removes a toast notification by its ID
@@ -447,6 +493,48 @@ export default function ProfilePage() {
         }
     };
 
+    const handleProfileSave =
+        async () => {
+
+            try {
+
+                const response =
+                    await updateProfileApi({
+                        user_name: profile.user_name,
+                        phone_number: profile.phone_number,
+                        description: profile.description,
+                        profile_image: profile.profile_image,
+                    });
+
+                setProfile(
+                    response.data.data
+                );
+
+                // Notify entire app that profile changed
+                window.dispatchEvent(
+                    new Event("profileUpdated")
+                );
+
+                showToast(
+                    "Profile updated successfully",
+                    "success"
+                );
+
+                setIsEditingProfile(
+                    false
+                );
+
+            } catch {
+
+                showToast(
+                    "Failed to update profile",
+                    "error"
+                );
+
+            }
+
+        };
+
     // ============================================================
     // COMPONENT RENDER
     // ============================================================
@@ -480,382 +568,575 @@ export default function ProfilePage() {
             {/* Main Profile Page Container */}
             <div className={styles.profilePage}>
                 <div className={styles.profileContainer}>
-
-                    {/* 
+                    <div className={styles.profileLayout}>
+                        {/* 
             Tab Navigation
             Allows switching between password and passkey forms
             Active tab is highlighted with different styling
-          */}
-                    <div className={styles.tabs}>
-                        {/* Password Tab */}
-                        <button
-                            type="button"
-                            className={
-                                activeTab === "password"
-                                    ? `${styles.tab} ${styles.tabActive}`
-                                    : styles.tab
-                            }
-                            onClick={() => setActiveTab("password")}
-                            aria-selected={activeTab === "password"}
-                            role="tab"
-                        >
-                            Change Password
-                        </button>
+          */}<div className={styles.profileCard}>
 
-                        {/* Passkey Tab */}
-                        <button
-                            type="button"
-                            className={
-                                activeTab === "passkey"
-                                    ? `${styles.tab} ${styles.tabActive}`
-                                    : styles.tab
-                            }
-                            onClick={() => setActiveTab("passkey")}
-                            aria-selected={activeTab === "passkey"}
-                            role="tab"
-                        >
-                            Change Credential Passkey
-                        </button>
-                    </div>
+                            <div
+                                className={styles.profileHeader}
+                            >
 
-                    {/* 
+                                <div
+                                    className={styles.profileAvatar}
+                                    onClick={() =>
+                                        isEditingProfile &&
+                                        profileFileRef.current?.click()
+                                    }
+                                >
+
+                                    {profile.profile_image ? (
+
+                                        <img
+                                            src={profile.profile_image}
+                                            alt="Profile"
+                                            className={styles.profileAvatarImg}
+                                        />
+
+                                    ) : (
+
+                                        profile.user_name
+                                            ?.charAt(0)
+                                            ?.toUpperCase()
+
+                                    )}
+
+                                    {isEditingProfile && (
+                                        <input
+                                            ref={profileFileRef}
+                                            type="file"
+                                            accept="image/*"
+                                            style={{ display: "none" }}
+                                            onChange={(e) => {
+
+                                                const file =
+                                                    e.target.files?.[0];
+
+                                                if (!file) return;
+
+                                                const reader =
+                                                    new FileReader();
+
+                                                reader.onloadend =
+                                                    () => {
+
+                                                        setProfile({
+                                                            ...profile,
+                                                            profile_image:
+                                                                reader.result as string,
+                                                        });
+
+                                                    };
+
+                                                reader.readAsDataURL(
+                                                    file
+                                                );
+
+                                            }}
+                                        />
+                                    )}
+
+                                </div>
+
+                                {!isEditingProfile ? (
+                                    <button
+                                        className={styles.editBtn}
+                                        onClick={() =>
+                                            setIsEditingProfile(true)
+                                        }
+                                        title="Edit Profile"
+                                    >
+                                        <Pencil size={16} />
+                                    </button>
+                                ) : (
+                                    <div>
+                                        <button
+                                            className={
+                                                styles.saveBtn
+                                            }
+                                            onClick={
+                                                handleProfileSave
+                                            }
+                                        >
+                                            Save
+                                        </button>
+
+                                        <button
+                                            className={
+                                                styles.cancelBtn
+                                            }
+                                            onClick={() =>
+                                                setIsEditingProfile(
+                                                    false
+                                                )
+                                            }
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                )}
+
+                            </div>
+
+                            <div
+                                className={
+                                    styles.profileInfo
+                                }
+                            >
+
+                                <label>Name</label>
+
+                                <input
+                                    value={
+                                        profile.user_name
+                                    }
+                                    disabled={
+                                        !isEditingProfile
+                                    }
+                                    onChange={(e) =>
+                                        setProfile({
+                                            ...profile,
+                                            user_name:
+                                                e.target.value,
+                                        })
+                                    }
+                                />
+
+                                <label>Email</label>
+
+                                <input
+                                    value={profile.email}
+                                    disabled
+                                />
+
+                                <label>Role</label>
+
+                                <input
+                                    value={profile.role}
+                                    disabled
+                                />
+
+                                <label>
+                                    Phone Number
+                                </label>
+
+                                <input
+                                    value={
+                                        profile.phone_number ||
+                                        ""
+                                    }
+                                    disabled={
+                                        !isEditingProfile
+                                    }
+                                    onChange={(e) =>
+                                        setProfile({
+                                            ...profile,
+                                            phone_number:
+                                                e.target.value,
+                                        })
+                                    }
+                                />
+
+                                <label>
+                                    Description
+                                </label>
+
+                                <textarea
+                                    rows={4}
+                                    value={
+                                        profile.description ||
+                                        ""
+                                    }
+                                    disabled={
+                                        !isEditingProfile
+                                    }
+                                    onChange={(e) =>
+                                        setProfile({
+                                            ...profile,
+                                            description:
+                                                e.target.value,
+                                        })
+                                    }
+                                />
+
+                            </div>
+
+                        </div>
+                        <div className={styles.securitySection}>
+                            <div className={styles.tabs}>
+                                {/* Password Tab */}
+                                <button
+                                    type="button"
+                                    className={
+                                        activeTab === "password"
+                                            ? `${styles.tab} ${styles.tabActive}`
+                                            : styles.tab
+                                    }
+                                    onClick={() => setActiveTab("password")}
+                                    aria-selected={activeTab === "password"}
+                                    role="tab"
+                                >
+                                    Change Password
+                                </button>
+
+                                {/* Passkey Tab */}
+                                <button
+                                    type="button"
+                                    className={
+                                        activeTab === "passkey"
+                                            ? `${styles.tab} ${styles.tabActive}`
+                                            : styles.tab
+                                    }
+                                    onClick={() => setActiveTab("passkey")}
+                                    aria-selected={activeTab === "passkey"}
+                                    role="tab"
+                                >
+                                    Change Credential Passkey
+                                </button>
+                            </div>
+
+                            {/* 
             Tab Content Area
             Dynamically renders form based on active tab
             Each form has its own validation and submission logic
           */}
-                    <div className={styles.tabContent}>
+                            <div className={styles.tabContent}>
 
-                        {/* Password Change Form */}
-                        {activeTab === "password" && (
-                            <>
-                                {/* Left Column - Form Fields (35% width) */}
-                                <div className={styles.formColumn}>
-                                    <form onSubmit={handlePasswordChange}>
-                                        <div className={styles.formGroup}>
-                                            <label
-                                                className={styles.label}
-                                                htmlFor="currentPassword"
-                                            >
-                                                Current Password
-                                            </label>
+                                {/* Password Change Form */}
+                                {activeTab === "password" && (
+                                    <>
+                                        {/* Left Column - Form Fields (35% width) */}
+                                        <div className={styles.formColumn}>
+                                            <form onSubmit={handlePasswordChange}>
+                                                <div className={styles.formGroup}>
+                                                    <label
+                                                        className={styles.label}
+                                                        htmlFor="currentPassword"
+                                                    >
+                                                        Current Password
+                                                    </label>
 
-                                            <div className={styles.passwordWrapper}>
-                                                <input
-                                                    id="currentPassword"
-                                                    type={
-                                                        showCurrentPassword
-                                                            ? "text"
-                                                            : "password"
-                                                    }
-                                                    placeholder="Enter current password"
-                                                    value={currentPassword}
-                                                    onChange={(e) => {
-                                                        setCurrentPassword(
-                                                            e.target.value
-                                                        );
-                                                        setCurrentPasskeyError("");
-                                                        setIsPasskeyVerified(false);
-                                                    }}
-                                                    onBlur={handleCurrentPasswordBlur}
-                                                    required
-                                                    className={`${styles.input} ${currentPasswordError
-                                                        ? styles.inputError
-                                                        : ""
-                                                        }`}
-                                                />
+                                                    <div className={styles.passwordWrapper}>
+                                                        <input
+                                                            id="currentPassword"
+                                                            type={
+                                                                showCurrentPassword
+                                                                    ? "text"
+                                                                    : "password"
+                                                            }
+                                                            placeholder="Enter current password"
+                                                            value={currentPassword}
+                                                            onChange={(e) => {
+                                                                setCurrentPassword(
+                                                                    e.target.value
+                                                                );
+                                                                setCurrentPasskeyError("");
+                                                                setIsPasskeyVerified(false);
+                                                            }}
+                                                            onBlur={handleCurrentPasswordBlur}
+                                                            required
+                                                            className={`${styles.input} ${currentPasswordError
+                                                                ? styles.inputError
+                                                                : ""
+                                                                }`}
+                                                        />
 
-                                                <button
-                                                    type="button"
-                                                    className={styles.eyeButton}
-                                                    onClick={() =>
-                                                        setShowCurrentPassword(
-                                                            !showCurrentPassword
-                                                        )
-                                                    }
-                                                >
-                                                    {showCurrentPassword
-                                                        ? <FaEyeSlash />
-                                                        : <FaEye />}
-                                                </button>
-                                            </div>
+                                                        <button
+                                                            type="button"
+                                                            className={styles.eyeButton}
+                                                            onClick={() =>
+                                                                setShowCurrentPassword(
+                                                                    !showCurrentPassword
+                                                                )
+                                                            }
+                                                        >
+                                                            {showCurrentPassword
+                                                                ? <EyeOff size={18} />
+                                                                : <Eye size={18} />}
+                                                        </button>
+                                                    </div>
 
-                                            {currentPasswordError && (
-                                                <div className={styles.fieldError}>
-                                                    {currentPasswordError}
+                                                    {currentPasswordError && (
+                                                        <div className={styles.fieldError}>
+                                                            {currentPasswordError}
+                                                        </div>
+                                                    )}
+                                                    <div
+                                                        className={styles.forgotLink}
+                                                        onClick={
+                                                            sendingPasswordReset
+                                                                ? undefined
+                                                                : handleForgotPassword
+                                                        }
+                                                        style={{
+                                                            cursor: sendingPasswordReset
+                                                                ? "not-allowed"
+                                                                : "pointer",
+                                                            opacity: sendingPasswordReset
+                                                                ? 0.7
+                                                                : 1,
+                                                        }}
+                                                    >
+                                                        {sendingPasswordReset
+                                                            ? "Sending reset link..."
+                                                            : "Forgot Password?"}
+                                                    </div>
                                                 </div>
-                                            )}
-                                            <div
-                                                className={styles.forgotLink}
-                                                onClick={
-                                                    sendingPasswordReset
-                                                        ? undefined
-                                                        : handleForgotPassword
-                                                }
-                                                style={{
-                                                    cursor: sendingPasswordReset
-                                                        ? "not-allowed"
-                                                        : "pointer",
-                                                    opacity: sendingPasswordReset
-                                                        ? 0.7
-                                                        : 1,
-                                                }}
-                                            >
-                                                {sendingPasswordReset
-                                                    ? "Sending reset link..."
-                                                    : "Forgot Password?"}
-                                            </div>
-                                        </div>
-                                        <div className={styles.formGroup}>
-                                            <label className={styles.label} htmlFor="newPassword">
-                                                New Password
-                                            </label>
-                                            <div className={styles.passwordWrapper}>
-                                                <input
-                                                    id="newPassword"
-                                                    type={showNewPassword ? "text" : "password"}
-                                                    placeholder="Enter new password"
-                                                    value={newPassword}
-                                                    onChange={(e) => setNewPassword(e.target.value)}
-                                                    onBlur={() => setPasswordTouched(true)}
-                                                    required
-                                                    className={`${styles.input} ${passwordError && passwordTouched ? styles.inputError : ""}`}
-                                                    autoComplete="new-password"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    className={styles.eyeButton}
-                                                    onClick={() => setShowNewPassword(!showNewPassword)}
-                                                    aria-label={showNewPassword ? "Hide password" : "Show password"}
-                                                >
-                                                    {showNewPassword ? <FaEyeSlash /> : <FaEye />}
-                                                </button>
-                                            </div>
-                                            {passwordError && passwordTouched && (
-                                                <div className={styles.fieldError}>{passwordError}</div>
-                                            )}
-                                        </div>
-
-                                        <div className={styles.formGroup}>
-                                            <label className={styles.label} htmlFor="confirmPassword">
-                                                Confirm Password
-                                            </label>
-                                            <div className={styles.passwordWrapper}>
-                                                <input
-                                                    id="confirmPassword"
-                                                    type={showConfirmPassword ? "text" : "password"}
-                                                    placeholder="Confirm new password"
-                                                    value={confirmPassword}
-                                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                                    onBlur={() => setConfirmPasswordTouched(true)}
-                                                    required
-                                                    className={`${styles.input} ${confirmPasswordError && confirmPasswordTouched ? styles.inputError : ""}`}
-                                                    autoComplete="new-password"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    className={styles.eyeButton}
-                                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                                    aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-                                                >
-                                                    {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
-                                                </button>
-                                            </div>
-                                            {confirmPasswordError && confirmPasswordTouched && (
-                                                <div className={styles.fieldError}>{confirmPasswordError}</div>
-                                            )}
-                                        </div>
-
-                                        <button
-                                            type="submit"
-                                            className={styles.submitButton}
-                                            disabled={
-                                                isUpdating ||
-                                                !isPasswordVerified
-                                            }
-                                        >
-                                            {isUpdating ? "Updating..." : "Update Password"}
-                                        </button>
-                                    </form>
-                                </div>
-
-                                {/* Right Column - Password Validation Rules */}
-                                <div className={styles.validationColumn}>
-                                    <h4 className={styles.validationTitle}>Password Requirements</h4>
-                                    <div className={styles.validationGrid}>
-                                        <div className={`${styles.rule} ${passwordRules.minLength ? styles.ruleValid : styles.ruleInvalid}`}>
-                                            {passwordRules.minLength ? <FaCheckCircle size={14} /> : <FaTimesCircle size={14} />}
-                                            <span>At least 8 characters</span>
-                                        </div>
-                                        <div className={`${styles.rule} ${passwordRules.uppercase ? styles.ruleValid : styles.ruleInvalid}`}>
-                                            {passwordRules.uppercase ? <FaCheckCircle size={14} /> : <FaTimesCircle size={14} />}
-                                            <span>One uppercase letter</span>
-                                        </div>
-                                        <div className={`${styles.rule} ${passwordRules.lowercase ? styles.ruleValid : styles.ruleInvalid}`}>
-                                            {passwordRules.lowercase ? <FaCheckCircle size={14} /> : <FaTimesCircle size={14} />}
-                                            <span>One lowercase letter</span>
-                                        </div>
-                                        <div className={`${styles.rule} ${passwordRules.number ? styles.ruleValid : styles.ruleInvalid}`}>
-                                            {passwordRules.number ? <FaCheckCircle size={14} /> : <FaTimesCircle size={14} />}
-                                            <span>One number</span>
-                                        </div>
-                                        <div className={`${styles.rule} ${passwordRules.special ? styles.ruleValid : styles.ruleInvalid}`}>
-                                            {passwordRules.special ? <FaCheckCircle size={14} /> : <FaTimesCircle size={14} />}
-                                            <span>One special character</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </>
-                        )}
-
-                        {/* Passkey Change Form */}
-                        {activeTab === "passkey" && (
-                            <>
-                                {/* Left Column - Form Fields */}
-                                <div className={styles.formColumn}>
-                                    <form onSubmit={handlePasskeyChange}>
-                                        <div className={styles.formGroup}>
-                                            <label className={styles.label} htmlFor="currentPasskey">
-                                                Current Passkey
-                                            </label>
-                                            <div className={styles.passwordWrapper}>
-                                                <input
-                                                    id="currentPasskey"
-                                                    type={showCurrentPasskey ? "text" : "password"}
-                                                    placeholder="Enter current 6-digit passkey"
-                                                    value={currentPasskey}
-                                                    onChange={(e) => {
-                                                        setCurrentPasskey(
-                                                            e.target.value
-                                                        );
-                                                        setCurrentPasskeyError("");
-                                                        setIsPasskeyVerified(false);
-                                                    }}
-                                                    maxLength={6}
-                                                    required
-                                                    className={styles.input}
-                                                    pattern="\d{6}"
-                                                    title="Must be exactly 6 digits"
-                                                    onBlur={handleCurrentPasskeyBlur}
-                                                />
-                                                <button
-                                                    type="button"
-                                                    className={styles.eyeButton}
-                                                    onClick={() => setShowCurrentPasskey(!showCurrentPasskey)}
-                                                    aria-label={showCurrentPasskey ? "Hide passkey" : "Show passkey"}
-                                                >
-                                                    {showCurrentPasskey ? <FaEyeSlash /> : <FaEye />}
-                                                </button>
-                                            </div>
-                                            {currentPasskeyError && (
-                                                <div className={styles.fieldError}>
-                                                    {currentPasskeyError}
+                                                <div className={styles.formGroup}>
+                                                    <label className={styles.label} htmlFor="newPassword">
+                                                        New Password
+                                                    </label>
+                                                    <div className={styles.passwordWrapper}>
+                                                        <input
+                                                            id="newPassword"
+                                                            type={showNewPassword ? "text" : "password"}
+                                                            placeholder="Enter new password"
+                                                            value={newPassword}
+                                                            onChange={(e) => setNewPassword(e.target.value)}
+                                                            onBlur={() => setPasswordTouched(true)}
+                                                            required
+                                                            className={`${styles.input} ${passwordError && passwordTouched ? styles.inputError : ""}`}
+                                                            autoComplete="new-password"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            className={styles.eyeButton}
+                                                            onClick={() => setShowNewPassword(!showNewPassword)}
+                                                            aria-label={showNewPassword ? "Hide password" : "Show password"}
+                                                        >
+                                                            {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                                        </button>
+                                                    </div>
+                                                    {passwordError && passwordTouched && (
+                                                        <div className={styles.fieldError}>{passwordError}</div>
+                                                    )}
                                                 </div>
-                                            )}
 
-                                            <div
-                                                className={styles.forgotLink}
-                                                onClick={
-                                                    sendingPasskeyReset
-                                                        ? undefined
-                                                        : handleForgotPasskey
-                                                }
-                                                style={{
-                                                    cursor: sendingPasskeyReset
-                                                        ? "not-allowed"
-                                                        : "pointer",
-                                                    opacity: sendingPasskeyReset
-                                                        ? 0.7
-                                                        : 1,
-                                                }}
-                                            >
-                                                {sendingPasskeyReset
-                                                    ? "Sending reset link..."
-                                                    : "Forgot Credential Passkey?"}
-                                            </div>
-                                        </div>
+                                                <div className={styles.formGroup}>
+                                                    <label className={styles.label} htmlFor="confirmPassword">
+                                                        Confirm Password
+                                                    </label>
+                                                    <div className={styles.passwordWrapper}>
+                                                        <input
+                                                            id="confirmPassword"
+                                                            type={showConfirmPassword ? "text" : "password"}
+                                                            placeholder="Confirm new password"
+                                                            value={confirmPassword}
+                                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                                            onBlur={() => setConfirmPasswordTouched(true)}
+                                                            required
+                                                            className={`${styles.input} ${confirmPasswordError && confirmPasswordTouched ? styles.inputError : ""}`}
+                                                            autoComplete="new-password"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            className={styles.eyeButton}
+                                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                            aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                                                        >
+                                                            {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                                        </button>
+                                                    </div>
+                                                    {confirmPasswordError && confirmPasswordTouched && (
+                                                        <div className={styles.fieldError}>{confirmPasswordError}</div>
+                                                    )}
+                                                </div>
 
-                                        <div className={styles.formGroup}>
-                                            <label className={styles.label} htmlFor="newPasskey">
-                                                New Passkey
-                                            </label>
-                                            <div className={styles.passwordWrapper}>
-                                                <input
-                                                    id="newPasskey"
-                                                    type={showNewPasskey ? "text" : "password"}
-                                                    placeholder="Enter new 6-digit passkey"
-                                                    value={newPasskey}
-                                                    onChange={(e) => setNewPasskey(e.target.value)}
-                                                    maxLength={6}
-                                                    required
-                                                    className={styles.input}
-                                                    pattern="\d{6}"
-                                                    title="Must be exactly 6 digits"
-                                                />
                                                 <button
-                                                    type="button"
-                                                    className={styles.eyeButton}
-                                                    onClick={() => setShowNewPasskey(!showNewPasskey)}
-                                                    aria-label={showNewPasskey ? "Hide passkey" : "Show passkey"}
+                                                    type="submit"
+                                                    className={styles.submitButton}
+                                                    disabled={
+                                                        isUpdating ||
+                                                        !isPasswordVerified
+                                                    }
                                                 >
-                                                    {showNewPasskey ? <FaEyeSlash /> : <FaEye />}
+                                                    {isUpdating ? "Updating..." : "Update Password"}
                                                 </button>
-                                            </div>
+                                            </form>
                                         </div>
 
-                                        <div className={styles.formGroup}>
-                                            <label className={styles.label} htmlFor="confirmPasskey">
-                                                Confirm Passkey
-                                            </label>
-                                            <div className={styles.passwordWrapper}>
-                                                <input
-                                                    id="confirmPasskey"
-                                                    type={showConfirmPasskey ? "text" : "password"}
-                                                    placeholder="Confirm new 6-digit passkey"
-                                                    value={confirmPasskey}
-                                                    onChange={(e) => setConfirmPasskey(e.target.value)}
-                                                    maxLength={6}
-                                                    required
-                                                    className={styles.input}
-                                                    pattern="\d{6}"
-                                                    title="Must be exactly 6 digits"
-                                                />
+                                        {/* Right Column - Password Validation Rules */}
+                                        <div className={styles.validationColumn}>
+                                            <h4 className={styles.validationTitle}>Password Requirements</h4>
+                                            <div className={styles.validationGrid}>
+                                                <div className={`${styles.rule} ${passwordRules.minLength ? styles.ruleValid : styles.ruleInvalid}`}>
+                                                    {passwordRules.minLength ? <CircleCheck size={14} /> : <CircleX size={14} />}
+                                                    <span>At least 8 characters</span>
+                                                </div>
+                                                <div className={`${styles.rule} ${passwordRules.uppercase ? styles.ruleValid : styles.ruleInvalid}`}>
+                                                    {passwordRules.uppercase ? <CircleCheck size={14} /> : <CircleX size={14} />}
+                                                    <span>One uppercase letter</span>
+                                                </div>
+                                                <div className={`${styles.rule} ${passwordRules.lowercase ? styles.ruleValid : styles.ruleInvalid}`}>
+                                                    {passwordRules.lowercase ? <CircleCheck size={14} /> : < CircleX size={14} />}
+                                                    <span>One lowercase letter</span>
+                                                </div>
+                                                <div className={`${styles.rule} ${passwordRules.number ? styles.ruleValid : styles.ruleInvalid}`}>
+                                                    {passwordRules.number ? <CircleCheck size={14} /> : <CircleX size={14} />}
+                                                    <span>One number</span>
+                                                </div>
+                                                <div className={`${styles.rule} ${passwordRules.special ? styles.ruleValid : styles.ruleInvalid}`}>
+                                                    {passwordRules.special ? <CircleCheck size={14} /> : <CircleX size={14} />}
+                                                    <span>One special character</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+
+                                {/* Passkey Change Form */}
+                                {activeTab === "passkey" && (
+                                    <>
+                                        {/* Left Column - Form Fields */}
+                                        <div className={styles.formColumn}>
+                                            <form onSubmit={handlePasskeyChange}>
+                                                <div className={styles.formGroup}>
+                                                    <label className={styles.label} htmlFor="currentPasskey">
+                                                        Current Passkey
+                                                    </label>
+                                                    <div className={styles.passwordWrapper}>
+                                                        <input
+                                                            id="currentPasskey"
+                                                            type={showCurrentPasskey ? "text" : "password"}
+                                                            placeholder="Enter current 6-digit passkey"
+                                                            value={currentPasskey}
+                                                            onChange={(e) => {
+                                                                setCurrentPasskey(
+                                                                    e.target.value
+                                                                );
+                                                                setCurrentPasskeyError("");
+                                                                setIsPasskeyVerified(false);
+                                                            }}
+                                                            maxLength={6}
+                                                            required
+                                                            className={styles.input}
+                                                            pattern="\d{6}"
+                                                            title="Must be exactly 6 digits"
+                                                            onBlur={handleCurrentPasskeyBlur}
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            className={styles.eyeButton}
+                                                            onClick={() => setShowCurrentPasskey(!showCurrentPasskey)}
+                                                            aria-label={showCurrentPasskey ? "Hide passkey" : "Show passkey"}
+                                                        >
+                                                            {showCurrentPasskey ? <EyeOff size={18} /> : <Eye size={18} />}
+                                                        </button>
+                                                    </div>
+                                                    {currentPasskeyError && (
+                                                        <div className={styles.fieldError}>
+                                                            {currentPasskeyError}
+                                                        </div>
+                                                    )}
+
+                                                    <div
+                                                        className={styles.forgotLink}
+                                                        onClick={
+                                                            sendingPasskeyReset
+                                                                ? undefined
+                                                                : handleForgotPasskey
+                                                        }
+                                                        style={{
+                                                            cursor: sendingPasskeyReset
+                                                                ? "not-allowed"
+                                                                : "pointer",
+                                                            opacity: sendingPasskeyReset
+                                                                ? 0.7
+                                                                : 1,
+                                                        }}
+                                                    >
+                                                        {sendingPasskeyReset
+                                                            ? "Sending reset link..."
+                                                            : "Forgot Credential Passkey?"}
+                                                    </div>
+                                                </div>
+
+                                                <div className={styles.formGroup}>
+                                                    <label className={styles.label} htmlFor="newPasskey">
+                                                        New Passkey
+                                                    </label>
+                                                    <div className={styles.passwordWrapper}>
+                                                        <input
+                                                            id="newPasskey"
+                                                            type={showNewPasskey ? "text" : "password"}
+                                                            placeholder="Enter new 6-digit passkey"
+                                                            value={newPasskey}
+                                                            onChange={(e) => setNewPasskey(e.target.value)}
+                                                            maxLength={6}
+                                                            required
+                                                            className={styles.input}
+                                                            pattern="\d{6}"
+                                                            title="Must be exactly 6 digits"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            className={styles.eyeButton}
+                                                            onClick={() => setShowNewPasskey(!showNewPasskey)}
+                                                            aria-label={showNewPasskey ? "Hide passkey" : "Show passkey"}
+                                                        >
+                                                            {showNewPasskey ? <EyeOff size={18} /> : <Eye size={18} />}
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <div className={styles.formGroup}>
+                                                    <label className={styles.label} htmlFor="confirmPasskey">
+                                                        Confirm Passkey
+                                                    </label>
+                                                    <div className={styles.passwordWrapper}>
+                                                        <input
+                                                            id="confirmPasskey"
+                                                            type={showConfirmPasskey ? "text" : "password"}
+                                                            placeholder="Confirm new 6-digit passkey"
+                                                            value={confirmPasskey}
+                                                            onChange={(e) => setConfirmPasskey(e.target.value)}
+                                                            maxLength={6}
+                                                            required
+                                                            className={styles.input}
+                                                            pattern="\d{6}"
+                                                            title="Must be exactly 6 digits"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            className={styles.eyeButton}
+                                                            onClick={() => setShowConfirmPasskey(!showConfirmPasskey)}
+                                                            aria-label={showConfirmPasskey ? "Hide passkey" : "Show passkey"}
+                                                        >
+                                                            {showConfirmPasskey ? <EyeOff size={18} /> : <Eye size={18} />}
+                                                        </button>
+                                                    </div>
+                                                </div>
+
                                                 <button
-                                                    type="button"
-                                                    className={styles.eyeButton}
-                                                    onClick={() => setShowConfirmPasskey(!showConfirmPasskey)}
-                                                    aria-label={showConfirmPasskey ? "Hide passkey" : "Show passkey"}
+                                                    type="submit"
+                                                    className={styles.submitButton}
+                                                    disabled={!isPasskeyVerified}
                                                 >
-                                                    {showConfirmPasskey ? <FaEyeSlash /> : <FaEye />}
+                                                    Update Passkey
                                                 </button>
+                                            </form>
+                                        </div>
+
+                                        {/* Right Column - Empty for passkey tab (maintains layout) */}
+                                        <div className={styles.validationColumn}>
+                                            <h4 className={styles.validationTitle}>Passkey Requirements</h4>
+                                            <div className={styles.validationGrid}>
+                                                <div className={`${styles.rule} ${/^\d{6}$/.test(newPasskey) ? styles.ruleValid : styles.ruleInvalid}`}>
+                                                    {/^\d{6}$/.test(newPasskey) ? <CircleCheck size={14} /> : <CircleX size={14} />}
+                                                    <span>Must be exactly 6 digits</span>
+                                                </div>
+                                                <div className={`${styles.rule} ${newPasskey && confirmPasskey && newPasskey === confirmPasskey ? styles.ruleValid : styles.ruleInvalid}`}>
+                                                    {newPasskey && confirmPasskey && newPasskey === confirmPasskey ? <CircleCheck size={14} /> : <CircleX size={14} />}
+                                                    <span>Passkeys must match</span>
+                                                </div>
                                             </div>
                                         </div>
-
-                                        <button
-                                            type="submit"
-                                            className={styles.submitButton}
-                                            disabled={!isPasskeyVerified}
-                                        >
-                                            Update Passkey
-                                        </button>
-                                    </form>
-                                </div>
-
-                                {/* Right Column - Empty for passkey tab (maintains layout) */}
-                                <div className={styles.validationColumn}>
-                                    <h4 className={styles.validationTitle}>Passkey Requirements</h4>
-                                    <div className={styles.validationGrid}>
-                                        <div className={`${styles.rule} ${/^\d{6}$/.test(newPasskey) ? styles.ruleValid : styles.ruleInvalid}`}>
-                                            {/^\d{6}$/.test(newPasskey) ? <FaCheckCircle size={14} /> : <FaTimesCircle size={14} />}
-                                            <span>Must be exactly 6 digits</span>
-                                        </div>
-                                        <div className={`${styles.rule} ${newPasskey && confirmPasskey && newPasskey === confirmPasskey ? styles.ruleValid : styles.ruleInvalid}`}>
-                                            {newPasskey && confirmPasskey && newPasskey === confirmPasskey ? <FaCheckCircle size={14} /> : <FaTimesCircle size={14} />}
-                                            <span>Passkeys must match</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </>
-                        )}
+                                    </>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

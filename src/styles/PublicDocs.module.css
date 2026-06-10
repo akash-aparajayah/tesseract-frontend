@@ -1,269 +1,282 @@
 /* PublicDocs.module.css */
 
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
 .docsWrapper {
     display: flex;
-    min-height: calc(100vh - 120px);
-    background-color: #f8fafc;
-    padding: 10px;
+    height: 100vh;
+    overflow: hidden;
+    background-color: #f8f9fa;
 }
 
-/* Sidebar Styles */
-.sidebar {
+/* ========== LEFT MENU SIDEBAR ========== */
+.leftMenu {
     width: 300px;
+    min-width: 300px;
     background-color: #1e293b;
     color: #e2e8f0;
-    border-radius: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
     overflow-y: auto;
-    height: fit-content;
-    max-height: calc(100vh - 140px);
-    position: sticky;
-    top: 20px;
 }
 
-.sidebarHeader {
+.contentLogo {
     padding: 1.5rem;
     border-bottom: 1px solid #334155;
 }
 
-.sidebarHeader h3 {
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin: 0 0 0.25rem 0;
-    color: white;
-}
-
-.sidebarHeader p {
-    font-size: 0.75rem;
-    color: #94a3b8;
+.logo1 h2 {
+    color: #ffffff;
+    font-size: 1.5rem;
+    font-weight: 700;
     margin: 0;
 }
 
-.sidebarMenu {
-    padding: 1rem;
+.contentMenu {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
 }
 
-.serviceItem {
+.contentInfos {
+    padding: 1.5rem;
+    border-bottom: 1px solid #334155;
+}
+
+.info {
+    font-size: 0.875rem;
+    color: #94a3b8;
+    margin-bottom: 0.25rem;
+}
+
+.info:first-child {
+    color: #ffffff;
+    font-weight: 600;
     margin-bottom: 0.5rem;
 }
 
-.serviceHeader {
+.legendLabel {
+    display: block;
+    padding: 1rem 1.5rem 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.apiList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.serviceGroup {
+    margin: 0;
+}
+
+.serviceParent {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.75rem;
-    border-radius: 0.5rem;
+    padding: 0.75rem 1.5rem;
     cursor: pointer;
-    transition: all 0.2s;
-    font-weight: 500;
-}
-
-.serviceHeader:hover {
-    background-color: #334155;
-}
-
-.serviceHeaderOpen {
-    background-color: #3b82f6;
-    color: white;
-}
-
-.serviceName {
-    font-size: 0.875rem;
-}
-
-.serviceIcon {
-    font-size: 0.75rem;
-    transition: transform 0.2s;
-}
-
-.providerList {
-    margin-left: 1rem;
-    margin-top: 0.25rem;
-    border-left: 1px solid #334155;
-}
-
-.providerItem {
-    padding: 0.5rem 0.75rem;
-    margin: 0.25rem 0;
-    border-radius: 0.375rem;
-    cursor: pointer;
-    font-size: 0.813rem;
     transition: all 0.2s;
     color: #cbd5e1;
 }
 
+.serviceParent:hover {
+    background-color: #334155;
+    color: #ffffff;
+}
+
+.serviceParentActive {
+    background-color: #3b82f6;
+    color: #ffffff;
+}
+
+.providerSubList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.providerItem {
+    padding: 0.5rem 1.5rem 0.5rem 2.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.813rem;
+    color: #94a3b8;
+}
+
 .providerItem:hover {
     background-color: #334155;
-    color: white;
+    color: #ffffff;
 }
 
 .providerItemActive {
-    background-color: #3b82f6;
-    color: white;
+    background-color: #264780;
+    color: #ffffff;
 }
 
-/* Main Content Styles */
-.mainContent {
+/* ========== RIGHT CONTENT PAGE ========== */
+.contentPage {
     flex: 1;
-    padding: 0 0 0 1.5rem;
-    min-height: auto;
-}
-
-.contentWrapper {
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-/* API Header */
-.apiHeader {
-    background: white;
-    border-radius: 0.75rem;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.apiTitle {
-    font-size: 1.875rem;
-    font-weight: 700;
-    margin: 0 0 0.5rem 0;
-    color: #0f172a;
-}
-
-.apiDescription {
-    color: #475569;
-    margin-bottom: 1rem;
-    line-height: 1.5;
-}
-
-.apiEndpoint {
     display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-    background-color: #f1f5f9;
-    padding: 0.75rem;
-    border-radius: 0.5rem;
+    height: 100vh;
+    overflow: hidden;
 }
 
-.methodBadge {
+/* ========== CONTENT AREA (LEFT SIDE) ========== */
+.content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 2rem;
+    background-color: #ffffff;
+    border-right: 1px solid #e2e8f0;
+}
+
+.contentSection {
+    margin-bottom: 2rem;
+}
+
+.contentSection h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 0.5rem;
+}
+
+.contentSection h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.contentSection h4 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+.contentSection p {
+    color: #475569;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+.methodBtn {
     display: inline-block;
     padding: 0.25rem 0.75rem;
-    border-radius: 9999px;
+    border-radius: 0.25rem;
     font-size: 0.75rem;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
-}
-
-.methodBadge.get {
-    background-color: #10b981;
-    color: white;
-}
-
-.methodBadge.post {
     background-color: #3b82f6;
-    color: white;
+    color: #ffffff;
+    border: none;
+    margin-right: 0.75rem;
 }
 
-.methodBadge.put {
-    background-color: #f59e0b;
-    color: white;
-}
-
-.methodBadge.delete {
-    background-color: #ef4444;
-    color: white;
-}
-
-.endpointUrl {
-    font-family: monospace;
+.highlighted {
+    font-family: 'Courier New', monospace;
     font-size: 0.875rem;
     color: #1e293b;
+    background-color: #f1f5f9;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
     word-break: break-all;
 }
 
-/* Section Styles */
-.section {
-    background: white;
-    border-radius: 0.75rem;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+.copyIcon {
+    margin-left: 0.75rem;
+    cursor: pointer;
+    color: #3b82f6;
+    font-size: 1rem;
+    transition: color 0.2s;
 }
 
-.sectionTitle {
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin: 0 0 1rem 0;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid #e2e8f0;
-    color: #0f172a;
+.copyIcon:hover {
+    color: #2563eb;
 }
 
-/* Table Styles */
-.tableWrapper {
-    overflow-x: auto;
-}
-
-.docsTable {
+/* ========== API TABLE ========== */
+.apiTable {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    margin-bottom: 1rem;
 }
 
-.docsTable th {
+.apiTable th {
     text-align: left;
     padding: 0.75rem;
     background-color: #f8fafc;
-    border-bottom: 1px solid #e2e8f0;
+    border: 1px solid #e2e8f0;
     font-weight: 600;
+    font-size: 0.875rem;
     color: #0f172a;
 }
 
-.docsTable td {
+.apiTable td {
     padding: 0.75rem;
-    border-bottom: 1px solid #f1f5f9;
+    border: 1px solid #e2e8f0;
+    font-size: 0.875rem;
     color: #334155;
 }
 
-.codeCell {
-    font-family: monospace;
-    font-weight: 600;
-    color: #3b82f6;
+.textCenter {
+    text-align: center;
 }
 
-.requiredText {
-    color: #ef4444;
-    font-weight: 500;
+.textCenter input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: default;
 }
 
-.optionalText {
-    color: #10b981;
-}
-
-/* Code Block */
-.codeBlock {
-    background-color: #0f172a;
+/* ========== RIGHT CODE COLUMN ========== */
+.contentCode {
+    width: 400px;
+    min-width: 400px;
+    background-color: #1e293b;
     color: #e2e8f0;
-    padding: 1rem;
+    overflow-y: auto;
+    padding: 2rem;
+    height: 100vh;
+}
+
+.contentCode pre {
+    background-color: #0f172a;
     border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
     overflow-x: auto;
-    font-family: monospace;
+}
+
+.contentCode code {
+    font-family: 'Courier New', monospace;
     font-size: 0.813rem;
+    color: #e2e8f0;
+    white-space: pre-wrap;
+    word-break: break-word;
     line-height: 1.5;
 }
 
-.codeBlock code {
-    white-space: pre-wrap;
-    word-break: break-word;
-}
-
-/* Empty State */
+/* ========== EMPTY STATE ========== */
 .emptyContent {
     text-align: center;
-    padding: 4rem;
-    background: white;
-    border-radius: 0.75rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    padding: 4rem 2rem;
 }
 
 .emptyIcon {
@@ -282,7 +295,7 @@
     color: #64748b;
 }
 
-/* Loading State */
+/* ========== LOADING STATE ========== */
 .loadingContainer {
     display: flex;
     flex-direction: column;
@@ -308,36 +321,81 @@
     }
 }
 
-/* Responsive */
+/* ========== RESPONSIVE ========== */
+@media (max-width: 1024px) {
+    .contentCode {
+        width: 350px;
+        min-width: 350px;
+    }
+}
+
 @media (max-width: 768px) {
     .docsWrapper {
         flex-direction: column;
     }
 
-    .sidebar {
+    .leftMenu {
         width: 100%;
-        margin-bottom: 1.5rem;
-        position: relative;
+        min-width: 100%;
+        height: auto;
+        max-height: 300px;
     }
 
-    .mainContent {
-        padding: 0;
+    .contentPage {
+        flex-direction: column;
     }
 
-    .apiTitle {
-        font-size: 1.5rem;
+    .content {
+        border-right: none;
+        border-bottom: 1px solid #e2e8f0;
     }
 
-    .section {
-        padding: 1rem;
+    .contentCode {
+        width: 100%;
+        min-width: 100%;
+        height: auto;
     }
+}
 
-    .docsTable {
-        font-size: 0.75rem;
-    }
+/* Code Section Headings */
+.codeSection {
+    margin-bottom: 2rem;
+}
 
-    .docsTable th,
-    .docsTable td {
-        padding: 0.5rem;
-    }
+.codeHeading {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #334155;
+}
+
+.codeSubHeading {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #94a3b8;
+    margin-bottom: 0.5rem;
+    margin-top: 1rem;
+}
+
+.codeBlock {
+    background-color: #0f172a;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    overflow-x: auto;
+    margin-bottom: 1rem;
+}
+
+.codeBlock code {
+    font-family: 'Courier New', monospace;
+    font-size: 0.813rem;
+    color: #e2e8f0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.6;
+}
+
+.responseItem {
+    margin-bottom: 1rem;
 }

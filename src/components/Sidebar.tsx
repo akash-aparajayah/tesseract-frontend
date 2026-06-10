@@ -215,11 +215,11 @@ export default function Sidebar() {
 
 
             {/* Existing Documentation Link (keep if you want) */}
-            <NavLink
-              to="/dashboard/documentation"
-              className={({ isActive }) =>
-                `${styles.menuItem} ${isActive ? styles.active : ""}`
-              }
+            <a
+              href="#/public-docs"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.menuItem}
               onClick={handleMenuClick}
               title={isCollapsed ? "Documentation" : ""}
             >
@@ -229,7 +229,7 @@ export default function Sidebar() {
                   <span className={styles.menuText}>Documentation</span>
                 </div>
               </div>
-            </NavLink>
+            </a>
           </div>
         </div>
 

@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useMemo } from "react";
 import styles from "../styles/dashboard.module.css";
 import { useToast } from "../hooks/useToast";
-import { getUserApi, healthCheckApi } from "../services/authApi";
+import {
+  getUserApi,
+  getProfileApi,
+  healthCheckApi
+} from "../services/authApi";
 import { userAssignProjectEnv } from "../services/projectApi";
 
 // Used to display roles like "Super Admin", "Admin", "User"
@@ -86,6 +90,7 @@ const Dashboard: React.FC = () => {
     email: "",
     lastLogin: "",
     status: "Active",
+    profile_image: "",
   });
   const [stats, setStats] = useState([
     { label: "Users", value: 0, icon: "👥", color: "#4f8ef7", bg: "#e8f0ff" },
@@ -107,11 +112,13 @@ const Dashboard: React.FC = () => {
     redis: "unknown",
   });
 
-  useEffect(() => {
+  const fetchDashboardData = async () => {
     const fetchData = async () => {
       try {
         setLoading(true);
         const profileData = (await getUserApi()).data;
+        const profileResponse = await getProfileApi();
+        const profileUser = profileResponse.data.data;
         const healthData = await healthCheckApi();
 
         // Use public_id because environment assignments are linked to public_id
@@ -158,12 +165,13 @@ const Dashboard: React.FC = () => {
         }
 
         setProfile({
-          id: profileData.data.users.id,
-          name: profileData.data.users.user_name,
-          role: formatRole(profileData.data.users.role),
-          email: profileData.data.users.email,
-          lastLogin: profileData?.data?.users?.last_login_at || "",
-          status: profileData.data.users.is_deleted === false ? "Active" : "Inactive",
+          id: profileUser.id,
+          name: profileUser.user_name,
+          role: formatRole(profileUser.role),
+          email: profileUser.email,
+          lastLogin: profileUser.last_login_at || "",
+          status: profileUser.is_active ? "Active" : "Inactive",
+          profile_image: profileUser.profile_image || "",
         });
 
         // Dashboard counts based on assigned workspace data
@@ -233,8 +241,29 @@ const Dashboard: React.FC = () => {
         setLoading(false);
       }
     };
-    fetchData();
-  }, [showToast]);
+    await fetchData();
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      fetchDashboardData();
+    };
+
+    window.addEventListener(
+      "profileUpdated",
+      handleProfileUpdate
+    );
+
+    return () =>
+      window.removeEventListener(
+        "profileUpdated",
+        handleProfileUpdate
+      );
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -333,8 +362,21 @@ const Dashboard: React.FC = () => {
               </div>
               <div className={styles.aadharBodyRow}>
                 <div className={styles.aadharAvatarRow}>
-                  <div className={styles.avatarPhotoRow}>👤</div>
-                  <div className={styles.avatarLabelRow}>Photo</div>
+                  <div className={styles.avatarPhotoRow}>
+                    {profile.profile_image ? (
+                      <img
+                        src={profile.profile_image}
+                        alt={profile.name}
+                        className={styles.dashboardProfileImage}
+                      />
+                    ) : (
+                      profile.name?.charAt(0)?.toUpperCase() || "U"
+                    )}
+                  </div>
+
+                  <div className={styles.avatarLabelRow}>
+                    Photo
+                  </div>
                 </div>
                 <div className={styles.profileDetailsGrid}>
                   <div className={styles.detailItem}>

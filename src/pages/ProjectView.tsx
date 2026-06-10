@@ -4574,11 +4574,13 @@ export default function ProjectView() {
                     name="credential_passkey_unlock"
                     placeholder="Enter Credential Passkey"
                     value={unlockPasskey}
-                    onChange={(e) =>
-                      setUnlockPasskey(
-                        e.target.value
-                      )
-                    } onKeyDown={(e) => {
+                    maxLength={6}
+                    inputMode="numeric"
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, "");
+                      setUnlockPasskey(value.slice(0, 6));
+                    }}
+                    onKeyDown={(e) => {
 
                       if (e.key === "Enter") {
 

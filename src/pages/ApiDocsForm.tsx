@@ -40,6 +40,7 @@ const ApiDocsForm = () => {
     const [providers, setProviders] = useState<ProviderType[]>([]);
     const [loading, setLoading] = useState(false);
 
+
     // Fetch services
     useEffect(() => {
         const fetchServices = async () => {
@@ -55,13 +56,34 @@ const ApiDocsForm = () => {
     }, [showToast]);
 
     // Fetch providers when service changes
+    // Fetch providers when service changes
     useEffect(() => {
         const serviceId = record.service_type_id;
         if (serviceId) {
             const fetchProviders = async () => {
                 try {
                     const response = await getProvidersByServiceId(serviceId);
-                    setProviders(response.data || response);
+                    const allProviders = response.data || response;
+
+                    // Fetch existing records to filter out used providers
+                    const recordsResponse = await apiDocs.getAll({});
+                    const existingRecords = recordsResponse.data.data.records;
+
+                    // Filter out providers that already have documentation for this service
+                    const usedProviderIds = existingRecords
+                        .filter((record: any) => {
+                            // When editing, exclude current record
+                            if (id && record.public_id === id) return false;
+                            return record.service_type?.public_id === serviceId || record.service_type_id === serviceId;
+                        })
+                        .map((record: any) => record.provider?.public_id || record.provider_id)
+                        .filter(Boolean); // Remove undefined/null values
+
+                    const filteredProviders = allProviders.filter(
+                        (provider: any) => !usedProviderIds.includes(provider.public_id)
+                    );
+
+                    setProviders(filteredProviders);
                 } catch (error) {
                     console.error('Failed to fetch providers:', error);
                     showToast('Failed to fetch providers', 'error');
@@ -71,7 +93,7 @@ const ApiDocsForm = () => {
         } else {
             setProviders([]);
         }
-    }, [record.service_type_id, showToast]);
+    }, [record.service_type_id, showToast, id]);
 
     // Fetch record if editing
     useEffect(() => {
@@ -213,6 +235,9 @@ const ApiDocsForm = () => {
                                         {providers.map(p => (
                                             <option key={p.public_id} value={p.public_id}>{p.name}</option>
                                         ))}
+                                        {record.service_type_id && providers.length === 0 && (
+                                            <option value="" disabled>All providers for this service have documentation</option>
+                                        )}
                                     </select>
                                 </div>
                             </div>
@@ -414,8 +439,7 @@ const ApiDocsForm = () => {
                                     <thead>
                                         <tr>
                                             <th>Code</th>
-                                            <th>Subject</th>
-                                            <th>Details</th>
+                                            <th>Meaning</th>
                                             <th style={{ width: '80px' }}></th>
                                         </tr>
                                     </thead>
@@ -438,14 +462,7 @@ const ApiDocsForm = () => {
                                                         onChange={(e) => handleArrayChange('response', idx, 'subject', e.target.value)}
                                                     />
                                                 </td>
-                                                <td>
-                                                    <input
-                                                        type="text"
-                                                        className={styles.tableInput}
-                                                        value={row.details}
-                                                        onChange={(e) => handleArrayChange('response', idx, 'details', e.target.value)}
-                                                    />
-                                                </td>
+
                                                 <td>
                                                     <button
                                                         type="button"

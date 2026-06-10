@@ -36,6 +36,7 @@ interface Admin {
   email: string;
   role: "ADMIN" | "SUPER_ADMIN" | "USER";
   is_active: boolean;
+  profile_image?: string | null;
 }
 
 interface RawAdmin {
@@ -45,6 +46,7 @@ interface RawAdmin {
   email: string;
   role: "ADMIN" | "SUPER_ADMIN" | "USER";
   is_active: boolean;
+  profile_image?: string | null;
 }
 
 const api = {
@@ -54,18 +56,21 @@ const api = {
       const data = response?.data?.data as RawAdmin[];
       if (!data || !Array.isArray(data) || data.length === 0) return [];
       return data
-        .map((item: RawAdmin) => {
+        .map((item: RawAdmin): Admin | null => {
           const id = item.public_id ?? item.id;
+
           if (!id) return null;
+
           return {
             id,
             user_name: item.user_name,
             email: item.email,
             role: item.role,
             is_active: item.is_active,
+            profile_image: item.profile_image ?? null,
           };
         })
-        .filter((item): item is Admin => item !== null);
+        .filter(Boolean) as Admin[];
     } catch (error) {
       console.error("GET ADMINS ERROR:", error);
       return [];
@@ -97,6 +102,7 @@ const api = {
       email: userData.email,
       role: userData.role,
       is_active: userData.is_active,
+      profile_image: userData.profile_image ?? null,
     };
   },
 };
@@ -625,7 +631,23 @@ const AdminPanel: React.FC = () => {
                     <td className={styles.colNo}>{serialNumber}</td>
                     <td className={styles.colUser}>
                       <div className={styles.userCell}>
-                        <div className={styles.userAvatar}>{getInitials(admin.user_name)}</div>
+                        <div className={styles.userAvatar}>
+
+                          {admin.profile_image ? (
+
+                            <img
+                              src={admin.profile_image}
+                              alt={admin.user_name}
+                              className={styles.userAvatarImage}
+                            />
+
+                          ) : (
+
+                            getInitials(admin.user_name)
+
+                          )}
+
+                        </div>
                         <span className={styles.userName}>{admin.user_name}</span>
                       </div>
                     </td>

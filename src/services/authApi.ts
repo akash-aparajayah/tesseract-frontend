@@ -127,3 +127,23 @@ export const validatePasskeyResetTokenApi =
       `/auth/validate-passkey-reset/${token}`
     );
   };
+
+// GET PROFILE
+export const getProfileApi = () => {
+  return api.get("/users/profile");
+};
+
+// UPDATE PROFILE
+export const updateProfileApi = (
+  data: {
+    user_name: string;
+    phone_number?: string;
+    description?: string;
+    profile_image?: string;
+  }
+) => {
+  return api.patch(
+    "/users/profile",
+    data
+  );
+};

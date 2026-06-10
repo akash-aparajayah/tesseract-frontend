@@ -42,6 +42,10 @@ const router = createHashRouter([
     element: <ServiceProviderDocs />,
   },
   {
+    path: "/public-docs",
+    element: <PublicDocs />,
+  },
+  {
     path: "/dashboard",
     element: <Layout />,
     children: [
@@ -94,10 +98,6 @@ const router = createHashRouter([
       {
         path: "api-docs/edit/:id",
         element: <ApiDocsForm />,
-      },
-      {
-        path: "documentation",
-        element: <PublicDocs />,
       },
     ],
   },

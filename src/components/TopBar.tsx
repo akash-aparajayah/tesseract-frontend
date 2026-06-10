@@ -16,7 +16,7 @@ import { useNavigate } from "react-router-dom";
 
 import styles from "../componentStyles/Topbar.module.css";
 import Toast from "./common/Toast";
-import { updatePasswordApi, updatePasskeyApi, getUserApi, } from "@/services/authApi";
+import { updatePasswordApi, updatePasskeyApi, getProfileApi, } from "@/services/authApi";
 import GlobalSearch from "./common/GlobalSearch";
 
 interface ToastState {
@@ -50,6 +50,7 @@ export default function TopBar({
   const navigate = useNavigate();
   const [userName, setUserName] = useState("User");
   const [userRole, setUserRole] = useState("");
+  const [profileImage, setProfileImage] = useState("");
 
   const [bellActive, setBellActive] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -74,8 +75,6 @@ export default function TopBar({
 
   // Profile dropdown state management
   const [showDropdown, setShowDropdown] = useState(false);
-  const [dropdownTimeout, setDropdownTimeout] = useState<number | null>(null);
-
   // Logout states
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -85,13 +84,6 @@ export default function TopBar({
  * Clears any existing timeout to prevent dropdown from closing
  * Shows the dropdown menu
  */
-  const handleProfileMouseEnter = () => {
-    if (dropdownTimeout !== null) {
-      clearTimeout(dropdownTimeout);
-      setDropdownTimeout(null);
-    }
-    setShowDropdown(true);
-  };
 
   /**
  * Navigates to profile page with password tab active
@@ -100,29 +92,7 @@ export default function TopBar({
  */
   const handleChangeProfile = () => {
     setShowDropdown(false);
-    navigate("/profile?tab=password"); // For now, goes to password tab as placeholder
-  };
-
-  const handleProfileMouseLeave = () => {
-    const timeout = window.setTimeout(() => {
-      setShowDropdown(false);
-    }, 200); // 200ms delay for better UX
-    setDropdownTimeout(timeout);
-  };
-
-  const handleDropdownMouseEnter = () => {
-    if (dropdownTimeout !== null) {
-      clearTimeout(dropdownTimeout);
-      setDropdownTimeout(null);
-    }
-    setShowDropdown(true);
-  };
-
-  const handleDropdownMouseLeave = () => {
-    const timeout = setTimeout(() => {
-      setShowDropdown(false);
-    }, 200);
-    setDropdownTimeout(timeout);
+    navigate("/dashboard/profile");
   };
 
   const handleChangePassword = () => {
@@ -153,29 +123,77 @@ export default function TopBar({
     return () => timers.forEach((timer) => clearTimeout(timer));
   }, [toasts]);
 
+  const loadUser = async () => {
+    try {
+
+      const response =
+        await getProfileApi();
+
+      const user =
+        response.data.data;
+
+      setUserName(
+        user.user_name ||
+        user.email?.split("@")[0] ||
+        "User"
+      );
+
+      setUserRole(
+        formatRole(user.role)
+      );
+
+      setProfileImage(
+        user.profile_image || ""
+      );
+
+    } catch (error) {
+
+      console.error(
+        "Failed to load profile",
+        error
+      );
+
+    }
+  };
+
   useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const response = await getUserApi();
-
-        const user = response.data.data.users;
-
-        setUserName(
-          user.user_name ||
-          user.email?.split("@")[0] ||
-          "User"
-        );
-
-        setUserRole(
-          formatRole(user.role)
-        );
-      } catch (error) {
-        console.error("Failed to load user", error);
-      }
-    };
-
     loadUser();
   }, []);
+
+  useEffect(() => {
+
+    const handleProfileUpdate =
+      () => {
+        loadUser();
+      };
+
+    window.addEventListener(
+      "profileUpdated",
+      handleProfileUpdate
+    );
+
+    return () => {
+      window.removeEventListener(
+        "profileUpdated",
+        handleProfileUpdate
+      );
+    };
+
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowDropdown(false);
+    };
+
+    if (showDropdown) {
+      document.addEventListener("click", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, [showDropdown]);
 
   const handleBell = () => {
     setBellActive(true);
@@ -373,19 +391,42 @@ export default function TopBar({
           {/* Profile Section with Hover Dropdown Menu */}
           <div
             className={styles.profileWrapper}
-            onMouseEnter={handleProfileMouseEnter}
-            onMouseLeave={handleProfileMouseLeave}
           >
             {/* Profile Display - Shows avatar, name, role and dropdown chevron */}
-            <div className={styles.profile}>
+            <div
+              className={styles.profile}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowDropdown((prev) => !prev);
+              }}
+            >
               <div className={styles.avatar}>
-                <FaUserAlt />
+
+                {profileImage ? (
+
+                  <img
+                    src={profileImage}
+                    alt={userName}
+                    className={styles.avatarImage}
+                  />
+
+                ) : (
+
+                  userName
+                    ?.charAt(0)
+                    ?.toUpperCase()
+
+                )}
+
               </div>
               <div className={styles.info}>
                 <span className={styles.name}>{userName}</span>
                 <span className={styles.role}>{userRole || "Member"}</span>
               </div>
-              <FaChevronDown className={styles.chevronIcon} />
+              <FaChevronDown
+                className={`${styles.chevronIcon} ${showDropdown ? styles.chevronOpen : ""
+                  }`}
+              />
             </div>
 
             {/* 
@@ -396,8 +437,7 @@ export default function TopBar({
             {showDropdown && (
               <div
                 className={styles.profileDropdown}
-                onMouseEnter={handleDropdownMouseEnter}
-                onMouseLeave={handleDropdownMouseLeave}
+                onClick={(e) => e.stopPropagation()}
               >
 
                 {/* Change Profile Option - First item with user icon */}
