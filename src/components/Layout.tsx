@@ -14,6 +14,23 @@ import {
   getAllUsersApi,
 } from "@/services/adminApi";
 
+const getUserRole = () => {
+  try {
+    const token =
+      localStorage.getItem("accessToken");
+
+    if (!token) return null;
+
+    const payload = JSON.parse(
+      atob(token.split(".")[1])
+    );
+
+    return payload.role;
+  } catch {
+    return null;
+  }
+};
+
 export default function Layout() {
   const navigation = useNavigation();
   const [globalProjects, setGlobalProjects] =
@@ -30,10 +47,14 @@ export default function Layout() {
 
   useEffect(() => {
 
-    const loadGlobalSearchData =
-      async () => {
+    const loadGlobalSearchData = async () => {
+      try {
+        const role = getUserRole();
 
-        try {
+        if (
+          role === "SUPER_ADMIN" ||
+          role === "ADMIN"
+        ) {
 
           // PROJECTS
           const projectsRes =
@@ -75,51 +96,30 @@ export default function Layout() {
                 : [];
 
           const environments: any[] = [];
-
           const providers: any[] = [];
 
           allProjects.forEach(
             (project: any) => {
-
               const projectId =
                 project.public_id || project.id;
 
-              // ENVIRONMENTS
               (project.environments || [])
                 .forEach((env: any) => {
-
                   environments.push({
-
                     ...env,
-
-                    label:
-                      env.environment_name,
-
-                    project_id:
-                      projectId,
-
+                    label: env.environment_name,
+                    project_id: projectId,
                   });
-
                 });
 
-              // PROVIDERS
               (project.providers || [])
                 .forEach((provider: any) => {
-
                   providers.push({
-
                     ...provider,
-
-                    label:
-                      provider.provider_name,
-
-                    project_id:
-                      projectId,
-
+                    label: provider.provider_name,
+                    project_id: projectId,
                   });
-
                 });
-
             }
           );
 
@@ -130,20 +130,23 @@ export default function Layout() {
           setGlobalProviders(
             providers
           );
-
-        } catch (error) {
-
-          console.error(
-            "Global search load failed",
-            error
-          );
-
         }
-      };
+
+      } catch (error) {
+
+        console.error(
+          "Global search load failed",
+          error
+        );
+
+      }
+    };
 
     loadGlobalSearchData();
 
   }, []);
+
+
 
   return (
     <div className="dashboard-layout-wrapper">

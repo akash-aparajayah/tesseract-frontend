@@ -5,7 +5,7 @@ import {
     EyeOff,
     CircleCheck,
     CircleX,
-    Pencil,
+    Pencil, User,
 } from "lucide-react";
 import styles from "../styles/ProfilePage.module.css";
 import Toast from "../components/common/Toast";
@@ -110,6 +110,8 @@ export default function ProfilePage() {
     const profileFileRef =
         useRef<HTMLInputElement>(null);
 
+    const [isOpeningImagePicker, setIsOpeningImagePicker] =
+        useState(false);
 
 
     /**
@@ -486,6 +488,18 @@ export default function ProfilePage() {
         }
     };
 
+    const handleChangeImageClick = () => {
+
+        setIsOpeningImagePicker(true);
+
+        profileFileRef.current?.click();
+
+        setTimeout(() => {
+            setIsOpeningImagePicker(false);
+        }, 1000);
+
+    };
+
     const handleProfileSave = async () => {
 
         try {
@@ -574,13 +588,7 @@ export default function ProfilePage() {
                                 className={styles.profileHeader}
                             >
 
-                                <div
-                                    className={styles.profileAvatar}
-                                    onClick={() =>
-                                        isEditingProfile &&
-                                        profileFileRef.current?.click()
-                                    }
-                                >
+                                <div className={styles.profileAvatar}>
 
                                     {profile.profile_image ? (
 
@@ -592,9 +600,9 @@ export default function ProfilePage() {
 
                                     ) : (
 
-                                        profile.user_name
-                                            ?.charAt(0)
-                                            ?.toUpperCase()
+                                        <User
+                                            className={styles.defaultProfileIcon}
+                                        />
 
                                     )}
 
@@ -630,10 +638,14 @@ export default function ProfilePage() {
                                                 );
 
                                             }}
+
+
                                         />
                                     )}
 
                                 </div>
+
+
 
                                 {!isEditingProfile ? (
                                     <button
@@ -668,6 +680,35 @@ export default function ProfilePage() {
                                 )}
 
                             </div>
+                            {isEditingProfile && (
+                                <div className={styles.imageActions}>
+                                    <button
+                                        type="button"
+                                        className={styles.changeImageBtn}
+                                        onClick={handleChangeImageClick}
+                                        disabled={isOpeningImagePicker}
+                                    >
+                                        {isOpeningImagePicker
+                                            ? "Opening..."
+                                            : "Change"}
+                                    </button>
+
+                                    {profile.profile_image && (
+                                        <button
+                                            type="button"
+                                            className={styles.removeImageBtn}
+                                            onClick={() =>
+                                                setProfile({
+                                                    ...profile,
+                                                    profile_image: "",
+                                                })
+                                            }
+                                        >
+                                            Remove
+                                        </button>
+                                    )}
+                                </div>
+                            )}
 
                             <div
                                 className={

@@ -28,16 +28,20 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error?.response?.status === 401) {
-      // 🚨 AUTO LOGOUT
       console.error(
         "401 API FAILED =>",
         error.config?.url
       );
 
-      console.error(
-        "401 RESPONSE =>",
-        error.response?.data
+      localStorage.removeItem(
+        "accessToken"
       );
+
+      localStorage.removeItem(
+        "refreshToken"
+      );
+
+      window.location.replace("/myapp/#/");
     }
 
     return Promise.reject(error);

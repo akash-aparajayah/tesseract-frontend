@@ -975,13 +975,9 @@ body {
 .drawerForm {
   flex: 1;
   overflow-y: auto;
-
-  padding: 1.5rem;
-
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
-
   min-height: 0;
 }
 

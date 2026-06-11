@@ -422,9 +422,9 @@ export default function TopBar({
 
                 ) : (
 
-                  userName
-                    ?.charAt(0)
-                    ?.toUpperCase()
+                  <FaUserAlt
+                    className={styles.defaultUserIcon}
+                  />
 
                 )}
 
