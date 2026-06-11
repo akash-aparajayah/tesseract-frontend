@@ -22,13 +22,13 @@ jobs:
             --exclude 'build' \
             --exclude 'dist' \
             --exclude '.env' \
-            ./ /var/www/dash.apinexus.one/html/
+            ./ /opt/apps/apinexus/frontend/app/
 
       - name: Deploy Admin Application
         run: |
           set -e
 
-          cd /var/www/dash.apinexus.one/html/
+          cd /opt/apps/apinexus/frontend/app
 
           docker compose up -d --build --force-recreate
 
