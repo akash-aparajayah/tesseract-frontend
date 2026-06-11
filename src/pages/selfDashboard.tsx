@@ -88,7 +88,7 @@ const Dashboard: React.FC = () => {
     name: "",
     role: "",
     email: "",
-    lastLogin: "",
+    last_login_at: "",
     status: "Active",
     profile_image: "",
   });
@@ -169,7 +169,18 @@ const Dashboard: React.FC = () => {
           name: profileUser.user_name,
           role: formatRole(profileUser.role),
           email: profileUser.email,
-          lastLogin: profileUser.last_login_at || "",
+          last_login_at: profileUser?.last_login_at
+            ? new Date(profileUser.last_login_at).toLocaleString("en-IN", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+                hour12: true,
+                timeZone: "Asia/Kolkata",
+              })
+            : "",
           status: profileUser.is_active ? "Active" : "Inactive",
           profile_image: profileUser.profile_image || "",
         });
@@ -395,7 +406,7 @@ const Dashboard: React.FC = () => {
                   </div>
                   <div className={styles.detailItem}>
                     <label>Last Login</label>
-                    <p>{profile.lastLogin || formatTime(currentTime)}</p>
+                    <p>{profile.last_login_at }</p>
                   </div>
                   <div className={`${styles.detailItem} ${styles.detailFullWidth}`}>
                     <label>Email Address</label>
@@ -474,7 +485,7 @@ const Dashboard: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  <div className={styles.serviceCardMini}>
+                  {/* <div className={styles.serviceCardMini}>
                     <div className={styles.serviceCardIconMini}>📦</div>
                     <div>
                       <div className={styles.serviceCardLabelMini}>REDIS</div>
@@ -483,7 +494,7 @@ const Dashboard: React.FC = () => {
                         <span>{getServiceStatus(services.redis).text}</span>
                       </div>
                     </div>
-                  </div>
+                  </div> */}
                 </div>
               </div>
               <div className={styles.aadharFooter}>
