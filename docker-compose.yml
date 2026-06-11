@@ -1,0 +1,10 @@
+name: dash-apinexus
+services:
+  admin:
+    container_name: dash-apinexus
+    build:
+      context: .
+      dockerfile: dockerfile
+    ports:
+      - "3006:80"
+    restart: always
