@@ -338,8 +338,9 @@
 
 /* ICON */
 .avatar svg {
-  color: white;
-  font-size: 15px;
+  width: 18px;
+  height: 18px;
+  color: rgb(0, 0, 0);
 }
 
 /* SOFT PREMIUM GLOW */
@@ -1156,6 +1157,7 @@
 }
 
 .defaultUserIcon {
-  font-size: 18px;
+  width: 18px;
+  height: 18px;
   color: #64748b;
 }

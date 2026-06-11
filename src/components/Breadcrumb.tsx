@@ -14,7 +14,7 @@ import {
   Eye,
   Edit,
   User,
-  Server,
+  Server, FileCode,
 } from "lucide-react";
 import styles from "../componentStyles/Breadcrumb.module.css";
 
@@ -45,6 +45,8 @@ const getIconForTitle = (label: string): React.ReactNode => {
   if (labelLower === "user details") return <User {...iconProps} />;
   if (labelLower === "environment") return <Server {...iconProps} />;
   if (labelLower === "profile settings") return <User {...iconProps} />;
+  if (labelLower === "api docs management")
+    return <FileCode {...iconProps} />;
   return null;
 
 };
@@ -95,6 +97,10 @@ export default function Breadcrumb() {
     "/dashboard/provider-config": [
       { label: "Dashboard", path: "/dashboard" },
       { label: "Provider Config" },
+    ],
+    "/dashboard/api-docs": [
+      { label: "Dashboard", path: "/dashboard" },
+      { label: "API Docs Management" },
     ],
   };
 

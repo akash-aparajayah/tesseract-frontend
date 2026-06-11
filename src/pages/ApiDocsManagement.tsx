@@ -152,20 +152,6 @@ const ApiDocsManagement = () => {
         <>
             <ToastContainer />
             <div className={styles.container}>
-                <div className={styles.headerCard}>
-                    <div className={styles.headerContent}>
-                        <h4 className={styles.pageTitle}>API Documentation Management</h4>
-                        <nav>
-                            <ol className={styles.breadcrumb}>
-                                <li className={styles.breadcrumbItem}>
-                                    <NavLink className={styles.breadcrumbLink} to="/dashboard">Dashboard</NavLink>
-                                </li>
-                                <li className={styles.breadcrumbItem}>/</li>
-                                <li className={styles.breadcrumbActive}>API Docs Management</li>
-                            </ol>
-                        </nav>
-                    </div>
-                </div>
 
                 <div className={styles.mainCard}>
                     <div className={styles.cardHeader}>

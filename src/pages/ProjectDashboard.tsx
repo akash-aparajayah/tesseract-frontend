@@ -76,7 +76,7 @@ export default function ProjectDashboard() {
     filters.createdDate !== "";
 
   // ------------- Profile states
-  const [profileImage, setProfileImage] = useState("");
+  const [, setProfileImage] = useState("");
 
   const fetchProfileImage = async () => {
     try {
@@ -828,6 +828,9 @@ export default function ProjectDashboard() {
       {showDeleteConfirm !== null && (
         <div className={styles["modal-overlay"]} onClick={() => setShowDeleteConfirm(null)}>
           <div className={`${styles["modal-container"]} ${styles["delete-confirm"]}`} onClick={e => e.stopPropagation()}>
+            <div className={styles.deleteModalIcon}>
+              <Trash2 size={18} />
+            </div>
             <h3>Delete Project</h3>
             <p>Are you sure you want to delete this project?</p>
             <div className={styles["modal-actions"]}>

@@ -1,16 +1,16 @@
 import { useState, useEffect } from "react";
 import {
-  FaUserAlt,
-  FaBell,
-  FaKey,
-  FaTimes,
-  FaEye,
-  FaEyeSlash,
-  FaCog,
-  FaSignOutAlt,
-  FaChevronDown,
-  FaLock,
-} from "react-icons/fa";
+  User,
+  Bell,
+  KeyRound,
+  X,
+  Eye,
+  EyeOff,
+  Settings,
+  LogOut,
+  ChevronDown,
+  Lock,
+} from "lucide-react";
 
 import { useNavigate } from "react-router-dom";
 
@@ -380,13 +380,13 @@ export default function TopBar({
             onClick={handleBell}
             title="Notifications"
           >
-            <FaBell />
+            <Bell size={18} />
             <span className={styles.badge}></span>
           </div>
 
           {/* Settings Icon - Navigates to settings page */}
           <div className={styles.settingsIcon} title="Settings">
-            <FaCog />
+            <Settings size={18} />
           </div>
 
           {/* Logout Button - Direct logout trigger with confirmation */}
@@ -395,7 +395,7 @@ export default function TopBar({
             onClick={handleLogoutClick}
             title="Logout"
           >
-            <FaSignOutAlt />
+            <LogOut size={18} />
           </button>
 
           {/* Profile Section with Hover Dropdown Menu */}
@@ -422,7 +422,7 @@ export default function TopBar({
 
                 ) : (
 
-                  <FaUserAlt
+                  <User
                     className={styles.defaultUserIcon}
                   />
 
@@ -433,7 +433,8 @@ export default function TopBar({
                 <span className={styles.name}>{userName}</span>
                 <span className={styles.role}>{userRole || "Member"}</span>
               </div>
-              <FaChevronDown
+              <ChevronDown
+                size={16}
                 className={`${styles.chevronIcon} ${showDropdown ? styles.chevronOpen : ""
                   }`}
               />
@@ -455,7 +456,7 @@ export default function TopBar({
                   className={styles.dropdownItem}
                   onClick={handleChangeProfile}
                 >
-                  <FaUserAlt className={styles.dropdownIcon} />
+                  <User className={styles.dropdownIcon} size={16} />
                   <span>Change Profile</span>
                 </button>
 
@@ -464,7 +465,7 @@ export default function TopBar({
                   className={styles.dropdownItem}
                   onClick={handleChangePassword}
                 >
-                  <FaLock className={styles.dropdownIcon} />
+                  <Lock className={styles.dropdownIcon} size={16} />
                   <span>Change Password</span>
                 </button>
 
@@ -473,7 +474,7 @@ export default function TopBar({
                   className={styles.dropdownItem}
                   onClick={handleChangePasskey}
                 >
-                  <FaKey className={styles.dropdownIcon} />
+                  <KeyRound className={styles.dropdownIcon} size={16} />
                   <span>Change Passkey</span>
                 </button>
 
@@ -485,7 +486,7 @@ export default function TopBar({
                   className={`${styles.dropdownItem} ${styles.logoutDropdownItem}`}
                   onClick={handleLogoutClick}
                 >
-                  <FaSignOutAlt className={styles.dropdownIcon} />
+                  <LogOut className={styles.dropdownIcon} size={16} />
                   <span>Logout</span>
                 </button>
               </div>
@@ -508,7 +509,7 @@ export default function TopBar({
                 title="Close"
                 style={{ marginLeft: 0 }}
               >
-                <FaTimes />
+                <X size={18} />
               </button>
             </div>
             <div className={styles.securityTabs}>
@@ -556,7 +557,7 @@ export default function TopBar({
                     onClick={() => setShowNewPassword(!showNewPassword)}
                     title={showNewPassword ? "Hide Password" : "Show Password"}
                   >
-                    {showNewPassword ? <FaEyeSlash /> : <FaEye />}
+                    {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
                 <div className={styles.passwordWrapper}>
@@ -573,7 +574,7 @@ export default function TopBar({
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     title={showConfirmPassword ? "Hide Password" : "Show Password"}
                   >
-                    {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
                 <div className={styles.modalActions}>
@@ -613,9 +614,9 @@ export default function TopBar({
                     }
                   >
                     {showCurrentPasskey ? (
-                      <FaEyeSlash />
+                      <EyeOff size={18} />
                     ) : (
-                      <FaEye />
+                      <Eye size={18} />
                     )}
                   </button>
                 </div>
@@ -640,9 +641,9 @@ export default function TopBar({
                     }
                   >
                     {showNewPasskey ? (
-                      <FaEyeSlash />
+                      <EyeOff size={18} />
                     ) : (
-                      <FaEye />
+                      <Eye size={18} />
                     )}
                   </button>
                 </div>
@@ -669,9 +670,9 @@ export default function TopBar({
                     }
                   >
                     {showConfirmPasskey ? (
-                      <FaEyeSlash />
+                      <EyeOff size={18} />
                     ) : (
-                      <FaEye />
+                      <Eye size={18} />
                     )}
                   </button>
                 </div>
@@ -714,7 +715,7 @@ export default function TopBar({
                 onClick={handleCancelLogout}
                 title="Close"
               >
-                <FaTimes />
+                <X size={18} />
               </button>
             </div>
             <p style={{ color: "#64748b", marginBottom: "24px" }}>
