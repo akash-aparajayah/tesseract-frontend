@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import {
     Eye,
     EyeOff,
@@ -26,17 +26,14 @@ interface ToastState {
 }
 
 export default function ProfilePage() {
+    const location = useLocation();
     // Hooks for navigation and URL parameter extraction
-    const [searchParams] = useSearchParams();
-
-    /**
-     * Active tab state   
-     */
     const [activeTab, setActiveTab] = useState<"password" | "passkey">(
-        (searchParams.get("tab") as "password" | "passkey") || "password"
+        location.state?.activeTab || "password"
     );
-
     const [isEditingProfile, setIsEditingProfile] =
+        useState(false);
+    const [isProfileSaving, setIsProfileSaving] =
         useState(false);
 
     const [profile, setProfile] =
@@ -112,6 +109,8 @@ export default function ProfilePage() {
 
     const profileFileRef =
         useRef<HTMLInputElement>(null);
+
+
 
     /**
      * Password validation rules for real-time feedback
@@ -212,12 +211,6 @@ export default function ProfilePage() {
      * Synchronizes active tab with URL query parameter
      * Ensures tab state stays in sync when URL changes externally
      */
-    useEffect(() => {
-        const tab = searchParams.get("tab");
-        if (tab === "password" || tab === "passkey") {
-            setActiveTab(tab);
-        }
-    }, [searchParams]);
 
     useEffect(() => {
 
@@ -493,47 +486,49 @@ export default function ProfilePage() {
         }
     };
 
-    const handleProfileSave =
-        async () => {
+    const handleProfileSave = async () => {
 
-            try {
+        try {
 
-                const response =
-                    await updateProfileApi({
-                        user_name: profile.user_name,
-                        phone_number: profile.phone_number,
-                        description: profile.description,
-                        profile_image: profile.profile_image,
-                    });
+            setIsProfileSaving(true);
 
-                setProfile(
-                    response.data.data
-                );
+            const response =
+                await updateProfileApi({
+                    user_name: profile.user_name,
+                    phone_number: profile.phone_number,
+                    description: profile.description,
+                    profile_image: profile.profile_image,
+                });
 
-                // Notify entire app that profile changed
-                window.dispatchEvent(
-                    new Event("profileUpdated")
-                );
+            setProfile(
+                response.data.data
+            );
 
-                showToast(
-                    "Profile updated successfully",
-                    "success"
-                );
+            window.dispatchEvent(
+                new Event("profileUpdated")
+            );
 
-                setIsEditingProfile(
-                    false
-                );
+            showToast(
+                "Profile updated successfully",
+                "success"
+            );
 
-            } catch {
+            setIsEditingProfile(false);
 
-                showToast(
-                    "Failed to update profile",
-                    "error"
-                );
+        } catch {
 
-            }
+            showToast(
+                "Failed to update profile",
+                "error"
+            );
 
-        };
+        } finally {
+
+            setIsProfileSaving(false);
+
+        }
+
+    };
 
     // ============================================================
     // COMPONENT RENDER
@@ -653,25 +648,19 @@ export default function ProfilePage() {
                                 ) : (
                                     <div>
                                         <button
-                                            className={
-                                                styles.saveBtn
-                                            }
-                                            onClick={
-                                                handleProfileSave
-                                            }
+                                            className={styles.saveBtn}
+                                            onClick={handleProfileSave}
+                                            disabled={isProfileSaving}
                                         >
-                                            Save
+                                            {isProfileSaving ? "Saving..." : "Save"}
                                         </button>
 
                                         <button
-                                            className={
-                                                styles.cancelBtn
-                                            }
+                                            className={styles.cancelBtn}
                                             onClick={() =>
-                                                setIsEditingProfile(
-                                                    false
-                                                )
+                                                setIsEditingProfile(false)
                                             }
+                                            disabled={isProfileSaving}
                                         >
                                             Cancel
                                         </button>

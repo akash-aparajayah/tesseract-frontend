@@ -586,7 +586,7 @@
     max-width: 450px;
     width: 100%;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-    margin: 0 auto;
+    margin: 50px auto;
 }
 
 .loaderCard p {

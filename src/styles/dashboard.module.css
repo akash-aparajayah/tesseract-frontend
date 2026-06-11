@@ -381,6 +381,8 @@
   color: #5b6e8c;
   text-transform: uppercase;
   font-weight: 500;
+  display: flex;
+  padding-left: 23px;
 }
 
 .profileDetailsGrid {

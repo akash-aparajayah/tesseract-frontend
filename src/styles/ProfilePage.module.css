@@ -403,7 +403,7 @@
 
 .editBtn,
 .saveBtn {
-    background: #1b72e8;
+    background: var(--deep-navy);
     color: white;
 }
 
@@ -443,4 +443,6 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+    border: 1px solid grey;
+    border-radius: 100%;
 }

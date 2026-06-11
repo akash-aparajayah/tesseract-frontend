@@ -16,7 +16,7 @@ import {
   ChevronRight,
   AlertCircle,
   X,
-  Loader2,
+  Loader2, FunnelPlus,
 } from "lucide-react";
 
 import noDataImg from "../assets/illustration/No data.gif";
@@ -209,6 +209,21 @@ const AdminPanel: React.FC = () => {
     }
   }, []);
 
+  // Filter
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
+
+  useEffect(() => {
+    if (isDrawerOpen || showFilterPanel) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isDrawerOpen, showFilterPanel]);
+
   useEffect(() => {
     const loadAdmins = async () => {
       await fetchAdmins();
@@ -261,6 +276,10 @@ const AdminPanel: React.FC = () => {
     }
   };
 
+  //filter color change
+  const hasActiveFilters =
+    roleFilter !== "all" ||
+    statusFilter !== "all";
   const handleView = (admin: Admin) => navigate(`/dashboard/user/${admin.id}`);
   const handleEdit = (admin: Admin) => {
 
@@ -566,7 +585,11 @@ const AdminPanel: React.FC = () => {
       <div className={styles.toolbar}>
         {/* search and filters – unchanged */}
         <div className={styles.searchBox}>
-          <Search size={16} className={styles.searchIcon} />
+          <Search
+            size={16}
+            className={styles.searchIcon}
+          />
+
           <input
             type="text"
             placeholder="Search users..."
@@ -577,35 +600,36 @@ const AdminPanel: React.FC = () => {
             }}
             className={styles.searchInput}
           />
+
+          {searchTerm.trim() !== "" && (
+            <button
+              type="button"
+              className={styles.clearSearchBtn}
+              onClick={() => {
+                setSearchTerm("");
+                setCurrentPage(1);
+              }}
+            >
+              <X size={14} />
+            </button>
+          )}
         </div>
         <div className={styles.actionsGroup}>
-          <select
-            className={styles.roleSelect}
-            value={roleFilter}
-            onChange={(e) => {
-              setRoleFilter(e.target.value as never);
-              setCurrentPage(1);
-            }}
+          <button
+            className={`${styles.addBtn} ${hasActiveFilters ? styles.filterActiveBtn : ""
+              }`}
+            onClick={() => setShowFilterPanel(true)}
           >
-            <option value="all">All Roles</option>
-            <option value="SUPER_ADMIN">Super Admin</option>
-            <option value="ADMIN">Admin</option>
-            <option value="USER">User</option>
-          </select>
-          <select
-            className={styles.roleSelect}
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value as never);
-              setCurrentPage(1);
-            }}
+            <FunnelPlus size={16} />
+            Filter
+          </button>
+
+          <button
+            className={styles.addBtn}
+            onClick={openDrawer}
           >
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
-          <button className={styles.addBtn} onClick={openDrawer}>
-            <UserPlus size={16} /> Add User
+            <UserPlus size={16} />
+            Add User
           </button>
         </div>
       </div>
@@ -750,6 +774,89 @@ const AdminPanel: React.FC = () => {
             Page {currentPage} of {totalPages}
           </span>
         </div>
+      )}
+
+      {showFilterPanel && (
+        <>
+          <div
+            className={styles.filterOverlay}
+            onClick={() => setShowFilterPanel(false)}
+          />
+
+          <div
+            className={styles.drawer}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.drawerHeader}>
+              <h3>Filter Users</h3>
+
+              <button
+                className={styles.drawerClose}
+                onClick={() => setShowFilterPanel(false)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className={styles.drawerBody}>
+              <div className={styles.formGroup}>
+                <label>Role</label>
+
+                <select
+                  value={roleFilter}
+                  onChange={(e) =>
+                    setRoleFilter(e.target.value as never)
+                  }
+                >
+                  <option value="all">All Roles</option>
+                  <option value="SUPER_ADMIN">Super Admin</option>
+                  <option value="ADMIN">Admin</option>
+                  <option value="USER">User</option>
+                </select>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>Status</label>
+
+                <select
+                  value={statusFilter}
+                  onChange={(e) =>
+                    setStatusFilter(e.target.value as never)
+                  }
+                >
+                  <option value="all">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>Total Results</label>
+
+                <input
+                  value={filteredAdmins.length}
+                  readOnly
+                />
+              </div>
+            </div>
+
+            <div className={styles.drawerActions}>
+              <button
+                className={`${styles.clearFilterBtn} ${hasActiveFilters
+                  ? styles.clearFilterActive
+                  : styles.clearFilterDisabled
+                  }`}
+                disabled={!hasActiveFilters}
+                onClick={() => {
+                  setRoleFilter("all");
+                  setStatusFilter("all");
+                }}
+              >
+                Clear Filters
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
       {isDrawerOpen && (

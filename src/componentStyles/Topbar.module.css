@@ -1142,7 +1142,8 @@
   align-items: center;
   justify-content: center;
 
-  background: #1b72e8;
+  background: transparent;
+  border: 1px solid rgb(166, 163, 163);
   color: #fff;
   font-weight: 700;
   font-size: 16px;

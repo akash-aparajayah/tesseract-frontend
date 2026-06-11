@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import styles from "../styles/ProjectDashboard.module.css";
 import {
   Eye, Pencil, Trash2, Plus, Settings, Search, FileText,
-  Users, CheckCircle, XCircle, AlertCircle, X, FolderOpen
+  Users, CheckCircle, XCircle, AlertCircle, X, FolderOpen, FunnelPlus
 } from 'lucide-react';
 import noDataImg from "../assets/illustration/No data.gif";
 import errorImg from "../assets/illustration/error.svg";
@@ -63,9 +63,41 @@ export default function ProjectDashboard() {
   const createFileRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Filter states
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
 
+  const [filters, setFilters] = useState({
+    status: "",
+    createdDate: "",
+  });
 
+  const hasActiveFilters =
+    filters.status !== "" ||
+    filters.createdDate !== "";
 
+  // ------------- Profile states
+  const [profileImage, setProfileImage] = useState("");
+
+  const fetchProfileImage = async () => {
+    try {
+      const response = await fetch(
+        "http://192.168.29.26:8500/api/users/profile",
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (data?.success) {
+        setProfileImage(data?.data?.profile_image || "");
+      }
+    } catch (error) {
+      console.error("Failed to fetch profile image", error);
+    }
+  };
 
   // Edit form states
   const [editForm, setEditForm] = useState({
@@ -85,7 +117,7 @@ export default function ProjectDashboard() {
 
 
   useEffect(() => {
-    if (showCreatePanel || showEditPanel) {
+    if (showCreatePanel || showEditPanel || showFilterPanel) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -94,10 +126,11 @@ export default function ProjectDashboard() {
     return () => {
       document.body.style.overflow = "";
     };
-  }, [showCreatePanel, showEditPanel]);
+  }, [showCreatePanel, showEditPanel, showFilterPanel]);
 
   useEffect(() => {
     fetchProjects();
+    fetchProfileImage();
   }, []);
 
   useEffect(() => {
@@ -406,10 +439,26 @@ export default function ProjectDashboard() {
     setOpenDropdownId((prev) => (prev === id ? null : id));
   };
 
-  const filteredProjects = projects.filter(p =>
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (p.description && p.description.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredProjects = projects.filter((p) => {
+    const matchesSearch =
+      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (p.description &&
+        p.description.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    const matchesStatus =
+      !filters.status ||
+      p.status === filters.status;
+
+    const matchesCreated =
+      !filters.createdDate ||
+      p.created?.includes(filters.createdDate);
+
+    return (
+      matchesSearch &&
+      matchesStatus &&
+      matchesCreated
+    );
+  });
 
   const totalPages = Math.ceil(filteredProjects.length / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
@@ -541,19 +590,54 @@ export default function ProjectDashboard() {
       {/* Toolbar */}
       <div className={styles["toolbar"]}>
         <div className={styles["searchBox"]}>
-          <Search size={16} className={styles["searchIcon"]} />
+          <Search
+            size={16}
+            className={styles["searchIcon"]}
+          />
+
           <input
             type="text"
             placeholder="Search projects..."
             value={searchTerm}
-            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
             className={styles["searchInput"]}
           />
+
+          {searchTerm.trim() !== "" && (
+            <button
+              type="button"
+              className={styles["clearSearchBtn"]}
+              onClick={() => {
+                setSearchTerm("");
+                setCurrentPage(1);
+              }}
+            >
+              <X size={14} />
+            </button>
+          )}
         </div>
         <div className={styles["actionsGroup"]}>
-          <button className={styles["addBtn"]} onClick={handleOpenCreate}>
-            <Plus size={16} /> Create Project
+
+          <button
+            className={`${styles["addBtn"]} ${hasActiveFilters ? styles["filterActiveBtn"] : ""
+              }`}
+            onClick={() => setShowFilterPanel(true)}
+          >
+            <FunnelPlus size={16} />
+            Filter
           </button>
+
+          <button
+            className={styles["addBtn"]}
+            onClick={handleOpenCreate}
+          >
+            <Plus size={16} />
+            Create Project
+          </button>
+
         </div>
       </div>
 
@@ -588,7 +672,15 @@ export default function ProjectDashboard() {
                     <td className={styles["colProject"]}>
                       <div className={styles["projectCell"]}>
                         <div className={styles["projectAvatar"]}>
-                          {project.name.charAt(0).toUpperCase()}
+                          {project.image_url ? (
+                            <img
+                              src={project.image_url}
+                              alt={project.name}
+                              className={styles["projectAvatarImage"]}
+                            />
+                          ) : (
+                            project.name.charAt(0).toUpperCase()
+                          )}
                         </div>
                         <span className={styles["projectName"]}>{project.name}</span>
                       </div>
@@ -978,6 +1070,102 @@ export default function ProjectDashboard() {
             </div>
           </div>
         </>
+      )}
+
+
+      {/* Filter Panel */}
+      {showFilterPanel && (
+
+        <>
+          <div
+            className={styles["filterOverlay"]}
+            onClick={() => setShowFilterPanel(false)}
+          />
+
+          <div
+            className={styles["dashboard-slide-panel"]}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles["panel-header"]}>
+              <h2>Filter Projects</h2>
+
+              <button
+                className={styles["panel-close-btn"]}
+                onClick={() => setShowFilterPanel(false)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className={styles["panel-body"]}>
+
+              <div className={styles["form-group"]}>
+                <label>Status</label>
+
+                <select
+                  value={filters.status}
+                  onChange={(e) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      status: e.target.value,
+                    }))
+                  }
+                >
+                  <option value="">All Projects</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+
+              <div className={styles["form-group"]}>
+                <label>Created Date</label>
+
+                <input
+                  type="date"
+                  value={filters.createdDate}
+                  onChange={(e) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      createdDate: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+
+              <div className={styles["form-group"]}>
+                <label>Total Results</label>
+
+                <input
+                  type="text"
+                  value={filteredProjects.length}
+                  readOnly
+                />
+              </div>
+
+            </div>
+
+            <div className={styles["panel-footer"]}>
+
+              <button
+                className={`${styles["clearFilterBtn"]} ${hasActiveFilters
+                  ? styles["clearFilterActive"]
+                  : styles["clearFilterDisabled"]
+                  }`}
+                disabled={!hasActiveFilters}
+                onClick={() =>
+                  setFilters({
+                    status: "",
+                    createdDate: "",
+                  })
+                }
+              >
+                Clear Filters
+              </button>
+
+            </div>
+          </div>
+        </>
+
       )}
 
       {/* ========== DISCARD CHANGES MODAL ========== */}

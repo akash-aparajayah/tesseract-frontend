@@ -18,6 +18,7 @@ import ApiDocsManagement from "../pages/ApiDocsManagement";
 import ApiDocsForm from "../pages/ApiDocsForm";
 import ServiceProviderDocs from "../pages/ServiceProviderDocs";
 import PublicDocs from "../pages/PublicDocs";
+import Reports from "../pages/Reports";
 
 const router = createHashRouter([
   {
@@ -99,6 +100,10 @@ const router = createHashRouter([
         path: "api-docs/edit/:id",
         element: <ApiDocsForm />,
       },
+      {
+        path: "reports",
+        element: <Reports />,
+      }
     ],
   },
   // 404 Page

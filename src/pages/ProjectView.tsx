@@ -150,6 +150,7 @@ export default function ProjectView() {
     left: 0,
   });
   const [isEditing, setIsEditing] = useState(false);
+  const [isProjectSaving, setIsProjectSaving] = useState(false);
   const [editForm, setEditForm] = useState({ name: "", description: "", status: "active" as "active" | "inactive" });
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [newEnvName, setNewEnvName] = useState("");
@@ -2144,9 +2145,13 @@ export default function ProjectView() {
   };
 
   const handleSaveEdit = async () => {
+
     if (!project || !editForm.name.trim()) return;
 
     try {
+
+      setIsProjectSaving(true);
+
       const payload = {
         project_name: editForm.name.trim(),
         project_description: editForm.description.trim(),
@@ -2179,9 +2184,13 @@ export default function ProjectView() {
 
       setIsEditing(false);
 
-      showToast("Project updated successfully", "success");
+      showToast(
+        "Project updated successfully",
+        "success"
+      );
 
     } catch (error: any) {
+
       console.error(error);
 
       showToast(
@@ -2189,6 +2198,11 @@ export default function ProjectView() {
         "Failed to update project",
         "error"
       );
+
+    } finally {
+
+      setIsProjectSaving(false);
+
     }
   };
 
@@ -2383,9 +2397,20 @@ export default function ProjectView() {
                   <div className={styles["form-group-inline"]}><label>Description</label><textarea value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} className={styles["inline-textarea"]} rows={2} /></div>
                 </div>
                 <div className={styles["edit-actions-inline"]}>
-                  <button className={`${styles["action-btn"]} ${styles["cancel"]}`} onClick={handleCancelEdit}><X size={16} /> Cancel</button>
-                  <button className={`${styles["action-btn"]} ${styles["save"]}`} onClick={handleSaveEdit}><Save size={16} /> Save</button>
-                </div>
+                  <button
+                    className={`${styles["action-btn"]} ${styles["cancel"]}`}
+                    onClick={handleCancelEdit}
+                    disabled={isProjectSaving}
+                  >
+                    <X size={16} /> Cancel
+                  </button>                  <button
+                    className={`${styles["action-btn"]} ${styles["save"]}`}
+                    onClick={handleSaveEdit}
+                    disabled={isProjectSaving}
+                  >
+                    <Save size={16} />
+                    {isProjectSaving ? "Saving..." : "Save"}
+                  </button>                </div>
               </>
             ) : (
               <>

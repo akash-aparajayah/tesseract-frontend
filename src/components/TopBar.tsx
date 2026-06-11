@@ -97,12 +97,22 @@ export default function TopBar({
 
   const handleChangePassword = () => {
     setShowDropdown(false);
-    navigate("/dashboard/profile?tab=password");
+
+    navigate("/dashboard/profile", {
+      state: {
+        activeTab: "password",
+      },
+    });
   };
 
   const handleChangePasskey = () => {
     setShowDropdown(false);
-    navigate("/dashboard/profile?tab=passkey");
+
+    navigate("/dashboard/profile", {
+      state: {
+        activeTab: "passkey",
+      },
+    });
   };
 
   const removeToast = (id: number) => {

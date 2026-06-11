@@ -22,6 +22,9 @@ const ApiDocsForm = () => {
     const navigate = useNavigate();
     const { showToast, ToastContainer } = useToast();
 
+    // ----------- API BASE URL -----------
+    const API_BASE_URL = "https://ibv-api.salesplanner.org/api/";
+
     const [record, setRecord] = useState<Partial<ApiDocumentation>>({
         name: "",
         type: "GET",
@@ -114,9 +117,34 @@ const ApiDocsForm = () => {
         }
     }, [id, showToast]);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const handleInputChange = (
+        e: React.ChangeEvent<
+            HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+        >
+    ) => {
         const { name, value } = e.target;
-        setRecord({ ...record, [name]: value });
+
+        if (name === "url") {
+            let updatedValue = value;
+
+            if (!updatedValue.startsWith(API_BASE_URL)) {
+                updatedValue =
+                    API_BASE_URL +
+                    updatedValue.replace(API_BASE_URL, "");
+            }
+
+            setRecord({
+                ...record,
+                url: updatedValue,
+            });
+
+            return;
+        }
+
+        setRecord({
+            ...record,
+            [name]: value,
+        });
     };
 
     const handleArrayChange = (
@@ -250,8 +278,8 @@ const ApiDocsForm = () => {
                                     <input
                                         type="text"
                                         className={styles.formInput}
-                                        name="name"
-                                        value={record.name || ''}
+                                        name="url"
+                                        value={record.url || API_BASE_URL}
                                         onChange={handleInputChange}
                                         required
                                     />

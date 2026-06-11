@@ -192,7 +192,7 @@ export default function Sidebar() {
             </div>
 
             <NavLink
-              to="/dashboard/report"
+              to="/dashboard/reports"
               className={({ isActive }) =>
                 `${styles.menuItem} ${isActive ? styles.active : ""}`
               }
