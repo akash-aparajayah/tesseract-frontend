@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import styles from "../styles/ProjectDashboard.module.css";
 import {
   Eye, Pencil, Trash2, Plus, Settings, Search, FileText,
-  Users, CheckCircle, XCircle, AlertCircle, X, FolderOpen, FunnelPlus
+  Users, CheckCircle, XCircle, AlertCircle, X, FolderOpen, FunnelPlus, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import noDataImg from "../assets/illustration/No data.gif";
 import errorImg from "../assets/illustration/error.svg";
@@ -772,7 +772,8 @@ export default function ProjectDashboard() {
             disabled={currentPage === 1}
             onClick={() => goToPage(currentPage - 1)}
           >
-            ← Prev
+            <ChevronLeft size={14} />
+            <span>Prev</span>
           </button>
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
             <button
@@ -788,7 +789,8 @@ export default function ProjectDashboard() {
             disabled={currentPage === totalPages}
             onClick={() => goToPage(currentPage + 1)}
           >
-            Next →
+            <span>Next</span>
+            <ChevronRight size={14} />
           </button>
           <span className={styles["pageInfo"]}>
             Page {currentPage} of {totalPages}
