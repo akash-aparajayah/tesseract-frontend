@@ -1,0 +1,37 @@
+name: Deploy Front End
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout Latest Code
+        uses: actions/checkout@v4
+
+      - name: Sync Files
+        run: |
+          rsync -av --delete \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude 'node_modules' \
+            --exclude 'build' \
+            --exclude 'dist' \
+            --exclude '.env' \
+            ./ /var/www/dash.apinexus.one/html/
+
+      - name: Deploy Admin Application
+        run: |
+          set -e
+
+          cd /var/www/dash.apinexus.one/html/
+
+          docker compose up -d --build --force-recreate
+
+          docker image prune -f
+
+          echo "Admin deployment completed successfully."
